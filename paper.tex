@@ -1,0 +1,46 @@
+\documentclass{article}
+\usepackage{url,color,xspace,verbatim,subfig,ctable,multirow,listings}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{txfonts}
+\usepackage{rotating}
+\usepackage{paralist}
+\usepackage{subfig}
+\usepackage{graphics}
+\usepackage{enumitem}
+\usepackage{times}
+
+% ==================================================
+
+\graphicspath{{figs/}}
+\urlstyle{sf}
+
+% tikz stuff
+\usepackage{tikz}
+\usetikzlibrary{shapes,positioning,calc}
+
+\lstset{
+  language=C,
+  basicstyle=\ttfamily \small,
+  flexiblecolumns=false,
+  basewidth={0.5em,0.45em},
+  boxpos=t,
+}
+
+\definecolor{skRed}{RGB}{155,25,25}
+\newcommand{\stefan}[1]{
+  {\color{skRed}[{\color{red}{SK}} #1]}}
+
+% ==================================================
+
+\begin{document}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newpage
+\bibliographystyle{plain}
+\bibliography{defs,db,mendeley}
+
+\label{LastPage}
+
+\end{document}
