@@ -9,6 +9,7 @@
 \usepackage{graphics}
 \usepackage{enumitem}
 \usepackage{times}
+\usepackage[colorlinks=true]{hyperref}
 
 % ==================================================
 
@@ -34,6 +35,51 @@
 % ==================================================
 
 \begin{document}
+
+\title{Replication on multicore considering hierarchy and
+  characteristics of the network}
+
+% email address
+\newcommand{\eaddr}{stefan.kaestle@inf.ethz.ch}
+\newcommand{\email}{\href{mailto:\eaddr}{\eaddr}}
+
+\author{Stefan Kaestle\\
+  \email \\
+  Systems Group, ETH Zurich}
+
+\maketitle
+
+\paragraph{What do you want to enable?} Increase algorithm performance
+on multicores by applying distributed principles, particularly
+replication. Consistency using hierarchical group communication.
+
+\paragraph{What problem are you solving, and why is it hard?}
+\begin{description}
+\item[placement] machine dependent
+\item[consistency] need to consider machine \emph{characteristics};
+  multicores are \emph{different} from classical distributed systems.
+\item[machine characteristics] diverse, fast changing
+\end{description}
+
+\paragraph{What's the related work?} People do replication to deal
+with scalability challenges on multicores, e.g.\
+databases~\cite{Salomie2011, Wiesmann2000} and operating
+systems~\cite{fos:osr09, tornado:osdi99, barrelfish:sosp09}.
+
+\paragraph{What new idea(s) will solve the problems?} Consider machine
+characteristics and keep in mind, that multicore machines are
+different. 
+
+\paragraph{How will you go about it?} Replicas on NUMA domains, show
+that overall throughput is higher. Use a quorum based approach for
+consistency. Consistency by doing a hierarchical group communication
+approach instead of sequential send from same nodes.
+
+\paragraph{How will you know and show it works?} Database?
+Microbenchmark? Compare to primary backup, which is typically used.
+
+\paragraph{What is your hypothesis?} We can do much better if machine
+characteristics are considered.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
