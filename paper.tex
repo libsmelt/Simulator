@@ -51,7 +51,11 @@
 
 \paragraph{What do you want to enable?} Increase algorithm performance
 on multicores by applying distributed principles, particularly
-replication. Consistency using hierarchical group communication.
+replication. The challenge then is to guarantee consistency. Previous
+work was using primary copy protocols to do that~\cite{Wiesmann2000}, a
+passive replication scheme (i.e.\ nodes do not have to contact all
+replicas). They do that because they claim that it is not suitable for
+clients to know about replication details. 
 
 \paragraph{What problem are you solving, and why is it hard?} Three problems:
 \begin{description}
@@ -65,11 +69,16 @@ replication. Consistency using hierarchical group communication.
 with scalability challenges on multicores, e.g.\
 databases~\cite{Salomie2011, Wiesmann2000} and operating
 systems~\cite{fos:osr09, tornado:osdi99, barrelfish:sosp09}. But they
-don't to it properly. They do not consider machine characteristics.
+don't to it properly. They do not consider machine characteristics or
+apply the wrong distributed technologies.
 
-\paragraph{What new idea(s) will solve the problems?} Consider machine
-characteristics and keep in mind, that multicore machines are
-different. \\
+\paragraph{What new idea(s) will solve the problems?} We do a
+hierarchical group communication, which implements an atomic
+broadcast on multicore machines. It has message complexity of
+$O(\frac{n}{2})$ and time complexity $O(log(n))$ as opposed to
+algorithms from traditional distributed systems having $O(2)$ message
+complexity and $O(n)$ time complexity. %
+\\
 {\footnotesize Example: sequential consistency on shared memory, do
   not really need to have primary backup.}
 
