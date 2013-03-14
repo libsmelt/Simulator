@@ -20,7 +20,7 @@
 % tikz stuff
 \usepackage{tikz}
 \usepackage{pgfplots}
-\usetikzlibrary{shapes,positioning,calc}
+\usetikzlibrary{shapes,positioning,calc,snakes,arrows,shapes}
 
 \lstset{
   language=C,
@@ -138,8 +138,7 @@ messages. Instead of
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Experimental results}
 
-on revision 1190:a787513fd28c, experiments for sequential and batch
-broadcast working on nos5 and appenzeller
+\paragraph{Current numbers}
 
 \begin{table}[htb]
   \centering
@@ -150,15 +149,13 @@ broadcast working on nos5 and appenzeller
     \midrule
     sequential &  4096.1 &  105.2 & 136751.9 &   3061.5 \\
     batch      &  2408.0 &  181.9 &  57360.8 &   5271.5 \\
-    tree\footnote{This only works for the first 200 runs, after that,
-      performance breaks down, don't know why, but the first 200 runs
-      are quite stable}%
-               &  \sout{1471.8} &  \sout{187.9} &          &          \\
     \bottomrule
   \end{tabular}
   \caption{Broadcast measurements}
   \label{tab:bc_measurements}
 \end{table}
+
+\paragraph{Tree setup} \stefan{describe}
 
 \paragraph{Measurements to do next} %
 \begin{itemize}
@@ -171,6 +168,70 @@ broadcast working on nos5 and appenzeller
   with. We measure this at dynamically at run-time and find the right
   batch size.
 \end{itemize}
+
+\paragraph{Minimal cost of sending a tree-broadcast} %
+Plot~\ref{pgfplot:201303141819} shows the minimal cost of flooding a
+sub-tree. The group communication is based on a binary tree. Core 0 is
+the root, cores 1 and 2 are its children etc.
+
+The average cost is really high (so something is wrong with my
+code). But the minimal numbers show what is possible. The numbers
+achieved are easily explainable. The cost is increasing
+logarithmic with the number of nodes reached by the broadcast (as
+expected). Every level in the tree adds an additional 3500 cycles to
+the tree. Node 0 takes significantly longer. I don't know yet why that
+is.
+
+\begin{figure}
+  \caption{Plot}
+  \label{pgfplot:201303141819}
+  \begin{tikzpicture}
+    \begin{axis}[
+      xlabel=core id,
+      ylabel={cost for subtree [cycles]}]
+    \addplot[color=red,mark=x] coordinates {
+      (0,9475.0)
+      (1,7935.0)
+      (2,7894.0)
+      (3,5965.0)
+      (4,5604.0)
+      (5,5718.0)
+      (6,5647.0)
+      (7,4316.0)
+      (8,2989.0)
+      (9,3173.0)
+      (10,3395.0)
+      (11,3332.0)
+      (12,3284.0)
+      (13,3310.0)
+      (14,3231.0)
+      (15,2542.0)
+      (16,586.0)
+      (17,588.0)
+      (18,576.0)
+      (19,583.0)
+      (20,536.0)
+      (21,539.0)
+      (22,533.0)
+      (23,516.0)
+      (24,546.0)
+      (25,552.0)
+      (26,541.0)
+      (27,543.0)
+      (28,537.0)
+      (29,527.0)
+      (30,533.0)
+      (31,534.0)
+    };
+    \end{axis}
+  \end{tikzpicture}
+
+\end{figure}
+  
+\begin{figure}
+  \input{qrm_tree_gruyere}
+  \caption{Tree of cores for broadcast on gruyere}
+\end{figure}
 
 \input{gruyere_bc_seq}
 
