@@ -9,6 +9,7 @@
 \usepackage{graphics}
 \usepackage{enumitem}
 \usepackage{times}
+\usepackage{amssymb}
 \usepackage[colorlinks=true]{hyperref}
 
 % ==================================================
@@ -18,6 +19,7 @@
 
 % tikz stuff
 \usepackage{tikz}
+\usepackage{pgfplots}
 \usetikzlibrary{shapes,positioning,calc}
 
 \lstset{
@@ -55,14 +57,17 @@ replication. The challenge then is to guarantee consistency. Previous
 work was using primary copy protocols to do that~\cite{Wiesmann2000}, a
 passive replication scheme (i.e.\ nodes do not have to contact all
 replicas). They do that because they claim that it is not suitable for
-clients to know about replication details. 
+clients to know about replication details. An atomic broadcast is
+often used as foundation of such algorithms. It guarantees in reliable
+delivery of messages to every node.
 
 \paragraph{What problem are you solving, and why is it hard?} Three problems:
 \begin{description}
 \item[placement] machine dependent
 \item[consistency] need to consider machine \emph{characteristics};
   multicores are \emph{different} from classical distributed systems.
-\item[machine characteristics] diverse, fast changing, complex
+\item[machine characteristics] diverse, fast changing, complex. One
+  example is the batch size for sending a broadcast.
 \end{description}
 
 \paragraph{What's the related work?} People do replication to deal
@@ -94,6 +99,93 @@ used. Measure time required to apply an update.
 \paragraph{What is your hypothesis?} We can do much better if machine
 characteristics are considered.
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Mechanisms}
+
+\subsubsection{Aggregation}
+
+Similarly to what has been done in wireless sensor networks (where it
+also matters to reduce the number of messages, but other reasons:
+power consumption), we can do aggregation in nodes. In difference to
+traditional distributed systems, this works, because it is easy to
+deploy custom software on every node in the network. Classical
+distributed systems do not typically allow this. Furthermore, reducing
+the number of messages at the price of higher complexity does not make
+sense there.
+
+Examples for aggregation: number of nodes agreeing to something, find
+capabilities (concatenate core ids). 
+
+Open questions: How does this work with several senders (everyone is
+potentially a sender). Maybe something like in navigation
+systems. Every node has an entry point, which forwards the
+messages. Nodes are then clustered \ldots
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Implementation}
+
+Build a tree. Every node has parents and children (except for the root
+and the leafs). The number of children does not really matter for the
+algorithm. In the init phase, we construct the tree (e.g. broadcast:
+one root node, all other nodes are children of the root node,
+multicast: every node has two children, NUMA tree: two layers, two
+different implementations?
+
+Reducing the number of children also helps in select. It reduces the
+number of ``channels'' to poll, and therefore the latency of detecting
+messages. Instead of 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Experimental results}
+
+on revision 1190:a787513fd28c, experiments for sequential and batch
+broadcast working on nos5 and appenzeller
+
+\begin{table}[htb]
+  \centering
+  \begin{tabular}{lrrrr}
+    \toprule
+    broadcast algorithm & \multicolumn{2}{c}{nos5} & \multicolumn{2}{c}{gruyere} \\
+      & cycles & error & cycles & error \\
+    \midrule
+    sequential &  4096.1 &  105.2 & 136751.9 &   3061.5 \\
+    batch      &  2408.0 &  181.9 &  57360.8 &   5271.5 \\
+    tree\footnote{This only works for the first 200 runs, after that,
+      performance breaks down, don't know why, but the first 200 runs
+      are quite stable}%
+               &  \sout{1471.8} &  \sout{187.9} &          &          \\
+    \bottomrule
+  \end{tabular}
+  \caption{Broadcast measurements}
+  \label{tab:bc_measurements}
+\end{table}
+
+\paragraph{Measurements to do next} %
+\begin{itemize}
+\item Increase number of cores to talk to in every round. Use a
+  separate waitsets, so that we don't have additional overhead from
+  the bindings not used in each concrete measurement.
+\item Play with batching. Incrementally increase the number of
+  messages send in a batch. I assume this is machine specific, which
+  means, that this is something programmers do not want to deal
+  with. We measure this at dynamically at run-time and find the right
+  batch size.
+\end{itemize}
+
+\input{gruyere_bc_seq}
+
+\begin{itemize}
+\item Move server to a core != 0
+\item Use low-level UMP stuff
+{
+\renewcommand{\labelitemi}{\checkmark}
+\item disable yielding set 
+}
+\item some other item
+\item run several request in parallel, give them IDs, can use in the
+  measurement struct. Good for everything having transactions (DB,
+  transactional memory, consistency in replication systems)
+\end{itemize}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
