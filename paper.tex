@@ -20,7 +20,9 @@
 % tikz stuff
 \usepackage{tikz}
 \usepackage{pgfplots}
+% configuration
 \usetikzlibrary{shapes,positioning,calc,snakes,arrows,shapes}
+\pgfplotsset{width=.9\linewidth}
 
 \lstset{
   language=C,
@@ -35,7 +37,7 @@
   {\color{skRed}[{\color{red}{SK}} #1]}}
 
 % ==================================================
-
+\setcounter{section}{0} % Start sections with 1, not 0
 \begin{document}
 
 \title{Replication on multicore considering hierarchy and
@@ -51,58 +53,132 @@
 
 \maketitle
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Introduction}
+
 \paragraph{What do you want to enable?} Increase algorithm performance
-on multicores by applying distributed principles, particularly
-replication. The challenge then is to guarantee consistency. Previous
-work was using primary copy protocols to do that~\cite{Wiesmann2000}, a
-passive replication scheme (i.e.\ nodes do not have to contact all
-replicas). They do that because they claim that it is not suitable for
-clients to know about replication details. An atomic broadcast is
-often used as foundation of such algorithms. It guarantees in reliable
-delivery of messages to every node.
+on multicores by applying distributed principles to overcome
+scalability challenges on such machines. 
 
-\paragraph{What problem are you solving, and why is it hard?} Three problems:
-\begin{description}
-\item[placement] machine dependent
-\item[consistency] need to consider machine \emph{characteristics};
-  multicores are \emph{different} from classical distributed systems.
-\item[machine characteristics] diverse, fast changing, complex. One
-  example is the batch size for sending a broadcast.
-\end{description}
+\paragraph{What problem are you solving, and why is it hard?} We are
+applying distributed algorithms to multicores to enable better
+scalability. However, characteristics of a multicore a different to
+those of traditional distributed systems. Traditional algorithms need
+to be reevaluated for multicores.
 
-\paragraph{What's the related work?} People do replication to deal
-with scalability challenges on multicores, e.g.\
-databases~\cite{Salomie2011, Wiesmann2000} and operating
+\paragraph{What's the related work?} People apply techniques from
+distributed systems to deal with scalability challenges on multicores,
+e.g.\ databases~\cite{Salomie2011, Wiesmann2000} and operating
 systems~\cite{fos:osr09, tornado:osdi99, barrelfish:sosp09}. But they
 don't to it properly. They do not consider machine characteristics or
-apply the wrong distributed technologies.
+apply the wrong distributed technologies. Also, what they do is rather
+ad hoc. 
 
-\paragraph{What new idea(s) will solve the problems?} We do a
-hierarchical group communication, which implements an atomic
-broadcast on multicore machines. It has message complexity of
-$O(\frac{n}{2})$ and time complexity $O(log(n))$ as opposed to
-algorithms from traditional distributed systems having $O(2)$ message
-complexity and $O(n)$ time complexity. %
-\\
-{\footnotesize Example: sequential consistency on shared memory, do
-  not really need to have primary backup.}
+\paragraph{What new idea(s) will solve the problems?} Instead of just
+reusing distributed algorithms, we reevaluate them for multicores and
+investigate the impact of the multicore network model on algorithm
+performance.
 
-\paragraph{How will you go about it?} Replicas on NUMA domains, show
-that overall throughput is higher. Then, use a quorum based approach for
-consistency. Consistency by doing a hierarchical group communication
-approach instead of sequential send from same nodes.
+\paragraph{How will you go about it?} We investigate the problem for
+atomic-broadcasts since many problems in distributed systems can be
+reduced to this communication primitive. Traditional implementations
+are sending requests to all nodes in parallel to hide high propagation
+delays. %
+However, this does not work on multicores, since the propagation time
+is not dominating any longer. %
+Instead, we build a tree for communication to parallelize transmit and
+receive cost across nodes. This has been done before (BF SOSP, IBM,
+.. ), but not for the general case of multicore communication. 
 
-\paragraph{How will you know and show it works?} Database?
-Microbenchmark? Compare to primary backup, which is typically
-used. Measure time required to apply an update.
+\paragraph{How will you know and show it works?} We will use a
+microbenchmark measuring broadcast cost and compare our tree
+implementation to the sequential case. Maybe we put some high-level
+applications on top of it.
 
-\paragraph{What is your hypothesis?} We can do much better if machine
-characteristics are considered.
+\paragraph{What is your hypothesis?} Performance of distributed
+algorithms can be improved if characteristics of multicores are
+considered when building and/or selecting them. %
+For the broadcast example, this means: the time complexity for a
+networks with dominating transmit and receive time will be $O(log(n))$
+instead of $O(n)$.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{Mechanisms}
+\section{Related work}
 
-\subsubsection{Aggregation}
+A multicore aware broadcast has been implemented in~\cite{Tu2008}. It
+takes the cache architecture of the machine into consideration for
+building the broadcast. It is however for larger messages (starting at
+4K) and it does not seem to be performing very well (numbers are given
+in microseconds -6). 4K messages are 52 microseconds, which is 150000
+cycles. For synchronization primitives, a cache line is sufficient.
+
+Another tree implementation with MPI in mind was done
+in~\cite{Graham2008}. They have comparable numbers to what we found. 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Model}
+
+The selection of distributed algorithms depends on the characteristics
+of a network. Multicores networks are heterogeneous combinations of
+complex networks. %
+Their diversity makes manual selection tedious. Hence, we aim for an
+automatic approach for selecting algorithms for a specific
+network. %
+We express the network characteristics in a multicore network
+model. This model is currently by no means complete. We are going to
+extend it over time to address more complexities of current and future
+multicores. 
+
+The network model is defined by communication channels, which in turn
+are defined by a set of attributes, i.e.\
+\begin{itemize}
+\item reliability (loss, link failure, in-order delivery, phantoms,
+  corruption, duplicated messages): Ethernet is not reliable,
+  multicore interconnect networks often are
+\item synchronized clocks: sychronized clocks + bound on propagation
+  time $\rightarrow$ \emph{synchronous network} model. \\Then:
+  $\exists$ algorithm for synchronous networks $\rightarrow
+  \exists$ algorithm for asynchronous
+\item Security \& and failure detection (and the cost for that)
+\end{itemize}
+
+These are more about performance:
+\begin{itemize}
+\item ``breakdown'' of message send cost: Ethernet has dominating
+  propagation time vs.\ dominating send and receive time on multicores
+\item latency between each pair of nodes
+\end{itemize}
+
+% Model given
+We assume that the model is given (if it is not, we can do online
+measurements and read some specs to find the relevant information). We
+just define one ourselves for now or build one manually for a
+particular machine. In a real-world scenario, this does not work. The
+model needs to be created automatically for a particular machine (due
+to the diversity of machines, and also the pace at which hardware changes)
+
+% Express as:
+We express the model in a graph, where nodes are processors and edges
+are (on-hop?) communication links.
+
+% How to deduct tree from model?
+We then use this graph to build a group-communication
+tree. Interesting techniques could be: clustering, to find closely
+connected subsets, distributed messages across cluster first, and then
+within cluster. Maybe also a spanning-tree protocol, to find a minimal
+graph such that all nodes can be reached.
+% Tree -> scheduling
+Assuming the tree, there is a scheduling problems for the order in
+which to send messages to children. The intuition is to send on
+long-delay links first to hide the more expensive latencies.
+
+% Limitations
+What we do not consider yet is link congestion. 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Mechanisms}
+
+\subsection{Aggregation}
 
 Similarly to what has been done in wireless sensor networks (where it
 also matters to reduce the number of messages, but other reasons:
@@ -116,13 +192,28 @@ sense there.
 Examples for aggregation: number of nodes agreeing to something, find
 capabilities (concatenate core ids). 
 
-Open questions: How does this work with several senders (everyone is
-potentially a sender). Maybe something like in navigation
-systems. Every node has an entry point, which forwards the
-messages. Nodes are then clustered \ldots
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{Implementation}
+\section{Implementation}
+
+We implement our quorum protocol on Barrelfish using the UMP
+interconnect driver. UMP provides channels between
+endpoints. Communication is reliable, and messages are delivered
+in-order within a channel. Although UMP channels are uni-directional,
+Barrelfish automatically established two uni-directional channels on
+bind time. Hence, we consider them as being bi-directional. Every UMP
+channels has independent buffers associated with it.
+
+First, we establish connections such that we get a fully connected
+graph with vertices being the quorum instances and edges being UMP
+channels between them. For that, we need $O(n^2)$ UMP channels. 
+
+We build up UMP channels in rounds $r_i$. The quorum instance on core
+$i$ is creating a UMP channel to all nodes $j$ with $j>i$ in
+$r_i$. The beginning of a round needs to be synchronized such that
+node $i+1$ only starts establishing connections when all other nodes
+completed $i$. Synchronization is required since UMP channels are
+scheduled round-robin. Messages on different channels are received
+non-deterministically. 
 
 Build a tree. Every node has parents and children (except for the root
 and the leafs). The number of children does not really matter for the
@@ -131,14 +222,24 @@ one root node, all other nodes are children of the root node,
 multicast: every node has two children, NUMA tree: two layers, two
 different implementations?
 
-Reducing the number of children also helps in select. It reduces the
-number of ``channels'' to poll, and therefore the latency of detecting
-messages. Instead of 
+We show an example broadcast tree for a 8x4x1 AMD Barcelona machine
+(gruyere) in Figure~\ref{fig:qrm_tree_gruyere}.
+
+\begin{figure}
+  \input{qrm_tree_gruyere}
+  \caption{Tree of cores for broadcast on gruyere}
+  \label{fig:qrm_tree_gruyere}
+\end{figure}
+
+\paragraph{Observations} Reducing the number of children also helps in
+select. It reduces the number of ``channels'' to poll, and therefore
+the latency of detecting messages. Instead of
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{Experimental results}
+\section{Experimental results}
 
-\paragraph{Current numbers}
+\paragraph{Current numbers} Current numbers are listed in
+Table~\ref{tab:bc_measurements}. 
 
 \begin{table}[htb]
   \centering
@@ -155,13 +256,8 @@ messages. Instead of
   \label{tab:bc_measurements}
 \end{table}
 
-\paragraph{Tree setup} \stefan{describe}
-
 \paragraph{Measurements to do next} %
 \begin{itemize}
-\item Increase number of cores to talk to in every round. Use a
-  separate waitsets, so that we don't have additional overhead from
-  the bindings not used in each concrete measurement.
 \item Play with batching. Incrementally increase the number of
   messages send in a batch. I assume this is machine specific, which
   means, that this is something programmers do not want to deal
@@ -170,9 +266,10 @@ messages. Instead of
 \end{itemize}
 
 \paragraph{Minimal cost of sending a tree-broadcast} %
-Plot~\ref{pgfplot:201303141819} shows the minimal cost of flooding a
-sub-tree. The group communication is based on a binary tree. Core 0 is
-the root, cores 1 and 2 are its children etc.
+Plot~\ref{pgfplot:201303141819} shows the cost of flooding a sub-tree
+(with the 50\% worst measurements dropped). The group communication is
+based on a binary tree. Core 0 is the root, cores 1 and 2 are its
+children etc.
 
 The average cost is really high (so something is wrong with my
 code). But the minimal numbers show what is possible. The numbers
@@ -183,56 +280,64 @@ the tree. Node 0 takes significantly longer. I don't know yet why that
 is.
 
 \begin{figure}
-  \caption{Plot}
+  \caption{Execution time for a broadcast with ACK on gruyere. The
+    cost is for execution for the sub-graph starting at the given
+    node. Refer to Figure~\ref{fig:qrm_tree_gruyere} for a
+    visualization of the broadcast tree used. }
   \label{pgfplot:201303141819}
   \begin{tikzpicture}
     \begin{axis}[
       xlabel=core id,
+      scaled y ticks = false, % prevent 10^x stuff
+      y tick label style={/pgf/number format/fixed},
       ylabel={cost for subtree [cycles]}]
-    \addplot[color=red,mark=x] coordinates {
-      (0,9475.0)
-      (1,7935.0)
-      (2,7894.0)
-      (3,5965.0)
-      (4,5604.0)
-      (5,5718.0)
-      (6,5647.0)
-      (7,4316.0)
-      (8,2989.0)
-      (9,3173.0)
-      (10,3395.0)
-      (11,3332.0)
-      (12,3284.0)
-      (13,3310.0)
-      (14,3231.0)
-      (15,2542.0)
-      (16,586.0)
-      (17,588.0)
-      (18,576.0)
-      (19,583.0)
-      (20,536.0)
-      (21,539.0)
-      (22,533.0)
-      (23,516.0)
-      (24,546.0)
-      (25,552.0)
-      (26,541.0)
-      (27,543.0)
-      (28,537.0)
-      (29,527.0)
-      (30,533.0)
-      (31,534.0)
+    \addplot[
+      color=red,
+      very thin,
+      mark=*,
+      mark options={%
+        scale=.4
+      },
+      error bars/y dir=both,
+      error bars/y explicit] coordinates {
+      (0,9932.3) +- (564.4,564.4)
+      (1,8240.1) +- (298.5,298.5)
+      (2,8259.6) +- (549.4,549.4)
+      (3,6206.3) +- (225.1,225.1)
+      (4,5914.9) +- (399.2,399.2)
+      (5,6033.5) +- (462.2,462.2)
+      (6,6070.4) +- (434.3,434.3)
+      (7,4530.4) +- (188.6,188.6)
+      (8,3163.4) +- (246.1,246.1)
+      (9,3403.0) +- (285.3,285.3)
+      (10,3650.7) +- (336.5,336.5)
+      (11,3559.0) +- (318.8,318.8)
+      (12,3558.1) +- (284.8,284.8)
+      (13,3567.5) +- (304.5,304.5)
+      (14,3476.3) +- (290.2,290.2)
+      (15,2711.7) +- (151.9,151.9)
+      (16,614.0) +- (17.5,17.5)
+      (17,606.2) +- (17.3,17.3)
+      (18,636.2) +- (72.5,72.5)
+      (19,641.3) +- (46.3,46.3)
+      (20,583.8) +- (46.7,46.7)
+      (21,577.8) +- (38.3,38.3)
+      (22,561.8) +- (18.1,18.1)
+      (23,603.5) +- (56.6,56.6)
+      (24,589.0) +- (33.4,33.4)
+      (25,582.9) +- (33.2,33.2)
+      (26,571.7) +- (16.3,16.3)
+      (27,581.6) +- (36.6,36.6)
+      (28,564.0) +- (16.4,16.4)
+      (29,564.0) +- (20.8,20.8)
+      (30,551.6) +- (13.0,13.0)
+      (31,596.2) +- (51.4,51.4)
     };
     \end{axis}
   \end{tikzpicture}
 
 \end{figure}
   
-\begin{figure}
-  \input{qrm_tree_gruyere}
-  \caption{Tree of cores for broadcast on gruyere}
-\end{figure}
-
 \input{gruyere_bc_seq}
 
 \begin{itemize}
@@ -240,13 +345,49 @@ is.
 \item Use low-level UMP stuff
 {
 \renewcommand{\labelitemi}{\checkmark}
-\item disable yielding set 
+\item disable yielding
 }
-\item some other item
 \item run several request in parallel, give them IDs, can use in the
   measurement struct. Good for everything having transactions (DB,
   transactional memory, consistency in replication systems)
 \end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Future work}
+
+\begin{itemize}
+\item Need higher-level applications, such as:
+  \begin{itemize}
+  \item octopus
+    \begin{itemize}
+    \item higher level application?
+    \end{itemize}
+  \item capability system? \stefan{Ask Simon how expensive revocation
+      currently is}
+  \item a database with replication and consistency maintenance
+    \begin{itemize}
+    \item SharedDB? (buffers between operators, but no synchronization
+      except for access to buffers, which are multiple writers, one
+      reader)
+    \item Crescando (some kind of state machine replication)
+    \end{itemize}
+  \end{itemize}
+\item Machine model for topology aware tree
+  \begin{itemize}
+  \item Talked to Pravin about this a bit
+  \end{itemize}
+\item MPI collectives (as in~\cite{Tu2008})
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Open questions}
+
+\paragraph{How does this work with several senders} 
+Maybe something like in navigation systems. Every node has an entry
+point, which forwards the messages. Nodes are then clustered
+\ldots. Or: send the request up to the root and then down again? This
+keeps the message complexity the same and doubles the time
+complexity. 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
