@@ -131,23 +131,20 @@ extend it over time to address more complexities of current and future
 multicores.
 
 The network model is defined by communication channels, which in turn
-are defined by a set of attributes, i.e.\
+are defined by a set of attributes (here sorted by priority):
 \begin{itemize}
-\item reliability (loss, link failure, in-order delivery, phantoms,
-  corruption, duplicated messages): Ethernet is not reliable,
-  multicore interconnect networks often are
+\item latency (quantitative) between each pair of nodes
+\item ``breakdown'' (quantitative) of message send cost: Ethernet has
+  dominating propagation time vs.\ dominating send and receive time on
+  multicores
 \item synchronized clocks: sychronized clocks + bound on propagation
   time $\rightarrow$ \emph{synchronous network} model. \\Then:
   $\exists$ algorithm for synchronous networks $\rightarrow
   \exists$ algorithm for asynchronous
+\item reliability (loss, link failure, in-order delivery, phantoms,
+  corruption, duplicated messages): Ethernet is not reliable,
+  multicore interconnect networks often are
 \item Security \& and failure detection (and the cost for that)
-\end{itemize}
-
-These are more about performance:
-\begin{itemize}
-\item ``breakdown'' of message send cost: Ethernet has dominating
-  propagation time vs.\ dominating send and receive time on multicores
-\item latency between each pair of nodes
 \end{itemize}
 
 % Model given
@@ -160,7 +157,10 @@ to the diversity of machines, and also the pace at which hardware changes)
 
 % Express as:
 We express the model in a graph, where nodes are processors and edges
-are (on-hop?) communication links.
+are (on-hop?) communication links. The machines we consider for now
+only have bi-directional communication links. Other machines (like the
+SCC) have uni-directional links, which is why we model the graph with
+directed graph.
 
 % How to deduct tree from model?
 We then use this graph to build a group-communication
