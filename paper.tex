@@ -173,6 +173,11 @@ Assuming the tree, there is a scheduling problems for the order in
 which to send messages to children. The intuition is to send on
 long-delay links first to hide the more expensive latencies.
 
+% Assumptions
+We assume that the cost of sending a message to the same node is 0,
+which is not true, since even using a highly optimized implementation
+for local communication (like LMP) has a non-negligible cost.
+
 % Limitations
 What we do not consider yet is link congestion. 
 
