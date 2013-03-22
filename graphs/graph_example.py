@@ -22,21 +22,24 @@ from pygraph.algorithms.minmax import shortest_path
 CORES_PER_NODE = 4
 NUM_NUMA_NODES = 8
 HOPCOST = 10
+NUMACOST = 1
 
 # Wrapper function to add edges between two NUMA nodes. 
-def add_numa(graph, node1, node2):
+def add_numa(graph, node1, node2, cost):
     n1 = node1*CORES_PER_NODE
     n2 = node2*CORES_PER_NODE
-    graph.add_edge((n1, n2), 1)
+    for c1 in range(CORES_PER_NODE):
+        for c2 in range(CORES_PER_NODE):
+            graph.add_edge((n1+c1, n2+c2), cost)
 
 def connect_numa_nodes(g, g_numa, src):
     # assuming that routing is taking the shortes path,
     # NOT true on e.g. SCC
+    connect_numa_internal(g, src)
     cost = shortest_path(g_numa, src)[1] # don't really know what the first argument is ..
     for trg in range(len(cost)):
         if src!=trg:
-            g.add_edge((CORES_PER_NODE*src, CORES_PER_NODE*trg), \
-                           cost[trg]*HOPCOST)
+            add_numa(g, src, trg, cost[trg]*HOPCOST)
 
 # fully connect numa islands!
 def connect_numa_internal(graph, numa_node):
@@ -45,7 +48,7 @@ def connect_numa_internal(graph, numa_node):
             if j>i:
                 node1 = numa_node*CORES_PER_NODE + i
                 node2 = numa_node*CORES_PER_NODE + j
-                graph.add_edge((node1, node2))
+                graph.add_edge((node1, node2), NUMACOST)
 
 # --------------------------------------------------
 
