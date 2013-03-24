@@ -20,7 +20,7 @@ from pygraph.algorithms.minmax import shortest_path
 # --------------------------------------------------
 
 CORES_PER_NODE = 4
-NUM_NUMA_NODES = 8
+NUM_NUMA_NODES = 2
 HOPCOST = 10
 NUMACOST = 1
 
@@ -30,13 +30,20 @@ def add_numa(graph, node1, node2, cost):
     n2 = node2*CORES_PER_NODE
     for c1 in range(CORES_PER_NODE):
         for c2 in range(CORES_PER_NODE):
-            graph.add_edge((n1+c1, n2+c2), cost)
+            src = (n1+c1)
+            dest = (n2+c2)
+            if src < dest:
+                print "Adding edge %d -> %d with weight %d" % \
+                    (src, dest, cost)
+                graph.add_edge((src, dest), cost)
 
 def connect_numa_nodes(g, g_numa, src):
     # assuming that routing is taking the shortes path,
     # NOT true on e.g. SCC
     connect_numa_internal(g, src)
     cost = shortest_path(g_numa, src)[1] # don't really know what the first argument is ..
+    print "connect numa nodes for %d: cost array size is: %d" % \
+        (src, len(cost))
     for trg in range(len(cost)):
         if src!=trg:
             add_numa(g, src, trg, cost[trg]*HOPCOST)
@@ -61,24 +68,28 @@ g_numa = graph()
 # Construct graph of NUMA nodes
 g_numa.add_nodes(range(NUM_NUMA_NODES))
 
-for i in range(3):
-    g_numa.add_edge((i, i+1)) # to right, top row
-    g_numa.add_edge((i, i+4)) # top to bottom row
+g_numa.add_edge((0, 1))
 
-for i in range(4,7):
-    g_numa.add_edge((i, i+1)) # to right, bottom row
+# for i in range(3):
+#     g_numa.add_edge((i, i+1)) # to right, top row
+#     g_numa.add_edge((i, i+4)) # top to bottom row
 
-# remainig edges
-g_numa.add_edge((2,7))
-g_numa.add_edge((3,6))
-g_numa.add_edge((3,7))
+# for i in range(4,7):
+#     g_numa.add_edge((i, i+1)) # to right, bottom row
+
+# # remainig edges
+# g_numa.add_edge((2,7))
+# g_numa.add_edge((3,6))
+# g_numa.add_edge((3,7))
 
 # --------------------------------------------------
 
-# gruyere has 32 nodes!
-gr.add_nodes(range(32))
+# # gruyere has 32 nodes!
+# gr.add_nodes(range(32))
+gr.add_nodes(range(8))
 
-connect_numa_nodes(gr, g_numa, 0)
+for n in range(NUM_NUMA_NODES):
+    connect_numa_nodes(gr, g_numa, n)
 
 # # inter-numa connections
 # for i in range(8):
