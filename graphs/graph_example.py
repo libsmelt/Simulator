@@ -20,7 +20,8 @@ from pygraph.algorithms.minmax import shortest_path
 # --------------------------------------------------
 
 CORES_PER_NODE = 4
-NUM_NUMA_NODES = 2
+NUM_NUMA_NODES = 8
+NUM_CORES = (CORES_PER_NODE*NUM_NUMA_NODES)
 HOPCOST = 10
 NUMACOST = 1
 
@@ -63,40 +64,38 @@ def connect_numa_internal(graph, numa_node):
 gr = graph()
 g_numa = graph()
 
+dbg_num_edges = 0
+for n in range(NUM_CORES):
+    dbg_num_edges += n
+
+print "Expecting %d edges" % dbg_num_edges
+
 # --------------------------------------------------
 
 # Construct graph of NUMA nodes
 g_numa.add_nodes(range(NUM_NUMA_NODES))
 
-g_numa.add_edge((0, 1))
+for i in range(3):
+    g_numa.add_edge((i, i+1)) # to right, top row
+    g_numa.add_edge((i, i+4)) # top to bottom row
 
-# for i in range(3):
-#     g_numa.add_edge((i, i+1)) # to right, top row
-#     g_numa.add_edge((i, i+4)) # top to bottom row
+for i in range(4,7):
+    g_numa.add_edge((i, i+1)) # to right, bottom row
 
-# for i in range(4,7):
-#     g_numa.add_edge((i, i+1)) # to right, bottom row
-
-# # remainig edges
-# g_numa.add_edge((2,7))
-# g_numa.add_edge((3,6))
-# g_numa.add_edge((3,7))
+# remainig edges
+g_numa.add_edge((2,7))
+g_numa.add_edge((3,6))
+g_numa.add_edge((3,7))
 
 # --------------------------------------------------
 
-# # gruyere has 32 nodes!
-# gr.add_nodes(range(32))
-gr.add_nodes(range(8))
+gr.add_nodes(range(NUM_CORES))
 
 for n in range(NUM_NUMA_NODES):
     connect_numa_nodes(gr, g_numa, n)
 
-# # inter-numa connections
-# for i in range(8):
-#     connect_numa_internal(gr, i)
-
 # Draw as PNG
-dot = write(gr)
+dot = write(gr, True)
 gvv = gv.readstring(dot)
 
 print dot
