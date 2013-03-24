@@ -87,6 +87,9 @@ connect_numa_nodes(gr, g_numa, 0)
 # Draw as PNG
 dot = write(gr)
 gvv = gv.readstring(dot)
+
+print dot
+
 gv.layout(gvv,'dot')
 gv.render(gvv,'png','gruyere.png')
 
