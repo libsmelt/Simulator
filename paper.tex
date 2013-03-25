@@ -133,10 +133,10 @@ multicores.
 The network model is defined by communication channels, which in turn
 are defined by a set of attributes (here sorted by priority):
 \begin{itemize}
-\item latency (quantitative) between each pair of nodes
+\item latency (quantitative) between each pair of nodes (per-edge)
 \item ``breakdown'' (quantitative) of message send cost: Ethernet has
   dominating propagation time vs.\ dominating send and receive time on
-  multicores
+  multicores (per-node)
 \item synchronized clocks: sychronized clocks + bound on propagation
   time $\rightarrow$ \emph{synchronous network} model. \\Then:
   $\exists$ algorithm for synchronous networks $\rightarrow
@@ -180,6 +180,29 @@ for local communication (like LMP) has a non-negligible cost.
 
 % Limitations
 What we do not consider yet is link congestion. 
+
+% EXAMPLE
+An example of a machine model, which approximates gruyere can be found
+in .. 
+
+\begin{tikzpicture}[>=latex,line join=bevel,scale=3.0]
+  \pgfsetlinewidth{1bp}
+\input{graphs/full_gruyere}
+\end{tikzpicture}
+
+We show the multicast tree automatically generated from a fully meshed
+machine model of a 8x4x1 sample multicore (gruyere) in
+Figure~\ref{fig:mst_gruyere}. We get this tree by applying a minimum
+spanning tree algorithm on a multicore model encoding link latencies.
+
+\begin{figure}
+\begin{tikzpicture}[>=latex,line join=bevel,scale=.5]
+  \pgfsetlinewidth{1bp}
+\input{graphs/mst_gruyere}
+\end{tikzpicture}
+\caption{Multicast tree automatically found for a 8x4x1 multicore}
+\label{fig:mst_gruyere}
+\end{figure}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Mechanisms}
@@ -362,6 +385,11 @@ is.
 \section{Future work}
 
 \begin{itemize}
+\item Arguing that group communication/atomic broadcast and showing
+  that we can do it well might be enough (appeal to atomic broadcasts
+  as the foundation for other distributed algorithms, and the MPI
+  primitives, that can/need to be mapped to group-communication (have
+  a list of them) 
 \item Need higher-level applications, such as:
   \begin{itemize}
   \item octopus
