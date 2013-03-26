@@ -16,6 +16,7 @@ from pygraph.classes.digraph import digraph
 from pygraph.algorithms.searching import breadth_first_search
 from pygraph.readwrite.dot import write
 from pygraph.algorithms.minmax import shortest_path
+from pygraph.algorithms.minmax import minimal_spanning_tree
 
 # --------------------------------------------------
 
@@ -24,6 +25,20 @@ NUM_NUMA_NODES = 8
 NUM_CORES = (CORES_PER_NODE*NUM_NUMA_NODES)
 HOPCOST = 10
 NUMACOST = 1
+
+def output_graph(graph, name):
+    """
+    Output the graph as png image and also as text file
+    """
+    dot = write(graph, True)
+    gvv = gv.readstring(dot)
+    
+    with open('%s.dot'%name, 'w') as f:
+        f.write(dot)
+
+    gv.layout(gvv, 'neato')
+    gv.render(gvv, 'png', ('%s.png' % name))
+
 
 # Wrapper function to add edges between two NUMA nodes. 
 def add_numa(graph, node1, node2, cost):
@@ -71,8 +86,8 @@ for n in range(NUM_CORES):
 print "Expecting %d edges" % dbg_num_edges
 
 # --------------------------------------------------
-
 # Construct graph of NUMA nodes
+
 g_numa.add_nodes(range(NUM_NUMA_NODES))
 
 for i in range(3):
@@ -88,22 +103,26 @@ g_numa.add_edge((3,6))
 g_numa.add_edge((3,7))
 
 # --------------------------------------------------
+# Build fully meshed machine graph
 
 gr.add_nodes(range(NUM_CORES))
 
 for n in range(NUM_NUMA_NODES):
     connect_numa_nodes(gr, g_numa, n)
 
-# Draw as PNG
-dot = write(gr, True)
-gvv = gv.readstring(dot)
+# --------------------------------------------------
+# Run MST algorithm
+mst = graph()
+mst.add_nodes(range(NUM_CORES))
 
-print dot
+mst_edges = minimal_spanning_tree(gr)
+for i in range(len(mst_edges)):
+    if mst_edges[i] != None:
+        mst.add_edge((mst_edges[i], i), \
+                         gr.edge_weight((mst_edges[i], i)))
 
-gv.layout(gvv,'dot')
-gv.render(gvv,'png','gruyere.png')
+# --------------------------------------------------
 
-dot_numa = write(g_numa)
-gvv_numa = gv.readstring(dot_numa)
-gv.layout(gvv_numa, 'dot')
-gv.render(gvv_numa, 'png', 'numa.png')
+output_graph(gr, 'gruyere')
+output_graph(g_numa, 'numa')
+output_graph(mst, 'mst')
