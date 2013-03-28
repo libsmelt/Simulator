@@ -20,8 +20,8 @@ from pygraph.algorithms.minmax import minimal_spanning_tree
 
 # --------------------------------------------------
 
-CORES_PER_NODE = 4
-NUM_NUMA_NODES = 8
+CORES_PER_NODE = 2
+NUM_NUMA_NODES = 2
 NUM_CORES = (CORES_PER_NODE*NUM_NUMA_NODES)
 HOPCOST = 10
 NUMACOST = 1
@@ -90,17 +90,18 @@ print "Expecting %d edges" % dbg_num_edges
 
 g_numa.add_nodes(range(NUM_NUMA_NODES))
 
-for i in range(3):
-    g_numa.add_edge((i, i+1)) # to right, top row
-    g_numa.add_edge((i, i+4)) # top to bottom row
+# for i in range(3):
+#     g_numa.add_edge((i, i+1)) # to right, top row
+#     g_numa.add_edge((i, i+4)) # top to bottom row
 
-for i in range(4,7):
-    g_numa.add_edge((i, i+1)) # to right, bottom row
+# for i in range(4,7):
+#     g_numa.add_edge((i, i+1)) # to right, bottom row
 
-# remainig edges
-g_numa.add_edge((2,7))
-g_numa.add_edge((3,6))
-g_numa.add_edge((3,7))
+# # remainig edges
+# g_numa.add_edge((2,7))
+# g_numa.add_edge((3,6))
+# g_numa.add_edge((3,7))
+g_numa.add_edge((0,1))
 
 # --------------------------------------------------
 # Build fully meshed machine graph

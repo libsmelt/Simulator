@@ -11,6 +11,7 @@
 \usepackage{times}
 \usepackage{amssymb}
 \usepackage[colorlinks=true]{hyperref}
+\usepackage[ruled,vlined]{algorithm2e}
 
 % ==================================================
 
@@ -116,62 +117,63 @@ Another tree implementation with MPI in mind was done
 in~\cite{Graham2008}. They have comparable numbers to what we found. 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Model}
+\section{The multicore network model}
 
+% selecting hard
 Characteristics of the network influence the performance of
-distributed algorithms. Multicores networks are heterogeneous
-combinations of complex networks, which makes algorithm selection
-hard. %
-Furthermore, their diversity makes manual selection tedious. Hence, we
-aim for an automatic approach for selecting algorithms for a specific
-network. %
+distributed algorithms. Due to the heterogeneous combinations of
+complex networks on multicores, selection of algorithms is
+particularly hard.
+
+% model
 We express the network characteristics in a multicore network
 model. This model at this stage is by no means complete. We are going to
 extend it over time to address more complexities of current and future
 multicores.
 
+% graph
+We represent the multicore network as a graph. The nodes in this graph
+correspond to cores, and edges the communication channels between
+nodes. The machines we consider for now only have bi-directional
+communication links. Other machines (like the SCC) have
+uni-directional links, which is why we model the graph as directed
+graph.
+
+% shared memory -> fully meshed
+This graph is fully meshed for shared memory machines. Every core can
+communicate with every other node via the cache coherence protocol.
+
+\subsection{Node characteristics} 
+
+Every node (i.e.\ core) in the system has characteristics associated
+with it:
+
+\begin{description}
+\item[synchrony] Parts of a multicore machine are synchronous. Hence,
+  one characteristic of a node is an identifier for the synchrony
+  cluster of a node.
+\item[$t_{send}$] Time required to send a message, i.e.\ marshalling
+  and queuing the message
+\item[$t_{recv}$] Time required to receive a message, i.e.\
+  dequeuing, unmarshalling and demultiplexing a channel. 
+\end{description}
+
+\subsection{Link characteristics} 
+
 The network model is defined by communication channels, which in turn
 are defined by a set of attributes (here sorted by priority):
-\begin{itemize}
-\item latency (quantitative) between each pair of nodes (per-edge)
-\item ``breakdown'' (quantitative) of message send cost: Ethernet has
+
+\begin{description}
+\item[latency] (quantitative) between each pair of nodes (per-edge)
+\item[breakdown] (quantitative) of message send cost: Ethernet has
   dominating propagation time vs.\ dominating send and receive time on
   multicores (per-node)
-\item synchronized clocks: sychronized clocks + bound on propagation
-  time $\rightarrow$ \emph{synchronous network} model. \\Then:
-  $\exists$ algorithm for synchronous networks $\rightarrow
-  \exists$ algorithm for asynchronous
-\item reliability (loss, link failure, in-order delivery, phantoms,
+\item[bounded delivery]
+\item[reliability] (loss, link failure, in-order delivery, phantoms,
   corruption, duplicated messages): Ethernet is not reliable,
   multicore interconnect networks often are
-\item Security \& and failure detection (and the cost for that)
-\end{itemize}
-
-% Model given
-We assume that the model is given (if it is not, we can do online
-measurements and read some specs to find the relevant information). We
-just define one ourselves for now or build one manually for a
-particular machine. In a real-world scenario, this does not work. The
-model needs to be created automatically for a particular machine (due
-to the diversity of machines, and also the pace at which hardware changes)
-
-% Express as:
-We express the model in a graph, where nodes are processors and edges
-are (on-hop?) communication links. The machines we consider for now
-only have bi-directional communication links. Other machines (like the
-SCC) have uni-directional links, which is why we model the graph with
-directed graph.
-
-% How to deduct tree from model?
-We then use this graph to build a group-communication
-tree. Interesting techniques could be: clustering, to find closely
-connected subsets, distributed messages across cluster first, and then
-within cluster. Maybe also a spanning-tree protocol, to find a minimal
-graph such that all nodes can be reached.
-% Tree -> scheduling
-Assuming the tree, there is a scheduling problems for the order in
-which to send messages to children. The intuition is to send on
-long-delay links first to hide the more expensive latencies.
+\item[Security] \& and failure detection (and the cost for that)
+\end{description}
 
 % Assumptions
 We assume that the cost of sending a message to the same node is 0,
@@ -181,14 +183,120 @@ for local communication (like LMP) has a non-negligible cost.
 % Limitations
 What we do not consider yet is link congestion. 
 
-% EXAMPLE
-An example of a machine model, which approximates gruyere can be found
-in .. 
+\subsection{Acquiring the model}
 
-\begin{tikzpicture}[>=latex,line join=bevel,scale=3.0]
+% Model given
+We assume that the model is given (if it is not, we can do online
+measurements and read some specs to find the relevant information). We
+just define one ourselves for now or build one manually for a
+particular machine. In a real-world scenario, this does not work. The
+model needs to be created automatically for a particular machine (due
+to the diversity of machines, and also the pace at which hardware changes)
+
+\subsection{Example}
+
+An example of a machine model, which approximates a 2x2x1 nos box can
+be found in Figure~\ref{fig:full_nos}
+
+\begin{figure}
+\begin{tikzpicture}[>=latex,line join=bevel]
   \pgfsetlinewidth{1bp}
-\input{graphs/full_gruyere}
+\input{graphs/full_nos}
 \end{tikzpicture}
+\caption{Network model of a 2x2x1 machine}
+\label{fig:full_nos}
+\end{figure}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Example: Atomic broadcast
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Atomic Broadcast}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Building the tree}
+
+First, we build the broadcast tree. We kick-start our protocol
+connecting every process with all other processes to get a
+fully-meshed network of channels.
+
+We use a round-based algorithm to open channels. Then, every node
+knows exactly the source of an incoming connection. We formalize this
+algorithm in Algorithm~\ref{algo:ab_bind}.
+
+\begin{algorithm}[H]
+  %
+  \SetKwInOut{Assumptions}{assumptions}
+  \Assumptions{Processes have unique contiguous
+    identifiers starting at 0}
+  \BlankLine
+  %
+  \SetKwArray{c}{channels}
+  \SetKwFunction{connectNode}{connectNode}
+  \SetKwFunction{listen}{listen}
+  % 
+  \KwData{process id $p$, round $r$, %
+    each process an array of channels \c}
+  \KwResult{Fully-meshed network of processes}
+  % 
+  \BlankLine
+  %
+  $r \leftarrow 0$\;
+  \For{$i \leftarrow 0$ \KwTo $num(p)$}{
+    \eIf{$p=i$}{
+      \For{$o \leftarrow i+1$ \KwTo $num(p)$}{
+        \c{$o$} $\leftarrow$ \connectNode{$o$}\;
+      }
+    }{
+        \c{$i$} $\leftarrow$ \listen{}\;
+    }
+  }
+  \caption{Atomic broadcast on reliable communication channels}
+  \label{algo:ab}
+\end{algorithm}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Broadcast protocol}
+
+% Our implementation
+We now build an atomic broadcast for multicore machines. Our
+implementation is based on the Barrelfish UMP interconnect driver. It
+provides reliable channels with in-order delivery. Communication
+starts at the root node, which acts as a
+sequentializer. See~\ref{algo:ab} for details.
+
+\begin{algorithm}[H]
+  \SetAlgoLined
+  %
+  \KwData{List of processes $p$, broadcast tree as graph $(V, E)$}
+  \KwResult{Tree based atomic broadcast using a sequentializer}
+  % 
+  $(V, E)$ = build\_graph\;
+  \While{not at end of this document}{
+    read current\;
+    \eIf{understand}{
+      go to next section\;
+      current section becomes this one\;
+    }{
+      go back to the beginning of current section\;
+    }
+  }
+  \caption{Atomic broadcast on reliable communication channels}
+  \label{algo:ab}
+\end{algorithm}
+
+
+% How to deduct tree from model?
+We then use this graph to build a group-communication
+tree. Interesting techniques could be: clustering, to find closely
+connected subsets, distributed messages across cluster first, and then
+within cluster. Maybe also a spanning-tree protocol, to find a minimal
+graph such that all nodes can be reached.
+
+% Tree -> scheduling
+Assuming the tree, there is a scheduling problems for the order in
+which to send messages to children. The intuition is to send on
+long-delay links first to hide the more expensive latencies.
 
 We show the multicast tree automatically generated from a fully meshed
 machine model of a 8x4x1 sample multicore (gruyere) in
