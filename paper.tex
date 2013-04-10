@@ -223,6 +223,11 @@ We use a round-based algorithm to open channels. Then, every node
 knows exactly the source of an incoming connection. We formalize this
 algorithm in Algorithm~\ref{algo:ab_bind}.
 
+This is required for Barrelfish UMP communication channels since on
+bind, no source identifier is send along\footnote{Check if this is
+  actually true, and even if it is true, if is a Barrelfish problem,
+  and not a general one}.
+
 \begin{algorithm}[H]
   %
   \SetKwInOut{Assumptions}{assumptions}
@@ -233,6 +238,7 @@ algorithm in Algorithm~\ref{algo:ab_bind}.
   \SetKwArray{c}{channels}
   \SetKwFunction{connectNode}{connectNode}
   \SetKwFunction{listen}{listen}
+  \SetKwFunction{barrier}{barrier}
   % 
   \KwData{process id $p$, round $r$, %
     each process an array of channels \c}
@@ -249,9 +255,10 @@ algorithm in Algorithm~\ref{algo:ab_bind}.
     }{
         \c{$i$} $\leftarrow$ \listen{}\;
     }
+    \barrier{} \tcp*{Otherwise, reordering possible}
   }
-  \caption{Atomic broadcast on reliable communication channels}
-  \label{algo:ab}
+  \caption{Establish fully-meshed network of channels}
+  \label{algo:ab_bindOB}
 \end{algorithm}
 
 
@@ -266,20 +273,22 @@ starts at the root node, which acts as a
 sequentializer. See~\ref{algo:ab} for details.
 
 \begin{algorithm}[H]
-  \SetAlgoLined
+\SetKwProg{Fn}{Function}{}{end}%
+\SetKwFunction{receive}{receive}%
+\SetKwFunction{send}{send}%
   %
   \KwData{List of processes $p$, broadcast tree as graph $(V, E)$}
   \KwResult{Tree based atomic broadcast using a sequentializer}
   % 
-  $(V, E)$ = build\_graph\;
-  \While{not at end of this document}{
-    read current\;
-    \eIf{understand}{
-      go to next section\;
-      current section becomes this one\;
-    }{
-      go back to the beginning of current section\;
-    }
+  \BlankLine
+  \Fn(\tcp*{Receive a message}){\receive{$m$}}{
+    $i \leftarrow 5$
+    \tcp{Receive a message}
+  }
+  % 
+  \BlankLine
+  \Fn(\tcp*{Send a message}){\send{void}}{
+    $i \leftarrow 5$
   }
   \caption{Atomic broadcast on reliable communication channels}
   \label{algo:ab}
