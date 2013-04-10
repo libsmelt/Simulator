@@ -272,23 +272,38 @@ provides reliable channels with in-order delivery. Communication
 starts at the root node, which acts as a
 sequentializer. See~\ref{algo:ab} for details.
 
+
+\newcommand{\textc}[1]{{\color{gray} {\footnotesize #1}}}
 \begin{algorithm}[H]
+\SetCommentSty{textc}
 \SetKwProg{Fn}{Function}{}{end}%
-\SetKwFunction{receive}{receive}%
+\SetKwFunction{receive}{on\_receive}%
+\SetKwFunction{waitchild}{wait\_for\_children}%
 \SetKwFunction{send}{send}%
+\SetKwFunction{icsend}{send\_bc\_request}%
+\SetKwFunction{handlemessages}{handle\_other\_messages}%
   %
   \KwData{List of processes $p$, broadcast tree as graph $(V, E)$}
   \KwResult{Tree based atomic broadcast using a sequentializer}
   % 
   \BlankLine
-  \Fn(\tcp*{Receive a message}){\receive{$m$}}{
-    $i \leftarrow 5$
-    \tcp{Receive a message}
+  \Fn(\tcp*{Receive a message}){\receive{$client$, $m$}}{
+    \For(\tcp*{For all children}){$c \leftarrow \{ c: \exists (self, c) \in E \} $}{
+      \icsend{c}
+    }
+    \waitchild{}\;
+    \icsend{$client$}\;
   }
   % 
   \BlankLine
   \Fn(\tcp*{Send a message}){\send{void}}{
-    $i \leftarrow 5$
+    \tcc{Need to wait for acknowledgment before returning to
+      caller. Otherwise, sender might see his own request before some
+      other request, that the sequentializer decided to handle first}
+    \icsend{$V_{root}$}\tcp*{Relay msg (sequentializer)}
+    \While{no answer received}{
+      \handlemessages{}\tcp*{Otherwise, deadlocks}
+    }
   }
   \caption{Atomic broadcast on reliable communication channels}
   \label{algo:ab}
