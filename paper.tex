@@ -258,7 +258,7 @@ bind, no source identifier is send along\footnote{Check if this is
     \barrier{} \tcp*{Otherwise, reordering possible}
   }
   \caption{Establish fully-meshed network of channels}
-  \label{algo:ab_bindOB}
+  \label{algo:ab_bind}
 \end{algorithm}
 
 
@@ -281,6 +281,7 @@ sequentializer. See~\ref{algo:ab} for details.
 \SetKwFunction{waitchild}{wait\_for\_children}%
 \SetKwFunction{send}{send}%
 \SetKwFunction{icsend}{send\_bc\_request}%
+\SetKwFunction{icsendack}{send\_bc\_ack}%
 \SetKwFunction{handlemessages}{handle\_other\_messages}%
   %
   \KwData{List of processes $p$, broadcast tree as graph $(V, E)$}
@@ -292,7 +293,7 @@ sequentializer. See~\ref{algo:ab} for details.
       \icsend{c}
     }
     \waitchild{}\;
-    \icsend{$client$}\;
+    \icsendack{$client$}\;
   }
   % 
   \BlankLine
