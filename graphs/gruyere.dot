@@ -1,6 +1,4 @@
 graph graphname {
-	overlap=false;
-	
 0;
 1;
 2;
