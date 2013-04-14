@@ -155,7 +155,8 @@ with it:
 \item[$t_{send}$] Time required to send a message, i.e.\ marshalling
   and queuing the message
 \item[$t_{recv}$] Time required to receive a message, i.e.\
-  dequeuing, unmarshalling and demultiplexing a channel. 
+  dequeuing, unmarshalling and demultiplexing a channel.
+\item[failure] Can nodes fail? If so, how? (Byzantine, \ldots)
 \end{description}
 
 \subsection{Link characteristics} 
@@ -272,10 +273,11 @@ provides reliable channels with in-order delivery. Communication
 starts at the root node, which acts as a
 sequentializer. See~\ref{algo:ab} for details.
 
-
 \newcommand{\textc}[1]{{\color{gray} {\footnotesize #1}}}
 \begin{algorithm}[H]
 \SetCommentSty{textc}
+\SetKwInOut{Assumptions}{assumptions}
+\Assumptions{Underlying communication channel is reliable and in-order}
 \SetKwProg{Fn}{Function}{}{end}%
 \SetKwFunction{receive}{on\_receive}%
 \SetKwFunction{waitchild}{wait\_for\_children}%
@@ -310,18 +312,35 @@ sequentializer. See~\ref{algo:ab} for details.
   \label{algo:ab}
 \end{algorithm}
 
-
 % How to deduct tree from model?
 We then use this graph to build a group-communication
 tree. Interesting techniques could be: clustering, to find closely
 connected subsets, distributed messages across cluster first, and then
-within cluster. Maybe also a spanning-tree protocol, to find a minimal
-graph such that all nodes can be reached.
+within cluster. 
+
+Maybe also a minimum spanning-tree (MST) protocol, to find a minimal
+graph such that all nodes can be reached. The problem with the MST is
+that it does not consider parallelism. While it is true that the
+global cost is minimal in such a tree, it does not take into account
+that sending in parallel does not increase the time required to reach
+every node. %
+\stefan{Find an example, the MST could be a path through the graph
+  with weights 1, where it might make more sense to use a link with
+  cost 2 in the beginning and then send messages on two ``branches''
+  of the tree in parallel.}
+
+% Radix degree
+If the send cost $t_s$ is smaller than the propagation time $t_p$,
+\stefan{round up}%
+$d = \frac{t_p}{t_s}$ messages can be send to hide propagation of
+messages. Hence, a tree with degree $d$ should be ideal to minimize
+latency, but only for an acknowledged protocol.
 
 % Tree -> scheduling
-Assuming the tree, there is a scheduling problems for the order in
+Assuming the tree, there is a \emph{scheduling problems} for the order in
 which to send messages to children. The intuition is to send on
-long-delay links first to hide the more expensive latencies.
+long-delay links first to hide the more expensive latencies, as this
+link is dominating total send cost.
 
 We show the multicast tree automatically generated from a fully meshed
 machine model of a 8x4x1 sample multicore (gruyere) in
@@ -355,34 +374,7 @@ Examples for aggregation: number of nodes agreeing to something, find
 capabilities (concatenate core ids). 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Implementation}
-
-We implement our quorum protocol on Barrelfish using the UMP
-interconnect driver. UMP provides channels between
-endpoints. Communication is reliable, and messages are delivered
-in-order within a channel. Although UMP channels are uni-directional,
-Barrelfish automatically established two uni-directional channels on
-bind time. Hence, we consider them as being bi-directional. Every UMP
-channels has independent buffers associated with it.
-
-First, we establish connections such that we get a fully connected
-graph with vertices being the quorum instances and edges being UMP
-channels between them. For that, we need $O(n^2)$ UMP channels. 
-
-We build up UMP channels in rounds $r_i$. The quorum instance on core
-$i$ is creating a UMP channel to all nodes $j$ with $j>i$ in
-$r_i$. The beginning of a round needs to be synchronized such that
-node $i+1$ only starts establishing connections when all other nodes
-completed $i$. Synchronization is required since UMP channels are
-scheduled round-robin. Messages on different channels are received
-non-deterministically. 
-
-Build a tree. Every node has parents and children (except for the root
-and the leafs). The number of children does not really matter for the
-algorithm. In the init phase, we construct the tree (e.g. broadcast:
-one root node, all other nodes are children of the root node,
-multicast: every node has two children, NUMA tree: two layers, two
-different implementations?
+\section{Example}
 
 We show an example broadcast tree for a 8x4x1 AMD Barcelona machine
 (gruyere) in Figure~\ref{fig:qrm_tree_gruyere}.
@@ -418,28 +410,18 @@ Table~\ref{tab:bc_measurements}.
   \label{tab:bc_measurements}
 \end{table}
 
-\paragraph{Measurements to do next} %
-\begin{itemize}
-\item Play with batching. Incrementally increase the number of
-  messages send in a batch. I assume this is machine specific, which
-  means, that this is something programmers do not want to deal
-  with. We measure this at dynamically at run-time and find the right
-  batch size.
-\end{itemize}
-
 \paragraph{Minimal cost of sending a tree-broadcast} %
 Plot~\ref{pgfplot:201303141819} shows the cost of flooding a sub-tree
 (with the 50\% worst measurements dropped). The group communication is
 based on a binary tree. Core 0 is the root, cores 1 and 2 are its
 children etc.
 
-The average cost is really high (so something is wrong with my
-code). But the minimal numbers show what is possible. The numbers
-achieved are easily explainable. The cost is increasing
-logarithmic with the number of nodes reached by the broadcast (as
-expected). Every level in the tree adds an additional 3500 cycles to
-the tree. Node 0 takes significantly longer. I don't know yet why that
-is.
+The average cost is really high (probably a scheduling issue). But the
+minimal numbers show what is possible. The numbers achieved are easily
+explainable. The cost is increasing logarithmic with the number of
+nodes reached by the broadcast (as expected). Every level in the tree
+adds an additional 3500 cycles to the tree. Node 0 takes significantly
+longer. I don't know yet why that is.
 
 \begin{figure}
   \caption{Execution time for a broadcast with ACK on gruyere. The
@@ -545,16 +527,6 @@ is.
   \end{itemize}
 \item MPI collectives (as in~\cite{Tu2008})
 \end{itemize}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Open questions}
-
-\paragraph{How does this work with several senders} 
-Maybe something like in navigation systems. Every node has an entry
-point, which forwards the messages. Nodes are then clustered
-\ldots. Or: send the request up to the root and then down again? This
-keeps the message complexity the same and doubles the time
-complexity. 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
