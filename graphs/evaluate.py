@@ -1,5 +1,6 @@
 import events
 import heapq
+import draw
 
 # Evaluation is round-based
 
@@ -19,6 +20,10 @@ def evalute(tree, root):
     global model
 
     model = tree
+
+    # Construct visualization instance
+    global visu
+    visu = draw.Output("visu.tex", len(model))
     
     send(root, round, [])
 
@@ -60,6 +65,7 @@ def receive(src, dest):
     """
     print "{%d}: receiving message from {%d} in round %d" \
         % (dest, src, round)
+    visu.receive(dest, src, round, receive_cost(dest))
     send(dest, round+receive_cost(dest), [src])
 
 def send_cost(node):
@@ -82,11 +88,14 @@ def send(src, cost, omit):
     No message will be send towards nodes given in omit
     XXX Scheduling decision here
     """
-    for n in model.neighbors(src):
-        if not n in omit:
-            cost+=send_cost(src)
-            heapq.heappush(event_queue, \
-                               (cost, events.Propagate(src, n)))
+    send_time = cost
+    for dest in model.neighbors(src):
+        if not dest in omit:
+            visu.send(src, dest, send_time, send_cost(src))
+            send_time += send_cost(src)
+            heapq.heappush(\
+                event_queue, \
+                    (send_time, events.Propagate(src, dest)))
 
 def terminate():
     """

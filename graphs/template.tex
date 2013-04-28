@@ -1,0 +1,34 @@
+\documentclass[portrait]{a0poster}
+\usepackage{url,color,xspace,verbatim,subfig,ctable,multirow,listings}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{txfonts}
+\usepackage{rotating}
+\usepackage{paralist}
+\usepackage{subfig}
+\usepackage{graphics}
+\usepackage{enumitem}
+\usepackage{times}
+\usepackage{amssymb}
+\usepackage[colorlinks=true]{hyperref}
+\usepackage[ruled,vlined]{algorithm2e}
+
+% ==================================================
+
+\graphicspath{{figs/}}
+\urlstyle{sf}
+
+% tikz stuff
+\usepackage{tikz}
+\usepackage{pgfplots}
+% configuration
+\usetikzlibrary{shapes,positioning,calc,snakes,arrows,shapes}
+
+\begin{document}
+
+\begin{tikzpicture}[]
+  % Insert visualization
+  \input{visu}
+\end{tikzpicture}
+
+\end{document}
