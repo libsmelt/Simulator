@@ -275,8 +275,11 @@ good solution in the general case, since it does not consider
 parallelism. Naturally, we would like to parallelize send operations
 to different nodes, which allows them to send messages in parallel. 
 
-\stefan{We have an example for this, where the MST is essentially a
-  path through the graph}
+An example is obvious in Figure~\ref{fig:mst_gruyere_operations}. The
+level of parallelism is only two. Cores 00 to 15 are dealt with in
+parallel to cores 16 to 31. Other than that, there is no further
+parallelism although it is possible to ``split up'' communication with
+every new ``round'' (i.e.\ send operations of nodes).
 
 An important variable in constructing such a tree is the degree of
 nodes. If the send cost $t_s$ is smaller than the propagation time
@@ -294,7 +297,13 @@ children. The intuition is to send on long-delay links first to hide
 the more expensive latencies, as this link is dominating total send
 cost.
 
-\stefan{We have experiments showing this}
+We show an example of bad scheduling in
+Figure~\ref{fig:mst_gruyere_operations}. When core 08 sends its six
+messages, it does so in naive order (here: in increasing node ID
+order). This is inefficient, as the latency of the broadcast is
+dominated by cores 12, 24 and 28 rather than cores 9, 10 and 11. A
+better schedule for sending messages to the children of core 8 would
+be to start with the child from which the longest path emerges.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Example tree}
@@ -311,6 +320,22 @@ spanning tree algorithm on a multicore model encoding link latencies.
 \end{tikzpicture}
 \caption{Multicast tree automatically found for a 8x4x1 multicore}
 \label{fig:mst_gruyere}
+\end{figure}
+
+In Figure~\ref{fig:mst_gruyere_operations}, we show the order of
+operations for sending a broadcast message along the MST given in
+Figure~\ref{fig:mst_gruyere}. 
+
+\begin{figure}[htb]
+  \centering
+  \begin{tikzpicture}[scale=.35,transform shape]
+    % Insert visualization
+    \input{graphs/visu}
+  \end{tikzpicture}
+  \caption{Visualization of operations for sending a message along the
+    tree. Red boxes represent send operations, blue boxes represent
+    receive operations and arrows messages sent between cores.}
+  \label{fig:mst_gruyere_operations}
 \end{figure}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
