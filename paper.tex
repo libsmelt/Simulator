@@ -41,8 +41,7 @@
 \setcounter{section}{0} % Start sections with 1, not 0
 \begin{document}
 
-\title{Replication on multicore considering hierarchy and
-  characteristics of the network}
+\title{Adaptive broadcast tree for multicores}
 
 % email address
 \newcommand{\eaddr}{stefan.kaestle@inf.ethz.ch}
@@ -57,7 +56,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Introduction}
 
-There are two problems:
 \begin{enumerate}
 \item Performance of distributed algorithms on multicores. Programmers
   don't get it right due to different complexity measures. We deal
@@ -68,52 +66,61 @@ There are two problems:
   performance of our automatic configuration on a wide range of
   multicores with performance of a single hand-tuned implementation.
 \end{enumerate}
+We deal with the latter one for now.
 
-\paragraph{What do you want to enable?} Increase algorithm performance
-on multicores by applying distributed principles to overcome
-scalability challenges on such machines. 
+% 
+Atomic broadcast is a building-block for many higher-level distributed
+algorithm such as state-machine replication. Such distributed
+algorithms are increasingly used to overcome scalability challenges on
+multicore machines. Examples are databases~\cite{Salomie2011,
+  Wiesmann2000} and operating systems~\cite{fos:osr09, tornado:osdi99,
+  barrelfish:sosp09}.
 
-\paragraph{What problem are you solving, and why is it hard?} We are
-applying distributed algorithms to multicores to enable better
-scalability. However, characteristics of a multicore a different to
-those of traditional distributed systems. Traditional algorithms need
-to be reevaluated for multicores.
+% What do you want to enable?
+We want to investigate how to achieve better performance of atomic
+broadcast across a wide range of multicore machines without manually
+tuning the implementation to concrete machines.
 
-\paragraph{What's the related work?} People apply techniques from
-distributed systems to deal with scalability challenges on multicores,
-e.g.\ databases~\cite{Salomie2011, Wiesmann2000} and operating
-systems~\cite{fos:osr09, tornado:osdi99, barrelfish:sosp09}. But they
-don't to it properly. They do not consider machine characteristics or
-apply the wrong distributed technologies. Also, what they do is rather
-ad hoc. 
+% What problem are you solving, and why is it hard?
+The problem is complexity and diversity of modern multicore
+machines. Multicores come in many flavors depending on vendor and
+generation of the machine. All of these machines have fundamentally
+different characteristics such as number of nodes, NUMA
+characteristics, interconnect topologies, propagation time on
+interconnect and use of shared caches. These characteristics are hard
+to understand, but important to consider for application performance. 
 
-\paragraph{What new idea(s) will solve the problems?} Instead of just
-reusing distributed algorithms, we reevaluate them for multicores and
-investigate the impact of the multicore network model on algorithm
-performance.
+% Related work
+\stefan{Fill in related work: in a nutshell, they do tuning, but only
+  for specific machines}
 
-\paragraph{How will you go about it?} We investigate the problem for
-atomic-broadcasts since many problems in distributed systems can be
-reduced to this communication primitive. Traditional implementations
-are sending requests to all nodes in parallel to hide high propagation
-delays. %
-However, this does not work on multicores, since the propagation time
-is not dominating any longer. %
-Instead, we build a tree for communication to parallelize transmit and
-receive cost across nodes. This has been done before (BF SOSP, IBM,
-.. ), but not for the general case of multicore communication. 
+% New ideas
+Instead of manually tuning algorithms to characteristics of individual
+machines, we automatically configure our atomic broadcast
+implementation based on a machine model.
+% How will you go about it?
+We will base our atomic broadcast on overlay networks, which we
+automatically configure based on the machine model. One questions is
+which information should actually be encoded in the machine model. %
+Our idea is to then explore different approaches (such as MST
+algorithms, clustering) to \emph{find good overlay networks} based on
+the network model to base the atomic broadcast on. Then, for every
+node, we need to decide which message to send first. This is a
+\emph{scheduling} problem.
 
-\paragraph{How will you know and show it works?} We will use a
-microbenchmark measuring broadcast cost and compare our tree
-implementation to the sequential case. Maybe we put some high-level
-applications on top of it.
+% How do we show it works
+We auto-configure a wide range of different multicore machines and
+show the performance of our implementation comes close to the
+performance of hand-tuned implementations for all of these machines.
 
-\paragraph{What is your hypothesis?} Performance of distributed
-algorithms can be improved if characteristics of multicores are
-considered when building and/or selecting them. %
-For the broadcast example, this means: the time complexity for a
-networks with dominating transmit and receive time will be $O(log(n))$
-instead of $O(n)$.
+% Hypothesis
+My hypothesis is that automatic tuning of atomic broadcast (and other
+distributed algorithms) to machine characteristics is worth
+doing. Obviously, we cannot achieve performance of hand-tuned
+implementations, but we can get close enough to argue that loosing a
+bit of performance to avoid tedious manual reconfiguration is worth if
+for many applications (while others, where performance \emph{really}
+matters, might still want to manually configure their stuff).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Related work}
