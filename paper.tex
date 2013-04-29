@@ -133,7 +133,11 @@ in microseconds -6). 4K messages are 52 microseconds, which is 150000
 cycles. For synchronization primitives, a cache line is sufficient.
 
 Another tree implementation with MPI in mind was done
-in~\cite{Graham2008}. They have comparable numbers to what we found. 
+in~\cite{Graham2008}. They have comparable numbers to what we found,
+but they cannot automatically tune to different machine
+characteristics. Our hypothesis is that we can do achieve higher
+average performance across a wide range of different multicore
+machines without manually adapting the implementation.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{The multicore network model}
