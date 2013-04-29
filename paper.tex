@@ -213,18 +213,52 @@ particular machine. In a real-world scenario, this does not work. The
 model needs to be created automatically for a particular machine (due
 to the diversity of machines, and also the pace at which hardware changes)
 
-\subsection{Example}
+\subsubsection{Example model approximating a 8x4x1 machine}
 
-An example of a machine model, which approximates a 2x2x1 nos box can
-be found in Figure~\ref{fig:full_nos}
+We now make up a machine model for evaluation. This model is based on
+a 8x4x1 AMD Shanghai machine. The topology of such a machine is shown
+in Figure~\ref{fig:gruyere}.
 
-\begin{figure}
-\begin{tikzpicture}[>=latex,line join=bevel]
-  \pgfsetlinewidth{1bp}
-\input{graphs/full_nos}
-\end{tikzpicture}
-\caption{Network model of a 2x2x1 machine}
-\label{fig:full_nos}
+Each of the eight nodes consists of four cores. We approximate the
+cost of sending messages within nodes as $1$ and across nodes as
+$10*num(hops)$. 
+
+\begin{figure}[htb]
+  \centering
+  \begin{tikzpicture}[
+    xscale=.7,
+    yscale=.5,
+    every node/.style={draw,fill=red!10,minimum width=2cm,minimum height=1cm}
+    ]
+    \node (c1) at ( 0, 4) {node 0};
+    \node (c2) at ( 4, 4) {node 1};
+    \node (c3) at ( 8, 4) {node 2};
+    \node (c4) at (12, 4) {node 3};
+
+    \node (c5) at ( 0, 0) {node 4};
+    \node (c6) at ( 4, 0) {node 5};
+    \node (c7) at ( 8, 0) {node 6};
+    \node (c8) at (12, 0) {node 7};
+
+    % top horizontal
+    \draw[thick] (c1) -- (c2);
+    \draw[thick] (c2) -- (c3);
+    \draw[thick] (c3) -- (c4);
+    % bottom horizontal
+    \draw[thick] (c5) -- (c6);
+    \draw[thick] (c6) -- (c7);
+    \draw[thick] (c7) -- (c8);
+    % vertical
+    \draw[thick] (c1) -- (c5);
+    \draw[thick] (c2) -- (c6);
+    \draw[thick] (c3) -- (c7);
+    \draw[thick] (c4) -- (c8);
+    % cross
+    \draw[thick] (c3) -- (c8);
+    \draw[thick] (c4) -- (c7);
+  \end{tikzpicture}
+  \caption{Interconnect topology of 8x4x1 AMD Shanghai machine}
+  \label{fig:gruyere}
 \end{figure}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -290,7 +324,7 @@ every new ``round'' (i.e.\ send operations of nodes).
 
 An important variable in constructing such a tree is the degree of
 nodes. If the send cost $t_s$ is smaller than the propagation time
-$t_p$,  $d = \lceil \frac{t_p}{t_s} \rceil$ messages can be send to
+$t_p$,  $d = \lfloor \frac{t_p}{t_s} \rfloor$ messages can be send to
 hide propagation of messages. Hence, a tree with degree $d$ should be
 ideal to minimize latency, but only for an acknowledged protocol.
 
@@ -337,12 +371,27 @@ Figure~\ref{fig:mst_gruyere}.
   \centering
   \begin{tikzpicture}[scale=.35,transform shape]
     % Insert visualization
-    \input{graphs/visu}
+    \input{visu_only_mst}
   \end{tikzpicture}
   \caption{Visualization of operations for sending a message along the
     tree. Red boxes represent send operations, blue boxes represent
-    receive operations and arrows messages sent between cores.}
+    receive operations and arrows messages sent between cores. The
+    tree has been acquired using an MST algorithm.}
   \label{fig:mst_gruyere_operations}
+\end{figure}
+
+\begin{figure}[htb]
+  \centering
+  \begin{tikzpicture}[scale=.35,transform shape]
+    % Insert visualization
+    \input{visu_mst_sort}
+  \end{tikzpicture}
+  \caption{Visualization of operations for sending a message along the
+    tree. Red boxes represent send operations, blue boxes represent
+    receive operations and arrows messages sent between cores. After
+    running the MST algorithm, we optimize scheduling in every node to
+    send messages to in decreasing order of their latency.}
+  \label{fig:mst_gruyere_operations_sorted}
 \end{figure}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
