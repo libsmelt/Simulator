@@ -56,19 +56,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Introduction}
 
-\begin{enumerate}
-\item Performance of distributed algorithms on multicores. Programmers
-  don't get it right due to different complexity measures. We deal
-  with this by improving these algorithms. This will lead to higher
-  performance of existing algorithms.
-\item Diversity of hardware. Hand-tuning algorithms is tedious. Need
-  to do this automatically. To evaluate this, we compare the average
-  performance of our automatic configuration on a wide range of
-  multicores with performance of a single hand-tuned implementation.
-\end{enumerate}
-We deal with the latter one for now.
-
-% 
 Atomic broadcast is a building-block for many higher-level distributed
 algorithm such as state-machine replication. Such distributed
 algorithms are increasingly used to overcome scalability challenges on
@@ -89,10 +76,6 @@ different characteristics such as number of nodes, NUMA
 characteristics, interconnect topologies, propagation time on
 interconnect and use of shared caches. These characteristics are hard
 to understand, but important to consider for application performance. 
-
-% Related work
-\stefan{Fill in related work: in a nutshell, they do tuning, but only
-  for specific machines}
 
 % New ideas
 Instead of manually tuning algorithms to characteristics of individual
@@ -126,11 +109,12 @@ matters, might still want to manually configure their stuff).
 \section{Related work}
 
 A multicore aware broadcast has been implemented in~\cite{Tu2008}. It
-takes the cache architecture of the machine into consideration for
-building the broadcast. It is however for larger messages (starting at
-4K) and it does not seem to be performing very well (numbers are given
-in microseconds -6). 4K messages are 52 microseconds, which is 150000
-cycles. For synchronization primitives, a cache line is sufficient.
+takes the cache architecture of the machine (and only one particular?)
+into consideration for building the broadcast. It is however for
+larger messages (starting at 4K) and it does not seem to be performing
+very well (numbers are given in microseconds -6). 4K messages are 52
+microseconds, which is 150000 cycles. For synchronization primitives,
+a cache line is sufficient.
 
 Another tree implementation with MPI in mind was done
 in~\cite{Graham2008}. They have comparable numbers to what we found,
@@ -505,15 +489,16 @@ bind, no source identifier is send along\footnote{Check if this is
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Mechanisms}
 
-\subsection{Aggregation}
+\subsection{Aggregation for convergecast}
 
-Aggregation is the act of collecting information from nodes (i.e.\ it
-is kind of the reverse of a broadcast). In node on the return path,
+Convergecast is a way of collecting information from nodes (i.e.\ it
+is kind of the reverse of a broadcast). On the return path,
 information can be aggregated. One example is batching, where several
 pieces of information are grouped in the same message to reduce packet
-processing overhead. Another example is pre-processing of data. One
-example is pre-calculating the average value of child messages if the
-sink node is not interested in individual values.
+processing overhead. Another example is aggregation, i.e.\
+pre-processing of data. One example is pre-calculating the average
+value of child messages if the sink node is not interested in
+individual values.
 
 Similarly to what has been done in wireless sensor networks (where it
 also matters to reduce the number of messages, but for other reasons:
@@ -522,7 +507,7 @@ traditional distributed systems, this works, because it is easy to
 deploy custom software on every node in the network. Classical
 distributed systems do not typically allow this. Furthermore, reducing
 the number of messages at the price of higher complexity does not make
-sense there.
+sense in classical systems.
 
 Examples for aggregation: number of nodes agreeing to something, find
 capabilities (concatenate core ids). 
@@ -684,10 +669,6 @@ longer. I don't know yet why that is.
   a list of them) 
 \item Need higher-level applications, such as:
   \begin{itemize}
-  \item octopus
-    \begin{itemize}
-    \item higher level application?
-    \end{itemize}
   \item capability system? \stefan{Ask Simon how expensive revocation
       currently is}
   \item a database with replication and consistency maintenance
@@ -704,6 +685,62 @@ longer. I don't know yet why that is.
   \end{itemize}
 \item MPI collectives (as in~\cite{Tu2008})
 \end{itemize}
+
+\subsection{Octopus}
+
+One idea is to make Octopus a decentralized application. Octopus is
+a coordination service implemented for the Barrelfish Multikernel
+operating system. It is, however, centralized. 
+
+The idea is to extend Octopus such that it can be replicated within a
+multicore machine. This will retain scalability for future manycore
+machines and potentially outperform a centralized version of Octopus
+especially in contented systems.
+
+One foundation block of Octopus is a key-value store. Since there is
+only one copy, the data in there is always consistent. If replicated,
+some sort of consistency guarantee would have to be implemented. One
+example is \emph{linearizability}, i.e.\ ``accesses occur one at a time
+in, some sequential order that is consistent with the order of
+invocations and responses''~\cite{lynch}.
+
+The question is whether a key-value store as a backend for
+synchronization primitives even makes sense.
+
+One concrete idea is to have one copy of the Octopus data-store
+replicated on every NUMA node. One core on every node acts as
+\emph{coordinator}, we call the other nodes \emph{slaves}.
+Coordinators communicate on a ring. Communication on a local NUMA node
+can be realized using read-only shared memory for read access. Write
+access needs to be globally ordered and hence communication with other
+replicas is required. 
+
+The idea of having a ring is somewhat related to SharedDB. It
+optimizes for throughput, not latency!
+
+\begin{description}
+\item[Updates on global state] Slaves direct their updates to the
+  local coordinator. Coordinators send the update request $r$ along
+  the ring and wait for them to be send back. While passing on
+  requests, coordinators can set a flag to indicate conflicts. A
+  conflict is another colliding request $r_o$ that is already in
+  flight. I think we will have to send activity vectors along with
+  this information! Otherwise, the coordinators requesting $r$ and
+  $r_o$ will both prevent the other thing from happening and none of
+  them will be applied! Maybe we need a two-phase commit.
+\item[Barriers] The coordinator knows how many of its slaves need to
+  enter the barrier. It can then just aggregate local barrier\_enters
+  calls and only communicate this information to the others once all
+  children are ready. 
+\end{description}
+
+\subsubsection{Load balancing}
+
+We could build several rings, that do not always include all
+coordinators and work with read- and write-sets. We can select these
+rings such that they nicely integrate with the physical topology. They
+can also have different sizes (e.g.\ a smaller one for read
+operations and larger ones for writes).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
