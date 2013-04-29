@@ -1,6 +1,7 @@
 import events
 import heapq
 import draw
+import config
 
 # Evaluation is round-based
 
@@ -89,8 +90,16 @@ def send(src, cost, omit):
     XXX Scheduling decision here
     """
     send_time = cost
+    nb = []
+    # Create list of children first, and the cost of the message list
     for dest in model.neighbors(src):
         if not dest in omit:
+            nb.append((model.edge_weight((src, dest)), dest))
+    # Sort this list
+    if config.SCHEDULING_SORT:
+        nb.sort(key=lambda tup: tup[0], reverse=True)
+    # Walk the list and send messages
+    for (cost, dest) in nb:
             visu.send(src, dest, send_time, send_cost(src))
             send_time += send_cost(src)
             heapq.heappush(\
