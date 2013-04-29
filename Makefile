@@ -15,13 +15,12 @@ pdf: $(PAPER).pdf
 $(PAPER).pdf: $(wildcard *.tex) $(wildcard *.bib) $(DEPS)
 	pdflatex $(LATEXOPTS) $(PAPER)
 	if egrep '\\cite' $(PAPER).tex ; then bibtex $(PAPER) ; fi
-#	pdflatex $(LATEXOPTS) $(PAPER)
 	if [ -e $(PAPER).toc ] ; then pdflatex $(LATEXOPTS) $(PAPER) ; fi
 	if [ -e $(PAPER).bbl ] ; then pdflatex $(LATEXOPTS) $(PAPER) ; fi
 	if egrep Rerun $(PAPER).log ; then pdflatex $(LATEXOPTS) $(PAPER) ; fi
 	if egrep Rerun $(PAPER).log ; then pdflatex $(LATEXOPTS) $(PAPER) ; fi
 	if egrep Rerun $(PAPER).log ; then pdflatex $(LATEXOPTS) $(PAPER) ; fi
-	$(RM) *.aux *.log *.bbl *.blg *.toc
+	$(RM) *.aux *.bbl *.blg *.toc
 
 sync: $(PAPER).pdf
 	rsync -av ~/Documents/library.bib mendeley.bib
