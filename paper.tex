@@ -499,8 +499,16 @@ bind, no source identifier is send along\footnote{Check if this is
 
 \subsection{Aggregation}
 
+Aggregation is the act of collecting information from nodes (i.e.\ it
+is kind of the reverse of a broadcast). In node on the return path,
+information can be aggregated. One example is batching, where several
+pieces of information are grouped in the same message to reduce packet
+processing overhead. Another example is pre-processing of data. One
+example is pre-calculating the average value of child messages if the
+sink node is not interested in individual values.
+
 Similarly to what has been done in wireless sensor networks (where it
-also matters to reduce the number of messages, but other reasons:
+also matters to reduce the number of messages, but for other reasons:
 power consumption), we can do aggregation in nodes. In difference to
 traditional distributed systems, this works, because it is easy to
 deploy custom software on every node in the network. Classical
