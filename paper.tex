@@ -225,12 +225,151 @@ be found in Figure~\ref{fig:full_nos}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Atomic Broadcast}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{Building the tree}
+We build our atomic broadcast based on an overlay network connecting
+all nodes of a given multicore machine. 
 
-First, we build the broadcast tree. We kick-start our protocol
-connecting every process with all other processes to get a
-fully-meshed network of channels.
+As a first step, we evaluate tree based overlay networks. Other
+potentially interesting topologies are rings.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Tree}
+
+We now look at tree based atomic broadcast implementations. 
+
+The first challenge is to find efficient spanning trees for arbitrary
+machines. These machines are represented by a model, which we
+described earlier.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{Divide and conquer}
+
+We divide the space into clusters. In every round, we further split up
+all cluster into smaller clusters and connect them with the minimal
+link. 
+
+We find this link by searching for links that have start and
+end node in different regions of the most recent split. Out of these
+links, we pick the cheapest ones. We ignore links whose start or end
+node have a too high degree in the spanning tree already.
+
+Assuming that the choice of node IDs represents the topology to some
+extend, splitting them up into distinct clusters avoids contention, as
+two separate sub-trees are processed in different areas of the
+interconnect network.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{Clustering}
+
+Another idea is to employ clustering. One example is to base this on
+NUMA domains such that every NUMA domain corresponds to one cluster. 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{Minimum-Spanning Tree}
+
+We can apply a minimum spanning tree algorithm to the machine model
+graph to find a number of links such that these links connect all
+nodes at a minimum cost.
+
+We have implemented such an algorithm and found out, that it is not a
+good solution in the general case, since it does not consider
+parallelism. Naturally, we would like to parallelize send operations
+to different nodes, which allows them to send messages in parallel. 
+
+\stefan{We have an example for this, where the MST is essentially a
+  path through the graph}
+
+An important variable in constructing such a tree is the degree of
+nodes. If the send cost $t_s$ is smaller than the propagation time
+$t_p$,  $d = \lceil \frac{t_p}{t_s} \rceil$ messages can be send to
+hide propagation of messages. Hence, a tree with degree $d$ should be
+ideal to minimize latency, but only for an acknowledged protocol.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Scheduling}
+
+% Tree -> scheduling
+Assuming the tree (or some other kind of overlay network), there is a
+\emph{scheduling problems} for the order in which to send messages to
+children. The intuition is to send on long-delay links first to hide
+the more expensive latencies, as this link is dominating total send
+cost.
+
+\stefan{We have experiments showing this}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Example tree}
+
+We show the multicast tree automatically generated from a fully meshed
+machine model of a 8x4x1 sample multicore (gruyere) in
+Figure~\ref{fig:mst_gruyere}. We get this tree by applying a minimum
+spanning tree algorithm on a multicore model encoding link latencies.
+
+\begin{figure}
+\begin{tikzpicture}[>=latex,line join=bevel,scale=.5]
+  \pgfsetlinewidth{1bp}
+\input{graphs/mst_gruyere}
+\end{tikzpicture}
+\caption{Multicast tree automatically found for a 8x4x1 multicore}
+\label{fig:mst_gruyere}
+\end{figure}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Broadcast protocol}
+
+% Our implementation
+Assuming the tree, we now build an atomic broadcast for multicore
+machines. Our implementation is based on the Barrelfish UMP
+interconnect driver. It provides reliable channels with in-order
+delivery. Communication starts at the root node, which acts as a
+sequentializer. See~\ref{algo:ab} for details.
+
+\newcommand{\textc}[1]{{\color{gray} {\footnotesize #1}}}
+\begin{algorithm}[H]
+\SetCommentSty{textc}
+\SetKwInOut{Assumptions}{assumptions}
+\Assumptions{Underlying communication channel is reliable and in-order}
+\SetKwProg{Fn}{Function}{}{end}%
+\SetKwFunction{receive}{on\_receive}%
+\SetKwFunction{waitchild}{wait\_for\_children}%
+\SetKwFunction{send}{send}%
+\SetKwFunction{icsend}{send\_bc\_request}%
+\SetKwFunction{icsendack}{send\_bc\_ack}%
+\SetKwFunction{handlemessages}{handle\_other\_messages}%
+  %
+  \KwData{List of processes $p$, broadcast tree as graph $(V, E)$}
+  \KwResult{Tree based atomic broadcast using a sequentializer}
+  % 
+  \BlankLine
+  \Fn(\tcp*{Receive a message}){\receive{$client$, $m$}}{
+    \For(\tcp*{For all children}){$c \leftarrow \{ c: \exists (self, c) \in E \} $}{
+      \icsend{c}
+    }
+    \waitchild{}\;
+    \icsendack{$client$}\;
+  }
+  % 
+  \BlankLine
+  \Fn(\tcp*{Send a message}){\send{void}}{
+    \tcc{Need to wait for acknowledgment before returning to
+      caller. Otherwise, sender might see his own request before some
+      other request, that the sequentializer decided to handle first}
+    \icsend{$V_{root}$}\tcp*{Relay msg (sequentializer)}
+    \While{no answer received}{
+      \handlemessages{}\tcp*{Otherwise, deadlocks}
+    }
+  }
+  \caption{Atomic broadcast on reliable communication channels}
+  \label{algo:ab}
+
+\end{algorithm}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Barrelfish implementation}
+
+When implementing the protocol in Barrelfish, we found several
+practical problems, which we will discuss briefly in this section.
+
+We kick-start our protocol connecting every process with all other
+processes to get a fully-meshed network of channels.
 
 We use a round-based algorithm to open channels. Then, every node
 knows exactly the source of an incoming connection. We formalize this
@@ -273,100 +412,6 @@ bind, no source identifier is send along\footnote{Check if this is
   \caption{Establish fully-meshed network of channels}
   \label{algo:ab_bind}
 \end{algorithm}
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{Broadcast protocol}
-
-% Our implementation
-We now build an atomic broadcast for multicore machines. Our
-implementation is based on the Barrelfish UMP interconnect driver. It
-provides reliable channels with in-order delivery. Communication
-starts at the root node, which acts as a
-sequentializer. See~\ref{algo:ab} for details.
-
-\newcommand{\textc}[1]{{\color{gray} {\footnotesize #1}}}
-\begin{algorithm}[H]
-\SetCommentSty{textc}
-\SetKwInOut{Assumptions}{assumptions}
-\Assumptions{Underlying communication channel is reliable and in-order}
-\SetKwProg{Fn}{Function}{}{end}%
-\SetKwFunction{receive}{on\_receive}%
-\SetKwFunction{waitchild}{wait\_for\_children}%
-\SetKwFunction{send}{send}%
-\SetKwFunction{icsend}{send\_bc\_request}%
-\SetKwFunction{icsendack}{send\_bc\_ack}%
-\SetKwFunction{handlemessages}{handle\_other\_messages}%
-  %
-  \KwData{List of processes $p$, broadcast tree as graph $(V, E)$}
-  \KwResult{Tree based atomic broadcast using a sequentializer}
-  % 
-  \BlankLine
-  \Fn(\tcp*{Receive a message}){\receive{$client$, $m$}}{
-    \For(\tcp*{For all children}){$c \leftarrow \{ c: \exists (self, c) \in E \} $}{
-      \icsend{c}
-    }
-    \waitchild{}\;
-    \icsendack{$client$}\;
-  }
-  % 
-  \BlankLine
-  \Fn(\tcp*{Send a message}){\send{void}}{
-    \tcc{Need to wait for acknowledgment before returning to
-      caller. Otherwise, sender might see his own request before some
-      other request, that the sequentializer decided to handle first}
-    \icsend{$V_{root}$}\tcp*{Relay msg (sequentializer)}
-    \While{no answer received}{
-      \handlemessages{}\tcp*{Otherwise, deadlocks}
-    }
-  }
-  \caption{Atomic broadcast on reliable communication channels}
-  \label{algo:ab}
-\end{algorithm}
-
-% How to deduct tree from model?
-We then use this graph to build a group-communication
-tree. Interesting techniques could be: clustering, to find closely
-connected subsets, distributed messages across cluster first, and then
-within cluster. 
-
-Maybe also a minimum spanning-tree (MST) protocol, to find a minimal
-graph such that all nodes can be reached. The problem with the MST is
-that it does not consider parallelism. While it is true that the
-global cost is minimal in such a tree, it does not take into account
-that sending in parallel does not increase the time required to reach
-every node. %
-\stefan{Find an example, the MST could be a path through the graph
-  with weights 1, where it might make more sense to use a link with
-  cost 2 in the beginning and then send messages on two ``branches''
-  of the tree in parallel.}
-
-% Radix degree
-If the send cost $t_s$ is smaller than the propagation time $t_p$,
-\stefan{round up}%
-$d = \frac{t_p}{t_s}$ messages can be send to hide propagation of
-messages. Hence, a tree with degree $d$ should be ideal to minimize
-latency, but only for an acknowledged protocol.
-
-% Tree -> scheduling
-Assuming the tree, there is a \emph{scheduling problems} for the order in
-which to send messages to children. The intuition is to send on
-long-delay links first to hide the more expensive latencies, as this
-link is dominating total send cost.
-
-We show the multicast tree automatically generated from a fully meshed
-machine model of a 8x4x1 sample multicore (gruyere) in
-Figure~\ref{fig:mst_gruyere}. We get this tree by applying a minimum
-spanning tree algorithm on a multicore model encoding link latencies.
-
-\begin{figure}
-\begin{tikzpicture}[>=latex,line join=bevel,scale=.5]
-  \pgfsetlinewidth{1bp}
-\input{graphs/mst_gruyere}
-\end{tikzpicture}
-\caption{Multicast tree automatically found for a 8x4x1 multicore}
-\label{fig:mst_gruyere}
-\end{figure}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Mechanisms}
