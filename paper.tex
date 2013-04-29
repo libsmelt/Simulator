@@ -218,6 +218,7 @@ model needs to be created automatically for a particular machine (due
 to the diversity of machines, and also the pace at which hardware changes)
 
 \subsubsection{Example model approximating a 8x4x1 machine}
+\label{sec:example_model}
 
 We now make up a machine model for evaluation. This model is based on
 a 8x4x1 AMD Shanghai machine. The topology of such a machine is shown
@@ -225,7 +226,10 @@ in Figure~\ref{fig:gruyere}.
 
 Each of the eight nodes consists of four cores. We approximate the
 cost of sending messages within nodes as $1$ and across nodes as
-$10*num(hops)$. 
+$10*num(hops)$.
+
+Send and receive time are $10$ each, i.e.\ in the order of propagation
+over a cross-NUMA link.
 
 \begin{figure}[htb]
   \centering
@@ -541,6 +545,29 @@ the latency of detecting messages. Instead of
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Experimental results}
+
+\subsection{Simulation in model}
+
+This section shows results for a simulation based on the model
+introduced in Section~\ref{sec:example_model}
+
+The time given is a fictional time unit at this point.
+
+\begin{table}[htb]
+  \centering
+  \begin{tabular}{llll}
+    \toprule
+    overlay & scheduling & time & factor \\
+    \midrule
+    MST & naive         & 241 & 1.00 \\
+    MST & longest first & 151 & 0.63 \\
+    \bottomrule
+  \end{tabular}
+  \caption{Simulation results for simplified machine model}
+  \label{tab:sim_results}
+\end{table}
+
+\subsection{Real hardware}
 
 \paragraph{Current numbers} Current numbers are listed in
 Table~\ref{tab:bc_measurements}. 
