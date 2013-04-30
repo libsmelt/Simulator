@@ -33,6 +33,8 @@
   boxpos=t,
 }
 
+\newcommand{\etal}{{\it et al.}\xspace}
+
 \definecolor{skRed}{RGB}{155,25,25}
 \newcommand{\stefan}[1]{
   {\color{skRed}[{\color{red}{SK}} #1]}}
@@ -170,9 +172,9 @@ with it:
 \item[synchrony] Parts of a multicore machine are synchronous. Hence,
   one characteristic of a node is an identifier for the synchrony
   cluster of a node.
-\item[$t_{send}$] Time required to send a message, i.e.\ marshalling
+\item[send time $t_{send}$] Time required to send a message, i.e.\ marshalling
   and queuing the message
-\item[$t_{recv}$] Time required to receive a message, i.e.\
+\item[receive $t_{recv}$] Time required to receive a message, i.e.\
   dequeuing, unmarshalling and demultiplexing a channel.
 \item[failure] Can nodes fail? If so, how? (Byzantine, crash)
 \end{description}
@@ -232,15 +234,11 @@ algorithms~\cite{Alistarh2012}.
 \subsection{Acquiring the model}
 
 % Model given
-We assume that the model is given (if it is not, we can do online
-measurements and read some specs to find the relevant information). We
-just define one ourselves for now or build one manually for a
-particular machine. In a real-world scenario, this does not work. The
-model needs to be created automatically for a particular machine (due
-to the diversity of machines, and also the pace at which hardware changes)
-
-\subsubsection{Example model approximating a 8x4x1 machine}
-\label{sec:example_model}
+We assume that the model is given. We just define one ourselves for
+now or build one manually for a particular machine. In a real-world
+scenario, this does not work. The model needs to be created
+automatically for a particular machine (due to the diversity of
+machines, and also the pace at which hardware changes)
 
 We now make up a machine model for evaluation. This model is based on
 a 8x4x1 AMD Shanghai machine. The topology of such a machine is shown
@@ -293,49 +291,30 @@ over a cross-NUMA link.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Atomic Broadcast}
+\section{Atomic Broadcast for Multicores}
 
-We build our atomic broadcast based on an overlay network connecting
-all nodes of a given multicore machine. First, we discuss what
-kind of overlay networks make sense on multicores.
+For a specific model, we now need to find ``the right'' implementation
+of algorithms to program it. We build our atomic broadcast based on a
+subset of links offered by the model such that all nodes of a given
+multicore machine can be reached. Atomic broadcast guarantees that 1)
+if one node receives a message, all other nodes receive it as well,
+and 2) that all nodes see the message in the same order.
 
-As a first step, we evaluate tree based overlay networks. Other
+First, we discuss what kind of topologies we use to communicate
+between nodes. We evaluate tree based implementations. Other
 potentially interesting topologies are rings.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{Tree overlay}
+\subsection{Tree Topology}
 
-We now look at tree based atomic broadcast implementations. 
-
-The first challenge is to find efficient spanning trees for arbitrary
-machines. These machines are represented by a model, which we
-described earlier.
-
-%-------------------------------------------------
-\subsubsection{Divide and conquer}
-
-We divide the space into clusters. In every round, we further split up
-all cluster into smaller clusters and connect them with the minimal
-link. 
-
-We find this link by searching for links that have start and
-end node in different regions of the most recent split. Out of these
-links, we pick the cheapest ones. We ignore links whose start or end
-node have a too high degree in the spanning tree already.
-
-Assuming that the choice of node IDs represents the topology to some
-extend, splitting them up into distinct clusters avoids contention, as
-two separate sub-trees are processed in different areas of the
-interconnect network.
-
-%-------------------------------------------------
-\subsubsection{Clustering}
-
-Another idea is to employ clustering. One example is to base this on
-NUMA domains such that every NUMA domain corresponds to one cluster. 
+We now look at tree-based atomic broadcast implementations. The first
+challenge is to find efficient spanning trees for arbitrary
+machines. We now discuss different strategies to select trees based on
+the model representing the machine.
 
 %-------------------------------------------------
 \subsubsection{Minimum-Spanning Tree}
+\label{sec:mst_tree}
 
 We can apply a minimum spanning tree algorithm to the machine model
 graph to find a number of links such that these links connect all
@@ -354,44 +333,51 @@ every new ``round'' (i.e.\ send operations of nodes).
 
 An important variable in constructing such a tree is the degree of
 nodes. If the send cost $t_s$ is smaller than the propagation time
-$t_p$,  $d = \lfloor \frac{t_p}{t_s} \rfloor$ messages can be send to
+$t_p$, $d = \lfloor \frac{t_p}{t_s} \rfloor$ messages can be send to
 hide propagation of messages. Hence, a tree with degree $d$ should be
-ideal to minimize latency, but only for an acknowledged protocol.
+ideal to minimize latency. For multicore interconnect networks,
+however, we expect $d<1$. Thus, we do not look into this in detail
+right now.
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{Rings}
+Reducing the degree of nodes also helps for the select operation. It
+reduces the number of memory locations to poll, and therefore the
+latency of detecting messages.
 
-\stefan{Just a random collection of ideas}
+We show an example broadcast tree for a 8x4x1 AMD Barcelona machine
+(gruyere) in Figure~\ref{fig:qrm_tree_gruyere}.
+
+\begin{figure}
+  \input{qrm_tree_gruyere}
+  \caption{Tree of cores for broadcast on gruyere}
+  \label{fig:qrm_tree_gruyere}
+\end{figure}
+
 
 %-------------------------------------------------
-\subsubsection{Load balancing in a tree}
+\subsubsection{Clustering}
 
-We could build several rings, that do not always include all
-coordinators and work with read- and write-sets. We can select these
-rings such that they nicely integrate with the physical topology. They
-can also have different sizes (e.g.\ a smaller one for read operations
-and larger ones for writes).
+We discussed earlier in Section~\ref{sec:model_hierarchy} that
+multicore machines are hierarchical.%
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{Scheduling}
+We divide the space into clusters. In every round, we further split up
+all cluster into smaller clusters and connect them with the minimal
+link. 
 
-% Tree -> scheduling
-Assuming the tree (or some other kind of overlay network), there is a
-\emph{scheduling problems} for the order in which to send messages to
-children. The intuition is to send on long-delay links first to hide
-the more expensive latencies, as this link is dominating total send
-cost.
+We find this link by searching for links that have start and
+end node in different regions of the most recent split. Out of these
+links, we pick the cheapest ones. We ignore links whose start or end
+node have a too high degree in the spanning tree already.
 
-We show an example of bad scheduling in
-Figure~\ref{fig:mst_gruyere_operations}. When core 08 sends its six
-messages, it does so in naive order (here: in increasing node ID
-order). This is inefficient, as the latency of the broadcast is
-dominated by cores 12, 24 and 28 rather than cores 9, 10 and 11. A
-better schedule for sending messages to the children of core 8 would
-be to start with the child from which the longest path emerges.
+Assuming that the choice of node IDs represents the topology to some
+extend, splitting them up into distinct clusters avoids contention, as
+two separate sub-trees are processed in different areas of the
+interconnect network.
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{Example tree}
+Another idea is to employ clustering on NUMA domains such that every
+NUMA domain corresponds to one cluster.
+
+%-------------------------------------------------
+\subsubsection{Example tree}
 
 We show the multicast tree automatically generated from a fully meshed
 machine model of a 8x4x1 sample multicore (gruyere) in
@@ -439,13 +425,32 @@ Figure~\ref{fig:mst_gruyere}.
 \end{figure}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{Broadcast protocol}
+\subsection{Scheduling}
+
+% Tree -> scheduling
+Assuming the tree (or some other kind of overlay network), there is a
+\emph{scheduling problems} for the order in which to send messages to
+children. The intuition is to send on long-delay links first to hide
+the more expensive latencies, as this link is dominating total send
+cost.
+
+We show an example of bad scheduling in
+Figure~\ref{fig:mst_gruyere_operations}. When core 08 sends its six
+messages, it does so in naive order (here: in increasing node ID
+order). This is inefficient, as the latency of the broadcast is
+dominated by cores 12, 24 and 28 rather than cores 9, 10 and 11. A
+better schedule for sending messages to the children of core 8 would
+be to start with the child from which the longest path emerges.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Implementation}
 
 % Our implementation
-Assuming the tree, we now build an atomic broadcast for multicore
+Assuming the tree, we now implement an atomic broadcast for multicore
 machines. Our implementation is based on the Barrelfish UMP
 interconnect driver. It provides reliable channels with in-order
-delivery. Communication starts at the root node, which acts as a
+delivery. Flow control is build in for reliability. Communication
+starts at the root node, which acts as a
 sequentializer. See~\ref{algo:ab} for details.
 
 \newcommand{\textc}[1]{{\color{gray} {\footnotesize #1}}}
@@ -487,19 +492,17 @@ sequentializer. See~\ref{algo:ab} for details.
   \label{algo:ab}
 
 \end{algorithm}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{Barrelfish implementation}
+\subsection{Issues with the Barrelfish implementation}
 
 When implementing the protocol in Barrelfish, we found several
 practical problems, which we will discuss briefly in this section.
-
 We kick-start our protocol connecting every process with all other
 processes to get a fully-meshed network of channels.
-
 We use a round-based algorithm to open channels. Then, every node
 knows exactly the source of an incoming connection. We formalize this
 algorithm in Algorithm~\ref{algo:ab_bind}.
-
 This is required for Barrelfish UMP communication channels since on
 bind, no source identifier is send along\footnote{Check if this is
   actually true, and even if it is true, if is a Barrelfish problem,
@@ -539,51 +542,6 @@ bind, no source identifier is send along\footnote{Check if this is
 \end{algorithm}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Mechanisms}
-
-\stefan{This section feels out of place. Rewrite it and put it
-  somewhere else}
-
-\subsection{Aggregation for convergecast}
-
-Convergecast is a way of collecting information from nodes (i.e.\ it
-is kind of the reverse of a broadcast). On the return path,
-information can be aggregated. One example is batching, where several
-pieces of information are grouped in the same message to reduce packet
-processing overhead. Another example is aggregation, i.e.\
-pre-processing of data. One example is pre-calculating the average
-value of child messages if the sink node is not interested in
-individual values.
-
-Similarly to what has been done in wireless sensor networks (where it
-also matters to reduce the number of messages, but for other reasons:
-power consumption), we can do aggregation in nodes. In difference to
-traditional distributed systems, this works, because it is easy to
-deploy custom software on every node in the network. Classical
-distributed systems do not typically allow this. Furthermore, reducing
-the number of messages at the price of higher complexity does not make
-sense in classical systems.
-
-Examples for aggregation: number of nodes agreeing to something, find
-capabilities (concatenate core ids). 
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Example}
-
-We show an example broadcast tree for a 8x4x1 AMD Barcelona machine
-(gruyere) in Figure~\ref{fig:qrm_tree_gruyere}.
-
-\begin{figure}
-  \input{qrm_tree_gruyere}
-  \caption{Tree of cores for broadcast on gruyere}
-  \label{fig:qrm_tree_gruyere}
-\end{figure}
-
-\paragraph{Observations} Reducing the number of children also helps in
-select. It reduces the number of ``channels'' to poll, and therefore
-the latency of detecting messages. Instead of
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Evaluation}
 
@@ -598,15 +556,14 @@ the latency of detecting messages. Instead of
 \subsubsection{Simulation}
 
 This section shows results for a simulation based on the model
-introduced in Section~\ref{sec:example_model}
-
-The time given is a fictional time unit at this point.
+introduced in Section~\ref{sec:mst_tree}. The time given is a
+fictional time unit at this point.
 
 \begin{table}[htb]
   \centering
   \begin{tabular}{llll}
     \toprule
-    overlay & scheduling & time & factor \\
+    topology & scheduling & time & factor \\
     \midrule
     MST & naive         & 241 & 1.00 \\
     MST & longest first & 151 & 0.63 \\
@@ -617,7 +574,7 @@ The time given is a fictional time unit at this point.
 \end{table}
 
 %-------------------------------------------------
-\subsection{Real hardware}
+\subsubsection{Real hardware}
 
 Current numbers are listed in Table~\ref{tab:bc_measurements}.
 
@@ -636,7 +593,6 @@ Current numbers are listed in Table~\ref{tab:bc_measurements}.
   \label{tab:bc_measurements}
 \end{table}
 
-\paragraph{Minimal cost of sending a tree-broadcast} %
 Plot~\ref{pgfplot:201303141819} shows the cost of flooding a sub-tree
 (with the 50\% worst measurements dropped). The group communication is
 based on a binary tree. Core 0 is the root, cores 1 and 2 are its
@@ -646,8 +602,8 @@ The average cost is really high (probably a scheduling issue). But the
 minimal numbers show what is possible. The numbers achieved are easily
 explainable. The cost is increasing logarithmic with the number of
 nodes reached by the broadcast (as expected). Every level in the tree
-adds an additional 3500 cycles to the tree. Node 0 takes significantly
-longer. I don't know yet why that is.
+adds an additional 2500 to 3000 cycles to the tree. Node 0 takes
+significantly longer. I don't know yet why that is.
 
 \begin{figure}
   \caption{Execution time for a broadcast with ACK on gruyere. The
@@ -707,20 +663,6 @@ longer. I don't know yet why that is.
   \end{tikzpicture}
 
 \end{figure}
-  
-\input{gruyere_bc_seq}
-
-\begin{itemize}
-\item Move server to a core != 0
-\item Use low-level UMP stuff
-{
-\renewcommand{\labelitemi}{\checkmark}
-\item disable yielding
-}
-\item run several request in parallel, give them IDs, can use in the
-  measurement struct. Good for everything having transactions (DB,
-  transactional memory, consistency in replication systems)
-\end{itemize}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -745,19 +687,49 @@ longer. I don't know yet why that is.
     \end{itemize}
   \end{itemize}
 \item MPI collectives (as in~\cite{Tu2008})
+\item Try other topologies (Frans Kaashoek), e.g.\ rings
+\item \emph{Load balancing in a tree} We could build several rings,
+  that do not always include all coordinators and work with read- and
+  write-sets. We can select these rings such that they nicely
+  integrate with the physical topology. They can also have different
+  sizes (e.g.\ a smaller one for read operations and larger ones for
+  writes).
+\item \emph{Aggregation for convergecast} %
+  Convergecast is a way of collecting information from nodes (i.e.\ it
+  is kind of the reverse of a broadcast). On the return path,
+  information can be aggregated. One example is batching, where several
+  pieces of information are grouped in the same message to reduce packet
+  processing overhead. Another example is aggregation, i.e.\
+  pre-processing of data. One example is pre-calculating the average
+  value of child messages if the sink node is not interested in
+  individual values. %
+  Similarly to what has been done in wireless sensor networks (where it
+  also matters to reduce the number of messages, but for other reasons:
+  power consumption), we can do aggregation in nodes. In difference to
+  traditional distributed systems, this works, because it is easy to
+  deploy custom software on every node in the network. Classical
+  distributed systems do not typically allow this. Furthermore, reducing
+  the number of messages at the price of higher complexity does not make
+  sense in classical systems. %
+  Examples for aggregation: number of nodes agreeing to something, find
+  capabilities (concatenate core ids). 
 \end{itemize}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Octopus}
 
 Octopus is a coordination service implementation for the Barrelfish
-Multikernel operating system. It is, however, centralized. The idea is
-to make Octopus a decentralized application.
+Multikernel operating system based on a key-value store
+data-backend. It is, however, centralized. The idea is to make Octopus
+a decentralized application.
 
 For that, we extend Octopus such that it can be replicated within a
 multicore machine. This will retain scalability for future manycore
 machines and potentially outperform a centralized version of Octopus
 especially in contented systems.
+
+%--------------------------------------------------
+\subsubsection{Key-value store}
 
 One foundation block of Octopus is a key-value store. Since there is
 only one copy, the data in there is always consistent. If replicated,
@@ -765,14 +737,6 @@ some sort of consistency guarantee would have to be implemented. One
 example is \emph{linearizability}, i.e.\ ``accesses occur one at a time
 in, some sequential order that is consistent with the order of
 invocations and responses''~\cite{lynch}.
-
-%--------------------------------------------------
-\subsubsection{Key-value store}
-
-The question is whether a key-value store as a backend for
-synchronization primitives even makes sense. As we want to show
-efficiency, we probably rather want to implement new synchronization
-algorithms from scratch.
 
 One concrete idea is to have one copy of the Octopus data-store
 replicated on every NUMA node. One core on every node acts as
@@ -782,24 +746,34 @@ can be realized using read-only shared memory for read access. Write
 access needs to be globally ordered and hence communication with other
 replicas is required. 
 
+Slaves direct their updates to the local coordinator. Coordinators
+send the update request $r$ along the ring and wait for them to be
+send back. While passing on requests, coordinators can set a flag to
+indicate conflicts. A conflict is another colliding request $r_o$ that
+is already in flight. I think we will have to send activity vectors
+along with this information! Otherwise, the coordinators requesting
+$r$ and $r_o$ will both prevent the other thing from happening and
+none of them will be applied! Maybe we need a two-phase commit.
+
 The idea of having a ring is somewhat related to SharedDB. It
 optimizes for throughput, not latency!
 
-\begin{description}
-\item[Updates on global state] Slaves direct their updates to the
-  local coordinator. Coordinators send the update request $r$ along
-  the ring and wait for them to be send back. While passing on
-  requests, coordinators can set a flag to indicate conflicts. A
-  conflict is another colliding request $r_o$ that is already in
-  flight. I think we will have to send activity vectors along with
-  this information! Otherwise, the coordinators requesting $r$ and
-  $r_o$ will both prevent the other thing from happening and none of
-  them will be applied! Maybe we need a two-phase commit.
-\item[Barriers] The coordinator knows how many of its slaves need to
-  enter the barrier. It can then just aggregate local barrier\_enters
-  calls and only communicate this information to the others once all
-  children are ready. 
-\end{description}
+%-------------------------------------------------
+\subsubsection{Synchronization}
+
+It is doubtful that a key-value store as a backend for synchronization
+primitives makes sense. As we want to show efficiency, we probably
+rather want to implement new synchronization algorithms from scratch.
+
+The coordinator knows how many of its slaves need to enter the
+barrier. It can then just aggregate local barrier\_enters calls and
+only communicate this information to the others once all children are
+ready. Local communication can be shared-memory based, while global
+communication should probably rather be message-passing based.
+
+We will have to compare the performance of such an implementation with
+a purely shared-memory based implementation like pthreads and
+something entirely message-passing based like MPI versions.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
