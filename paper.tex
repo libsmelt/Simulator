@@ -37,7 +37,6 @@
 \newcommand{\stefan}[1]{
   {\color{skRed}[{\color{red}{SK}} #1]}}
 
-% ==================================================
 \setcounter{section}{0} % Start sections with 1, not 0
 \begin{document}
 
@@ -53,6 +52,7 @@
 
 \maketitle
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Introduction}
 
@@ -106,6 +106,7 @@ for many applications (while others, where performance \emph{really}
 matters, might still want to manually configure their stuff).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Related work}
 
 A multicore aware broadcast has been implemented in~\cite{Tu2008}. It
@@ -123,6 +124,14 @@ characteristics. Our hypothesis is that we can do achieve higher
 average performance across a wide range of different multicore
 machines without manually adapting the implementation.
 
+Alistarh\etal~\cite{Alistarh2012} show composition of shared-memory
+algorithms that perform efficiently under different conditions at
+negligible overhead. A similar approach can potentially be applied to
+deal with diversity of multicore machines. However, we would have
+to extend it to support both shared-memory and message-passing
+implementations. 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{The multicore network model}
 
@@ -150,7 +159,9 @@ graph.
 This graph is fully meshed for shared memory machines. Every core can
 communicate with every other node via the cache coherence protocol.
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Node characteristics} 
+\label{sec:model_nodes}
 
 Every node (i.e.\ core) in the system has characteristics associated
 with it:
@@ -163,10 +174,12 @@ with it:
   and queuing the message
 \item[$t_{recv}$] Time required to receive a message, i.e.\
   dequeuing, unmarshalling and demultiplexing a channel.
-\item[failure] Can nodes fail? If so, how? (Byzantine, \ldots)
+\item[failure] Can nodes fail? If so, how? (Byzantine, crash)
 \end{description}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Link characteristics} 
+\label{sec:model_links}
 
 The network model is defined by communication channels, which in turn
 are defined by a set of attributes (here sorted by priority):
@@ -180,7 +193,6 @@ are defined by a set of attributes (here sorted by priority):
 \item[reliability] (loss, link failure, in-order delivery, phantoms,
   corruption, duplicated messages): 
   multicore interconnect networks often are
-%\item[Security] \& and failure detection (and the cost for that)
 \end{description}
 
 % Assumptions
@@ -191,6 +203,32 @@ for local communication (like LMP) has a non-negligible cost.
 % Limitations
 What we do not consider yet is link congestion. 
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Hierarchical model}
+\label{sec:model_hierarchy}
+
+Multicore machines are hierarchical. Processor cores are grouped in
+NUMA nodes with shared caches. These NUMA nodes are then connected to
+each by increasingly complex interconnect networks. 
+
+We encode NUMA node affinity in our model. This allows to break down
+programming of a multicore machine into two distinct instances. We
+solve one instance of the problem between NUMA nodes, and then, in a
+second step, within each NUMA node. These two steps can be executed
+independently and different algorithms can be used in either case.
+
+If cores on the same NUMA node share a cache, it makes sense to
+leverage this hardware feature to implement shared-memory algorithms
+on top of it. %
+Communication across NUMA nodes is realized sending messages across
+the packet-based interconnect network. Using message-passing based
+implementations is the natural choice. %
+Shared memory algorithms and message-passing based algorithms can be
+composed together to program hierarchical machines similarly to what
+was previously shown for combinations of shared-memory
+algorithms~\cite{Alistarh2012}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Acquiring the model}
 
 % Model given
@@ -254,18 +292,18 @@ over a cross-NUMA link.
 \end{figure}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Example: Atomic broadcast
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Atomic Broadcast}
 
 We build our atomic broadcast based on an overlay network connecting
-all nodes of a given multicore machine. 
+all nodes of a given multicore machine. First, we discuss what
+kind of overlay networks make sense on multicores.
 
 As a first step, we evaluate tree based overlay networks. Other
 potentially interesting topologies are rings.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{Tree}
+\subsection{Tree overlay}
 
 We now look at tree based atomic broadcast implementations. 
 
@@ -273,7 +311,7 @@ The first challenge is to find efficient spanning trees for arbitrary
 machines. These machines are represented by a model, which we
 described earlier.
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%-------------------------------------------------
 \subsubsection{Divide and conquer}
 
 We divide the space into clusters. In every round, we further split up
@@ -290,13 +328,13 @@ extend, splitting them up into distinct clusters avoids contention, as
 two separate sub-trees are processed in different areas of the
 interconnect network.
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%-------------------------------------------------
 \subsubsection{Clustering}
 
 Another idea is to employ clustering. One example is to base this on
 NUMA domains such that every NUMA domain corresponds to one cluster. 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%-------------------------------------------------
 \subsubsection{Minimum-Spanning Tree}
 
 We can apply a minimum spanning tree algorithm to the machine model
@@ -319,6 +357,20 @@ nodes. If the send cost $t_s$ is smaller than the propagation time
 $t_p$,  $d = \lfloor \frac{t_p}{t_s} \rfloor$ messages can be send to
 hide propagation of messages. Hence, a tree with degree $d$ should be
 ideal to minimize latency, but only for an acknowledged protocol.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Rings}
+
+\stefan{Just a random collection of ideas}
+
+%-------------------------------------------------
+\subsubsection{Load balancing in a tree}
+
+We could build several rings, that do not always include all
+coordinators and work with read- and write-sets. We can select these
+rings such that they nicely integrate with the physical topology. They
+can also have different sizes (e.g.\ a smaller one for read operations
+and larger ones for writes).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Scheduling}
@@ -489,6 +541,9 @@ bind, no source identifier is send along\footnote{Check if this is
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Mechanisms}
 
+\stefan{This section feels out of place. Rewrite it and put it
+  somewhere else}
+
 \subsection{Aggregation for convergecast}
 
 Convergecast is a way of collecting information from nodes (i.e.\ it
@@ -529,9 +584,18 @@ select. It reduces the number of ``channels'' to poll, and therefore
 the latency of detecting messages. Instead of
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Experimental results}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Evaluation}
 
-\subsection{Simulation in model}
+\stefan{Compare to pure shared-memory implementations, otherwise
+  reviewers might argue that there is no need for distributed
+  algorithms.}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Atomic broadcast}
+
+%-------------------------------------------------
+\subsubsection{Simulation}
 
 This section shows results for a simulation based on the model
 introduced in Section~\ref{sec:example_model}
@@ -552,10 +616,10 @@ The time given is a fictional time unit at this point.
   \label{tab:sim_results}
 \end{table}
 
+%-------------------------------------------------
 \subsection{Real hardware}
 
-\paragraph{Current numbers} Current numbers are listed in
-Table~\ref{tab:bc_measurements}. 
+Current numbers are listed in Table~\ref{tab:bc_measurements}.
 
 \begin{table}[htb]
   \centering
@@ -659,14 +723,15 @@ longer. I don't know yet why that is.
 \end{itemize}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Future work}
 
 \begin{itemize}
-\item Arguing that group communication/atomic broadcast and showing
-  that we can do it well might be enough (appeal to atomic broadcasts
-  as the foundation for other distributed algorithms, and the MPI
-  primitives, that can/need to be mapped to group-communication (have
-  a list of them) 
+\item Arguing that group communication/atomic broadcast is important
+  and showing that we can do it well might be enough (appeal to atomic
+  broadcasts as the foundation for other distributed algorithms, and
+  the MPI primitives, that can/need to be mapped to
+  group-communication (have a list of them)
 \item Need higher-level applications, such as:
   \begin{itemize}
   \item capability system? \stefan{Ask Simon how expensive revocation
@@ -679,20 +744,17 @@ longer. I don't know yet why that is.
     \item Crescando (some kind of state machine replication)
     \end{itemize}
   \end{itemize}
-\item Machine model for topology aware tree
-  \begin{itemize}
-  \item Talked to Pravin about this a bit
-  \end{itemize}
 \item MPI collectives (as in~\cite{Tu2008})
 \end{itemize}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Octopus}
 
-One idea is to make Octopus a decentralized application. Octopus is
-a coordination service implemented for the Barrelfish Multikernel
-operating system. It is, however, centralized. 
+Octopus is a coordination service implementation for the Barrelfish
+Multikernel operating system. It is, however, centralized. The idea is
+to make Octopus a decentralized application.
 
-The idea is to extend Octopus such that it can be replicated within a
+For that, we extend Octopus such that it can be replicated within a
 multicore machine. This will retain scalability for future manycore
 machines and potentially outperform a centralized version of Octopus
 especially in contented systems.
@@ -704,8 +766,13 @@ example is \emph{linearizability}, i.e.\ ``accesses occur one at a time
 in, some sequential order that is consistent with the order of
 invocations and responses''~\cite{lynch}.
 
+%--------------------------------------------------
+\subsubsection{Key-value store}
+
 The question is whether a key-value store as a backend for
-synchronization primitives even makes sense.
+synchronization primitives even makes sense. As we want to show
+efficiency, we probably rather want to implement new synchronization
+algorithms from scratch.
 
 One concrete idea is to have one copy of the Octopus data-store
 replicated on every NUMA node. One core on every node acts as
@@ -733,14 +800,6 @@ optimizes for throughput, not latency!
   calls and only communicate this information to the others once all
   children are ready. 
 \end{description}
-
-\subsubsection{Load balancing}
-
-We could build several rings, that do not always include all
-coordinators and work with read- and write-sets. We can select these
-rings such that they nicely integrate with the physical topology. They
-can also have different sizes (e.g.\ a smaller one for read
-operations and larger ones for writes).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
