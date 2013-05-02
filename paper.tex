@@ -799,11 +799,20 @@ It is doubtful that a key-value store as a backend for synchronization
 primitives makes sense. As we want to show efficiency, we probably
 rather want to implement new synchronization algorithms from scratch.
 
-The coordinator knows how many of its slaves need to enter the
-barrier. It can then just aggregate local barrier\_enters calls and
-only communicate this information to the others once all children are
-ready. Local communication can be shared-memory based, while global
-communication should probably rather be message-passing based.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Barriers}
+
+The idea is to explore barrier implementations. The idea is to
+leverage information about the NUMA topology for better performance of
+barrier intensive workloads. Every NUMA node has a coordinator node,
+that knows how many threads on that node want to enter the
+barrier. There is only local communication (possibly using a
+share-memory implementation to exploit the shared cache) until the
+point where all NUMA local threads did enter the barrier.  Then there
+is ``global'' communication with other coordinators on other nodes
+using a message-passing based algorithm. We believe that this scales
+better than pure shared-memory implementations due to less
+interconnect contention.
 
 We will have to compare the performance of such an implementation with
 a purely shared-memory based implementation like pthreads and
