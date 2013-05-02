@@ -169,18 +169,19 @@ communicate with every other node via the cache coherence protocol.
 \label{sec:model_nodes}
 
 Every node (i.e.\ core) in the system has characteristics associated
-with it:
+with it.
 
 \begin{description}
 \item[synchrony] Parts of a multicore machine are synchronous. Hence,
   one characteristic of a node is an identifier for the synchrony
   cluster of a node.
-\item[send time $t_{send}$] Time required to send a message, i.e.\ marshalling
-  and queuing the message
-\item[receive $t_{recv}$] Time required to receive a message, i.e.\
-  dequeuing, unmarshalling and demultiplexing a channel.
 \item[failure] Can nodes fail? If so, how? (Byzantine, crash)
 \end{description}
+
+These are currently not encoded in the model. The send and receive
+cost are in part node specific. The faster a core is, the faster it
+can to the multiplexing and marshalling. However, they are also link
+dependent, so we view them as link characteristics.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Link characteristics} 
@@ -190,10 +191,11 @@ The network model is defined by communication channels, which in turn
 are defined by a set of attributes (here sorted by priority):
 
 \begin{description}
-\item[latency] (quantitative) between each pair of nodes (per-edge)
 \item[breakdown] (quantitative) of message send cost:
   dominating propagation time vs.\ dominating send and receive time on
-  multicores (per-node)
+  multicores (per-node). Our model is currently limited to only the
+  breakdown of the cost for sending messages.
+\item[latency] (quantitative) between each pair of nodes (per-edge)
 \item[bounded delivery]
 \item[reliability] (loss, link failure, in-order delivery, phantoms,
   corruption, duplicated messages): 
@@ -796,11 +798,13 @@ optimizes for throughput, not latency!
 \subsubsection{Synchronization}
 
 It is doubtful that a key-value store as a backend for synchronization
-primitives makes sense. As we want to show efficiency, we probably
-rather want to implement new synchronization algorithms from scratch.
+primitives as we want to show efficiency rather than ease of use and
+flexibility. We probably rather want to implement new synchronization
+algorithms from scratch. See Section~\ref{barriers} for ideas.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Barriers}
+\label{barriers}
 
 The idea is to explore barrier implementations. The idea is to
 leverage information about the NUMA topology for better performance of
