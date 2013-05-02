@@ -34,6 +34,9 @@
 }
 
 \newcommand{\etal}{{\it et al.}\xspace}
+\newcommand{\naive}{na\"{\i}ve\xspace}
+\newcommand{\Naive}{Na\"{\i}ve\xspace}
+\newcommand{\textc}[1]{{\color{gray} {\footnotesize #1}}}
 
 \definecolor{skRed}{RGB}{155,25,25}
 \newcommand{\stefan}[1]{
@@ -211,13 +214,13 @@ What we do not consider yet is link congestion.
 
 Multicore machines are hierarchical. Processor cores are grouped in
 NUMA nodes with shared caches. These NUMA nodes are then connected to
-each by increasingly complex interconnect networks. 
+each other by increasingly complex interconnect networks. 
 
 We encode NUMA node affinity in our model. This allows to break down
 programming of a multicore machine into two distinct instances. We
 solve one instance of the problem between NUMA nodes, and then, in a
 second step, within each NUMA node. These two steps can be executed
-independently and different algorithms can be used in either case.
+independently and different algorithms can be used in both case.
 
 If cores on the same NUMA node share a cache, it makes sense to
 leverage this hardware feature to implement shared-memory algorithms
@@ -227,7 +230,7 @@ the packet-based interconnect network. Using message-passing based
 implementations is the natural choice. %
 Shared memory algorithms and message-passing based algorithms can be
 composed together to program hierarchical machines similarly to what
-was previously shown for combinations of shared-memory
+was previously shown for composing of shared-memory
 algorithms~\cite{Alistarh2012}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -313,6 +316,27 @@ machines. We now discuss different strategies to select trees based on
 the model representing the machine.
 
 %-------------------------------------------------
+\subsubsection{Binary Tree}
+
+A very \naive strategy to build a tree from machine models is the use
+of a binary tree with root in core 0. Every node $n$ has two children
+$2(n+1)-1$ and $2(n+1)$.
+
+The benefit of such a tree is that the time complexity is guaranteed
+to be $O(\log{n})$. The downside is that it is not considering the
+machine topology. Unnecessary communication across NUMA nodes might be
+introduced. 
+
+We show an example for such a tree for a 8x4x1 AMD Barcelona machine
+(gruyere) in Figure~\ref{fig:qrm_tree_gruyere}.
+
+\begin{figure}
+  \input{qrm_tree_gruyere}
+  \caption{\Naive binary tree of cores for broadcast on gruyere}
+  \label{fig:qrm_tree_gruyere}
+\end{figure}
+
+%-------------------------------------------------
 \subsubsection{Minimum-Spanning Tree}
 \label{sec:mst_tree}
 
@@ -343,15 +367,18 @@ Reducing the degree of nodes also helps for the select operation. It
 reduces the number of memory locations to poll, and therefore the
 latency of detecting messages.
 
-We show an example broadcast tree for a 8x4x1 AMD Barcelona machine
-(gruyere) in Figure~\ref{fig:qrm_tree_gruyere}.
+We show the multicast tree automatically generated from a fully meshed
+machine model by applying a minimum spanning tree algorithm in
+Figure~\ref{fig:mst_gruyere}.
 
 \begin{figure}
-  \input{qrm_tree_gruyere}
-  \caption{Tree of cores for broadcast on gruyere}
-  \label{fig:qrm_tree_gruyere}
+\begin{tikzpicture}[>=latex,line join=bevel,scale=.5]
+  \pgfsetlinewidth{1bp}
+\input{graphs/mst_gruyere}
+\end{tikzpicture}
+\caption{Multicast tree automatically found for a 8x4x1 multicore}
+\label{fig:mst_gruyere}
 \end{figure}
-
 
 %-------------------------------------------------
 \subsubsection{Clustering}
@@ -376,26 +403,24 @@ interconnect network.
 Another idea is to employ clustering on NUMA domains such that every
 NUMA domain corresponds to one cluster.
 
-%-------------------------------------------------
-\subsubsection{Example tree}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Scheduling}
 
-We show the multicast tree automatically generated from a fully meshed
-machine model of a 8x4x1 sample multicore (gruyere) in
-Figure~\ref{fig:mst_gruyere}. We get this tree by applying a minimum
-spanning tree algorithm on a multicore model encoding link latencies.
+% Tree -> scheduling
+Assuming the tree (or some other kind of overlay network), there is a
+\emph{scheduling problems} for the order in which to send messages to
+children. The intuition is to send on long-delay links first to hide
+the more expensive latencies, as this link is dominating total send
+cost.
 
-\begin{figure}
-\begin{tikzpicture}[>=latex,line join=bevel,scale=.5]
-  \pgfsetlinewidth{1bp}
-\input{graphs/mst_gruyere}
-\end{tikzpicture}
-\caption{Multicast tree automatically found for a 8x4x1 multicore}
-\label{fig:mst_gruyere}
-\end{figure}
-
-In Figure~\ref{fig:mst_gruyere_operations}, we show the order of
-operations for sending a broadcast message along the MST given in
-Figure~\ref{fig:mst_gruyere}. 
+In Figure~\ref{fig:mst_gruyere_operations}, we visualize sending of a
+broadcast message in \naive order. We use the MST given in
+Figure~\ref{fig:mst_gruyere}.  When core 08 sends its six messages, it
+does so in random order (here: in increasing node ID order). This is
+inefficient, as the latency of the broadcast is dominated by cores 12,
+24 and 28 rather than cores 9, 10 and 11. A better schedule for
+sending messages to the children of core 8 would be to start with the
+child from which the longest path emerges.
 
 \begin{figure}[htb]
   \centering
@@ -409,6 +434,34 @@ Figure~\ref{fig:mst_gruyere}.
     tree has been acquired using an MST algorithm.}
   \label{fig:mst_gruyere_operations}
 \end{figure}
+
+In Figure~\ref{fig:mst_gruyere_operations_sorted} we schedule sending
+of messages based on link cost. We sort the outgoing edges by their
+weights and send on the most expensive links first. See
+Algorithm~\ref{algo:scheduling_link_weight}
+
+\begin{algorithm}[htb]
+\SetCommentSty{textc}
+\SetKwFunction{weight}{edge\_weight}%
+\SetKwFunction{sort}{sort\_by\_edge\_weight}%
+\SetKwFunction{icsend}{send}%
+  %
+  \KwData{Node $n$ sending messages, \\ %
+    broadcast tree as graph $(V, E)$, \\ %
+    weight function \weight{$E$}
+    %
+  }
+  % 
+  \BlankLine
+  $nb \leftarrow \{ c: \exists (self, c) \in E \}$\tcp*{Get children}
+  $nb \leftarrow $ \sort{$nb$, \weight{}}\tcp*{Sort by edge weight}
+  \For(\tcp*{For all children}){$c \leftarrow nb$}{
+    \icsend{$c$}
+  }
+  % 
+  \caption{Scheduling in order of outgoing link weight}
+  \label{algo:scheduling_link_weight}
+\end{algorithm}
 
 \begin{figure}[htb]
   \centering
@@ -425,24 +478,6 @@ Figure~\ref{fig:mst_gruyere}.
 \end{figure}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{Scheduling}
-
-% Tree -> scheduling
-Assuming the tree (or some other kind of overlay network), there is a
-\emph{scheduling problems} for the order in which to send messages to
-children. The intuition is to send on long-delay links first to hide
-the more expensive latencies, as this link is dominating total send
-cost.
-
-We show an example of bad scheduling in
-Figure~\ref{fig:mst_gruyere_operations}. When core 08 sends its six
-messages, it does so in naive order (here: in increasing node ID
-order). This is inefficient, as the latency of the broadcast is
-dominated by cores 12, 24 and 28 rather than cores 9, 10 and 11. A
-better schedule for sending messages to the children of core 8 would
-be to start with the child from which the longest path emerges.
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Implementation}
 
 % Our implementation
@@ -453,8 +488,7 @@ delivery. Flow control is build in for reliability. Communication
 starts at the root node, which acts as a
 sequentializer. See~\ref{algo:ab} for details.
 
-\newcommand{\textc}[1]{{\color{gray} {\footnotesize #1}}}
-\begin{algorithm}[H]
+\begin{algorithm}[htb]
 \SetCommentSty{textc}
 \SetKwInOut{Assumptions}{assumptions}
 \Assumptions{Underlying communication channel is reliable and in-order}
@@ -508,7 +542,7 @@ bind, no source identifier is send along\footnote{Check if this is
   actually true, and even if it is true, if is a Barrelfish problem,
   and not a general one}.
 
-\begin{algorithm}[H]
+\begin{algorithm}[htb]
   %
   \SetKwInOut{Assumptions}{assumptions}
   \Assumptions{Processes have unique contiguous
