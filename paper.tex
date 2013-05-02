@@ -420,9 +420,7 @@ broadcast message in \naive order. We use the MST given in
 Figure~\ref{fig:mst_gruyere}.  When core 08 sends its six messages, it
 does so in random order (here: in increasing node ID order). This is
 inefficient, as the latency of the broadcast is dominated by cores 12,
-24 and 28 rather than cores 9, 10 and 11. A better schedule for
-sending messages to the children of core 8 would be to start with the
-child from which the longest path emerges.
+24 and 28 rather than cores 9, 10 and 11.
 
 \begin{figure}[htb]
   \centering
@@ -478,6 +476,11 @@ Algorithm~\ref{algo:scheduling_link_weight}
     send messages to in decreasing order of their latency.}
   \label{fig:mst_gruyere_operations_sorted}
 \end{figure}
+
+A better schedule for sending messages to the children of core 8 would
+be to start with the child from which the longest path emerges.
+
+\stefan{TODO: write down algorithm}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Implementation}
@@ -601,13 +604,19 @@ fictional time unit at this point.
     \toprule
     topology & scheduling & time & factor \\
     \midrule
-    MST & naive         & 241 & 1.00 \\
-    MST & longest first & 151 & 0.63 \\
+    MST & naive                     & 241 & 1.00 \\
+    MST & highest link weight first & 151 & 0.63 \\
+    MST & longest path first        & 151 & 0.63 \\
     \bottomrule
   \end{tabular}
   \caption{Simulation results for simplified machine model}
   \label{tab:sim_results}
 \end{table}
+
+Scheduling based on the longest path does not make a difference for
+the current MST, but will be better in many cases. \stefan{We need to
+  find a model where this is actually true. But we also need to
+  evaluate if the increase in complexity is worth it}
 
 %-------------------------------------------------
 \subsubsection{Real hardware}
