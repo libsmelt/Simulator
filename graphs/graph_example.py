@@ -1,22 +1,20 @@
 #!/usr/bin/env python
 
-# Import graphviz
-import sys
-sys.path.append('..')
-sys.path.append('/usr/lib/graphviz/python/')
-sys.path.append('/usr/lib64/graphviz/python/')
-import gv
-
 # Import pygraph
 from pygraph.classes.graph import graph
 from pygraph.classes.digraph import digraph
 from pygraph.algorithms.searching import breadth_first_search
-from pygraph.readwrite.dot import write
 from pygraph.algorithms.minmax import shortest_path
 from pygraph.algorithms.minmax import minimal_spanning_tree
 
 # Import own code
 import evaluate
+import config
+import model
+import cluster
+import helpers
+
+import pdb
 
 # --------------------------------------------------
 
@@ -25,20 +23,6 @@ NUM_NUMA_NODES = 8
 NUM_CORES = (CORES_PER_NODE*NUM_NUMA_NODES)
 HOPCOST = 10
 NUMACOST = 1
-
-def output_graph(graph, name):
-    """
-    Output the graph as png image and also as text file
-    """
-    dot = write(graph, True)
-    gvv = gv.readstring(dot)
-    
-    with open('%s.dot'%name, 'w') as f:
-        f.write(dot)
-
-    gv.layout(gvv, 'neato')
-    gv.render(gvv, 'png', ('%s.png' % name))
-
 
 # Wrapper function to add edges between two NUMA nodes. 
 def add_numa(graph, node1, node2, cost):
@@ -109,7 +93,7 @@ def build_and_simulate():
     g_numa.add_edge((3,6))
     g_numa.add_edge((3,7))
 
-    output_graph(g_numa, 'g_numa_tmp')
+    helpers.output_graph(g_numa, 'g_numa_tmp')
 
 
     # --------------------------------------------------
@@ -126,8 +110,32 @@ def build_and_simulate():
     # for n in range(NUM_NUMA_NODES, 2*NUM_NUMA_NODES):
     #     connect_numa_nodes(gr, g_numa, n)
 
+
+    if config.TOPO_TREE:
+        final_graph = _run_mst(gr)
+
+    elif config.TOPO_CLUSTER:
+        # Build a model for gruyere
+        # XXX all the above code should go there!
+        m = model.Gruyere(gr)
+        clustering = cluster.Cluster(m)
+        final_graph = clustering.get_broadcast_tree()
+        pdb.set_trace() # XXX Evaluation does not work at this point
+
     # --------------------------------------------------
-    # Run MST algorithm
+    # Output graphs
+
+    # helpers.output_graph(gr, 'gruyere')
+    # helpers.output_graph(g_numa, 'numa')
+    # helpers.output_graph(final_graph, 'mst')
+
+    # --------------------------------------------------
+    print "Cost for tree is: %d" % evaluate.evalute(final_graph, 0)
+
+def _run_mst(gr):
+    """
+    Run MST algorithm
+    """
     mst = graph()
     mst.add_nodes(range(NUM_CORES))
 
@@ -136,15 +144,8 @@ def build_and_simulate():
         if mst_edges[i] != None:
             mst.add_edge((mst_edges[i], i), \
                              gr.edge_weight((mst_edges[i], i)))
+    return mst
 
-    # --------------------------------------------------
-
-    # output_graph(gr, 'gruyere')
-    # output_graph(g_numa, 'numa')
-    # output_graph(mst, 'mst')
-
-    # --------------------------------------------------
-    print "Cost for tree is: %d" % evaluate.evalute(mst, 0)
 
 if __name__ == "__main__":
     build_and_simulate()

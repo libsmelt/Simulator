@@ -172,6 +172,7 @@ Every node (i.e.\ core) in the system has characteristics associated
 with it.
 
 \begin{description}
+\item[NUMA affinity] A list of cores on the same NUMA node
 \item[synchrony] Parts of a multicore machine are synchronous. Hence,
   one characteristic of a node is an identifier for the synchrony
   cluster of a node.
@@ -182,6 +183,30 @@ These are currently not encoded in the model. The send and receive
 cost are in part node specific. The faster a core is, the faster it
 can to the multiplexing and marshalling. However, they are also link
 dependent, so we view them as link characteristics.
+
+%-------------------------------------------------
+\subsection{NUMA characteristics}
+\label{sec:model_numa_nodes}
+
+The cost of sending a message in a multicore machines does not so much
+depend on the distance on the interconnect networks as on the number
+of hops on such a path. Propagation on the wire is essentially for
+free due to short distances between cores. 
+
+On a multi-hop path, however, packages traversing the interconnect
+need to be buffered. This is expensive. Depending on the machine,
+some routing is executed on every intermediate route, which increases
+the latency further.
+
+\begin{description}
+\item[hop count] Number of hops to every other NUMA node.
+\item[hop count histogram] For every NUMA node, we want to know how
+  many other NUMA nodes can be reached with $n$ hops. This tells us
+  something about how well such nodes are connected to other NUMA
+  nodes. The intuition is that it makes sense to send a message to a
+  well connected NUMA node early in time, to ``spread'' out a message
+  as quickly as possible.
+\end{description}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Link characteristics} 
@@ -194,8 +219,10 @@ are defined by a set of attributes (here sorted by priority):
 \item[breakdown] (quantitative) of message send cost:
   dominating propagation time vs.\ dominating send and receive time on
   multicores (per-node). Our model is currently limited to only the
-  breakdown of the cost for sending messages.
-\item[latency] (quantitative) between each pair of nodes (per-edge)
+  breakdown of the cost for sending messages. Maybe we do not strictly
+  need to know about propagation time, as it is negligible independent
+  of were messages are sent. Relevant seems to be the number of hops
+  rather than the latency expressed in a concrete time.
 \item[bounded delivery]
 \item[reliability] (loss, link failure, in-order delivery, phantoms,
   corruption, duplicated messages): 
