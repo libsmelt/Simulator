@@ -14,6 +14,15 @@ import pdb
 round = 0
 event_queue = []
 model = {}
+node_state = []
+
+class NodeState(object):
+    """
+    Store node state for evaluation
+    """
+    def __init__(self):
+        self.seq_no = 0
+
 
 def evalute(tree, root):
     """
@@ -22,8 +31,11 @@ def evalute(tree, root):
     global round
     global node_queues
     global model
+    global node_state
 
     model = tree
+
+    node_state = [NodeState()]*len(model)
 
     # Construct visualization instance
     global visu
@@ -130,8 +142,15 @@ def send(src, cost, omit):
     No message will be send towards nodes given in omit
     """
     assert isinstance(omit, list)
+    assert src<len(model)
     send_time = cost
     nb = []
+    # For rings: sequence number
+    if isinstance(node_state[src], NodeState) and node_state[src].seq_no > 0:
+        print "Node %d Received message that was send before, aborting!" % src
+        return
+    node_state[src] = NodeState()
+    node_state[src].seq_no = 1
     # Create list of children first, and the cost of the message list
     for dest in model.neighbors(src):
         if not dest in omit:
@@ -144,6 +163,9 @@ def send(src, cost, omit):
     # Sort this list
     if config.SCHEDULING_SORT or config.SCHEDULING_SORT_LONGEST_PATH:
         nb.sort(key=lambda tup: tup[0], reverse=True)
+    # Sort this list
+    if config.SCHEDULING_SORT_ID:
+        nb.sort(key=lambda tup: tup[1], reverse=False) # Sort by node ID
     # Walk the list and send messages
     for (cost, dest) in nb:
             visu.send(src, dest, send_time, send_cost(src))

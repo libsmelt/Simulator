@@ -12,6 +12,7 @@ import evaluate
 import config
 import model
 import cluster
+import ring
 import helpers
 
 import pdb
@@ -111,16 +112,20 @@ def build_and_simulate():
     #     connect_numa_nodes(gr, g_numa, n)
 
 
+    root = 0
     if config.TOPO_TREE:
         final_graph = _run_mst(gr)
 
     elif config.TOPO_CLUSTER:
-        # Build a model for gruyere
-        # XXX all the above code should go there!
         m = model.Gruyere(gr)
         clustering = cluster.Cluster(m)
         final_graph = clustering.get_broadcast_tree()
-        pdb.set_trace() # XXX Evaluation does not work at this point
+
+    elif config.TOPO_RING:
+        m = model.Gruyere(gr)
+        r = ring.Ring(m)
+        final_graph = r.get_broadcast_tree()
+        root = 8
 
     # --------------------------------------------------
     # Output graphs
@@ -130,7 +135,7 @@ def build_and_simulate():
     # helpers.output_graph(final_graph, 'mst')
 
     # --------------------------------------------------
-    print "Cost for tree is: %d" % evaluate.evalute(final_graph, 0)
+    print "Cost for tree is: %d" % evaluate.evalute(final_graph, root)
 
 def _run_mst(gr):
     """

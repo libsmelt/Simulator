@@ -20,25 +20,20 @@ import evaluate
 import model
 import helpers
 import algorithms
+import overlay
 
-class Cluster:
+class Cluster(overlay.Overlay):
+    """
+    Build a cluster topology for a model
+    """
     
     def __init__(self, mod):
         """
         Initialize the clustering algorithm
         """
-        assert isinstance(mod, model.Model)
-        self.mod = mod
-        self.coordinators=[]
-        for core in range(len(mod.get_graph())):
-            new_coordinator = True
-            for c in self.coordinators:
-                if mod.on_same_numa_node(core, c):
-                    new_coordinator = False
-            if new_coordinator:
-                self.coordinators.append(core)
-        print "Coordinator nodes are: %s" % str(self.coordinators)
-
+        super(Cluster, self).__init__(mod)
+        self.coordinators = self.get_coordinators()
+        
     def get_broadcast_tree(self):
         """
         Return the broadcast tree as a graph
@@ -50,6 +45,8 @@ class Cluster:
             g_numa.add_node(c)
             for co in self.coordinators:
                 if co<c:
+                    print "Adding edge to NUMA node %d %d, with weight %d" % \
+                        (c, co, self.mod.get_graph().edge_weight((c, co)))
                     g_numa.add_edge((c, co),
                                     self.mod.get_graph().edge_weight((c, co)))
 
@@ -81,8 +78,14 @@ class Cluster:
         # but if we send a message far away, with many hops, that is kind of stupid (or is it?)
 
         g_outer = algorithms.binary_tree(g_numa)
+        
+        for c in self.coordinators:
+            numa_node = self.mod.get_numa_node(c)
+            g_outer = algorithms.merge_graphs(\
+                algorithms.simple_tree(self.mod.get_graph(), numa_node, c),\
+                g_outer)
+            print "%s" % str(numa_node)
 
-        helpers.output_graph(g_outer, 'cluster_outer_bin', 'dot')
-        pdb.set_trace()
+        helpers.output_graph(g_outer, 'cluster_outer_bin', 'neato')
 
-        return None
+        return g_outer

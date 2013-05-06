@@ -19,6 +19,16 @@ class Model:
         
     def get_graph(self):
         return self.graph
+
+    def get_numa_node(self, core1):
+        """
+        Return all cores that are on the same NUMA node then the given core
+        """
+        numa_node = []
+        for node in self.graph.nodes():
+            if self.on_same_numa_node(core1, node):
+                numa_node.append(node)
+        return numa_node
         
 # --------------------------------------------------
 class Gruyere(Model):

@@ -57,6 +57,8 @@
 
 \maketitle
 
+% keywords: modeling, simulation, overlay networks, scheduling
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Introduction}
@@ -333,8 +335,9 @@ if one node receives a message, all other nodes receive it as well,
 and 2) that all nodes see the message in the same order.
 
 First, we discuss what kind of topologies we use to communicate
-between nodes. We evaluate tree based implementations. Other
-potentially interesting topologies are rings.
+between nodes. We evaluate tree based implementations: binary trees,
+minimum spanning trees, hierarchical tress and clustering
+techniques. Other potentially interesting topologies are rings.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Tree Topology}
@@ -410,6 +413,33 @@ Figure~\ref{fig:mst_gruyere}.
 \end{figure}
 
 %-------------------------------------------------
+\subsubsection{Hierarchical}
+
+We now consider NUMA node for coming up with a broadcast tree. We
+select one coordinator node in every node and build a binary tree
+for the coordinators. We call this topology connecting nodes across
+NUMA domains the \emph{outer} network.
+
+Each coordinator is also responsible for sending a message to all
+other cores of the node. We currently do this sequentially, since the
+number of cores in a node is typically very small. Alternatively, a
+binary tree could be used as well. We call overlay networks within
+NUMA nodes \emph{inner} networks.
+
+We show an example hierarchical tree in
+Figure~\ref{fig:gruyere_hierarchy}.
+
+\begin{figure}
+\begin{tikzpicture}[>=latex,line join=bevel,scale=.5]
+  \pgfsetlinewidth{.5bp}
+\input{figs/final_gruyere_hierarchical}
+\end{tikzpicture}
+\caption{Hierarchical tree for a 8x4x1 multicore}
+\label{fig:gruyere_hierarchy}
+\end{figure}
+
+
+%-------------------------------------------------
 \subsubsection{Clustering}
 
 We discussed earlier in Section~\ref{sec:model_hierarchy} that
@@ -430,7 +460,35 @@ two separate sub-trees are processed in different areas of the
 interconnect network.
 
 Another idea is to employ clustering on NUMA domains such that every
-NUMA domain corresponds to one cluster.
+NUMA domain corresponds to one cluster. 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Ring topology}
+
+Next, we evaluate ring topologies. Rings have the advantage that the
+implicitly acknowledge messages once they arrive back to the
+sender. This is beneficial for some algorithms such as quorums, where
+nodes report back to the sender.
+
+The downside is that some state is required on every node to remember
+whether or not a message was received before. This however only works
+if forwarding along the ring is only done after all local nodes
+acknowledge a message. If messages are just forwarded as they arrive,
+message transport does never terminate.
+
+To add more parallelism, we add a second ring, which we send the
+message on in parallel. The overlay ring network is visualized in
+Figure~\ref{fig:gruyere_ring}.
+
+\begin{figure}
+\begin{tikzpicture}[>=latex,line join=bevel,scale=.5]
+  \pgfsetlinewidth{.5bp}
+\input{graphs/final_ring}
+\end{tikzpicture}
+\caption{Outer overlay as ring with sequential inner overlay for a
+  8x4x1 multicore}
+\label{fig:gruyere_ring}
+\end{figure}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Scheduling}
@@ -500,7 +558,7 @@ Algorithm~\ref{algo:scheduling_link_weight}
     tree. Red boxes represent send operations, blue boxes represent
     receive operations and arrows messages sent between cores. After
     running the MST algorithm, we optimize scheduling in every node to
-    send messages to in decreasing order of their latency.}
+    send messages in decreasing order of their latency.}
   \label{fig:mst_gruyere_operations_sorted}
 \end{figure}
 
@@ -627,13 +685,21 @@ fictional time unit at this point.
 
 \begin{table}[htb]
   \centering
-  \begin{tabular}{llll}
+  \begin{tabular}{lllll}
     \toprule
-    topology & scheduling & time & factor \\
+    topology & scheduling & time & factor & figure \\
     \midrule
-    MST & naive                     & 241 & 1.00 \\
-    MST & highest link weight first & 151 & 0.63 \\
-    MST & longest path first        & 151 & 0.63 \\
+    MST & naive                     & 241 & 1.00 & 
+        \ref{fig:mst_gruyere_operations} \\
+    MST & highest link weight first & 151 & 0.63 & 
+        \ref{fig:mst_gruyere_operations_sorted} \\
+    MST & longest path first        & 151 & 0.63 & 
+        \stefan{? AFAIK, same as
+        \ref{fig:mst_gruyere_operations_sorted} } \\
+    hierarchical & highest link weight first & 151 & 0.63 &
+        \ref{fig:visu_hierarchy} \\
+    ring & highest link weight first & 181 & 0.75 &
+        \ref{fig:visu_ring} \\
     \bottomrule
   \end{tabular}
   \caption{Simulation results for simplified machine model}
@@ -644,6 +710,37 @@ Scheduling based on the longest path does not make a difference for
 the current MST, but will be better in many cases. \stefan{We need to
   find a model where this is actually true. But we also need to
   evaluate if the increase in complexity is worth it}
+
+\begin{figure}[htb]
+  \centering
+  \begin{tikzpicture}[scale=.35,transform shape]
+    % Insert visualization
+    \input{visu_hierarchy}
+  \end{tikzpicture}
+  \caption{Visualization of hierarchical tree broadcast. A binary tree
+    spans across NUMA nodes followed by sequential send operations
+    within the NUMA node. %
+    Red boxes represent send operations, blue boxes represent receive
+    operations and arrows messages sent between cores.  }
+  \label{fig:visu_hierarchy}
+\end{figure}
+
+\begin{figure}[htb]
+  \centering
+  \begin{tikzpicture}[scale=.35,transform shape]
+    % Insert visualization
+    \input{visu_ring}
+  \end{tikzpicture}
+  \caption{Visualization of ring based broadcast. Two rings
+    spans across NUMA nodes followed by sequential send operations
+    within the NUMA node. %
+    Red boxes represent send operations, blue boxes represent receive
+    operations and arrows messages sent between
+    cores. \stefan{Scheduling is broken. If we want acks, we can only
+      forward a message along the ring when all the local nodes
+      acknowledge a message}}
+  \label{fig:visu_ring}
+\end{figure}
 
 %-------------------------------------------------
 \subsubsection{Real hardware}

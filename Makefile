@@ -3,7 +3,8 @@
 # Makefile for LaTeX docs
 #
 
-DEPS=$(wildcard plots/*/*.pdf) $(wildcard figures/*.pdf)
+DEPS=$(wildcard plots/*/*.pdf) $(wildcard figs/*.pdf)
+DOT=$(patsubst %.dot,%.tex,$(wildcard graphs/final_*.dot))
 
 PAPER=paper
 LATEXOPTS=-interaction=nonstopmode
@@ -27,6 +28,13 @@ sync: $(PAPER).pdf
 
 %.ps: %.pdf
 	pdf2ps $< $@
+
+# Translate dot files to tex files
+# Remove begin tikzpicture along with it
+%.tex: %.dot
+	dot2tex --prog=neato --figonly $< | head -n -3 | tail -n +5 > $@
+
+dot: $(DOT)
 
 clean:
 	$(RM) *.aux *.log *.bbl *.blg *~ \#*\# *.toc *.idx
