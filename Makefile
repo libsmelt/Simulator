@@ -13,7 +13,7 @@ all: pdf
 
 pdf: $(PAPER).pdf
 
-$(PAPER).pdf: $(wildcard *.tex) $(wildcard *.bib) $(DEPS)
+$(PAPER).pdf: $(wildcard *.tex) $(wildcard *.bib) $(DEPS) $(DOT)
 	pdflatex $(LATEXOPTS) $(PAPER)
 	if egrep '\\cite' $(PAPER).tex ; then bibtex $(PAPER) ; fi
 	if [ -e $(PAPER).toc ] ; then pdflatex $(LATEXOPTS) $(PAPER) ; fi
