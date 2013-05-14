@@ -762,24 +762,68 @@ the current MST, but will be better in many cases. \stefan{We need to
 %-------------------------------------------------
 \subsubsection{Real hardware}
 
-\stefan{These numbers are outdated. Keeping them for reference}
+\paragraph{Binary tree on sbrinz2}
 
-Some numbers are listed in Table~\ref{tab:bc_measurements}.
+Plot~\ref{pgfplot:201305101058} shows the time in cycles until a
+message send from core $n$ is received back via the broadcast tree
+show in Figure~\ref{fig:binary_tree_sbrinz2}. We were expecting
+increasing cost with the depth of the tree. If a message is sent from
+one of the leave nodes, it takes longer to receive this message back
+on the tree.
 
-\begin{table}[htb]
+The result is quite unexpected. We would expect nodes far down in the
+tree to experience a longer waiting time for receiving own messages
+back on the tree (due to more hops). This observation does not seem to
+be true. 
+
+Lukas Humbel, who was also working on sbrinz1 was observing that the
+Barrelfish core IDs might not properly correspond to physical core
+IDs. This could explain the numbers we observe in our measurement.
+
+\begin{figure}[htb]
   \centering
-  \begin{tabular}{lrrrr}
-    \toprule
-    broadcast algorithm & \multicolumn{2}{c}{nos5} & \multicolumn{2}{c}{gruyere} \\
-      & cycles & error & cycles & error \\
-    \midrule
-    sequential &  4096.1 &  105.2 & 136751.9 &   3061.5 \\
-    batch      &  2408.0 &  181.9 &  57360.8 &   5271.5 \\
-    \bottomrule
-  \end{tabular}
-  \caption{Broadcast measurements}
-  \label{tab:bc_measurements}
-\end{table}
+  \includegraphics[width=\linewidth]{binary_tree_sbrinz2}
+  \caption{Binary tree for sbrinz2}
+  \label{fig:binary_tree_sbrinz2}
+\end{figure}
+
+\begin{figure}
+  \caption{Cost for receiving a message back on the tree. This is the
+    time for which the send call needs to be blocked to retain atomic
+    broadcast properties.}
+  \label{pgfplot:201305101058}
+  \begin{tikzpicture}
+    \begin{axis}[%
+        xlabel=sender core ID,%
+        ylabel={Cost [cycles]}%
+        ]
+    \addplot[%
+        color=red,%
+        mark=x,%  
+        error bars/y dir=both,%
+        error bars/y explicit%
+        ] coordinates {
+      (1,276.1) +- (291.3,291.3)
+      (2,876.1) +- (56.6,56.6)
+      (3,863.0) +- (108.3,108.3)
+      (4,899.7) +- (102.3,102.3)
+      (5,893.5) +- (44.5,44.5)
+      (6,880.5) +- (39.4,39.4)
+      (7,520.9) +- (41.7,41.7)
+      (8,171.9) +- (91.5,91.5)
+      (9,155.7) +- (51.4,51.4)
+      (10,174.6) +- (99.9,99.9)
+      (11,175.1) +- (99.3,99.3)
+      (12,154.5) +- (50.5,50.5)
+      (13,176.8) +- (109.7,109.7)
+      (14,173.1) +- (99.4,99.4)
+      (15,150.4) +- (43.3,43.3)
+    };
+    \end{axis}
+  \end{tikzpicture}
+\end{figure}
+
+\paragraph{Older numbers}
 
 Plot~\ref{pgfplot:201303141819} shows the cost of flooding a sub-tree
 (with the 50\% worst measurements dropped). The group communication is
