@@ -6,7 +6,7 @@ all: graph visu
 graph: visu.tex $(DEP_PYTHON)
 
 visu.tex: $(DEP_PYTHON)
-	./graph_example.py
+	./simulator.py
 
 visu: template.pdf $(DEP_PYTHON) $(DEP_LATEX)
 
