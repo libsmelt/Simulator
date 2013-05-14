@@ -12,38 +12,47 @@ import evaluate
 import config
 import model
 import gruyere
+import nos6
 import cluster
 import ring
 import helpers
 
 import pdb
+import argparse
 
-# --------------------------------------------------
-
-CORES_PER_NODE = 4
-NUM_NUMA_NODES = 8
-NUM_CORES = (CORES_PER_NODE*NUM_NUMA_NODES)
-HOPCOST = 10
-NUMACOST = 1
+def arg_machine(string):
+    if string == "gruyere":
+        return gruyere.Gruyere()
+    elif string == "nos":
+        return nos6.Nos()
+    else:
+        return None
 
 # --------------------------------------------------
 def build_and_simulate():
     """
     Build a tree model and simulate sending a message along it
     """
+    parser = argparse.ArgumentParser(
+        description='Simulator for multicore machines')
+    parser.add_argument('machine', choices=['nos', 'gruyere'],
+                        help="Machine to simulate")
+    parser.add_argument('overlay', choices=["ring", "cluster", "tree"],
+                        help="Overlay to use for atomic broadcast")
+    args = parser.parse_args()
 
-    m = gruyere.Gruyere()
+    m = arg_machine(args.machine)
     gr = m.get_graph()
-
+    
     root = 0
-    if config.TOPO_TREE:
-        final_graph = _run_mst(gr)
+    if args.overlay == "tree":
+        final_graph = _run_mst(gr, m)
 
-    elif config.TOPO_CLUSTER:
+    elif args.overlay == "cluster":
         clustering = cluster.Cluster(m)
         final_graph = clustering.get_broadcast_tree()
 
-    elif config.TOPO_RING:
+    elif args.overlay == "ring":
         r = ring.Ring(m)
         final_graph = r.get_broadcast_tree()
         root = 8
@@ -58,12 +67,12 @@ def build_and_simulate():
     # --------------------------------------------------
     print "Cost for tree is: %d" % evaluate.evalute(final_graph, root)
 
-def _run_mst(gr):
+def _run_mst(gr, model):
     """
     Run MST algorithm
     """
     mst = graph()
-    mst.add_nodes(range(NUM_CORES))
+    mst.add_nodes(range(model.get_num_cores()))
 
     mst_edges = minimal_spanning_tree(gr)
     for i in range(len(mst_edges)):

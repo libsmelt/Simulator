@@ -17,10 +17,10 @@ class Model(object):
     # --------------------------------------------------
     # Characteritics of model
     def get_num_numa_nodes(self):
-        return -1
+        return None
 
     def get_num_cores(self):
-        return -1
+        return None
 
     def get_cores_per_node(self):
         return self.get_num_cores() / self.get_num_numa_nodes()
@@ -30,27 +30,40 @@ class Model(object):
 
     def get_cost_across_numa(self):
         return 10
-        
-    def on_same_numa_node(self, core1, core2):
+    
+    def get_numa_information(self):
         """
-        Base model does not have any NUMA nodes
+        Return information on NUMA nodes. This is a a list of
+        list. Every element of the outer list represents a NUMA node
+        and the inner list the cores in that NUMA node.
         """
-        return True
-    # --------------------------------------------------
+        return None
 
-    def _get_graph(self):
+    # --------------------------------------------------
+    # Methods used for building overlay + scheduling
+    def get_graph(self):
         return self.graph
 
-    def _get_numa_node(self, core1):
+    def on_same_numa_node(self, core1, core2):
+        """
+        Return whether two nodes are in the same NUMA region
+        """
+        for node in self.get_numa_information():
+            if core1 in node:
+                return core2 in node
+        return None
+
+    def get_numa_node(self, core1):
         """
         Return all cores that are on the same NUMA node then the given core
         """
         numa_node = []
         for node in self.graph.nodes():
-            if self._on_same_numa_node(core1, node):
+            if self.on_same_numa_node(core1, node):
                 numa_node.append(node)
         return numa_node
         
+    # --------------------------------------------------
 
     def _add_numa(self, graph, node1, node2, cost):
         """
