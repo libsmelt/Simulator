@@ -19,6 +19,9 @@ class Gruyere(numa_model.NUMAModel):
 
     # --------------------------------------------------
     # Characteritics of model
+    def get_name(self):
+        return "gruyere"
+
     def get_num_numa_nodes(self):
         return 8
 

@@ -16,6 +16,9 @@ class Model(object):
 
     # --------------------------------------------------
     # Characteritics of model
+    def get_name(self):
+        return None
+
     def get_num_numa_nodes(self):
         return None
 

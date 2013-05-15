@@ -11,11 +11,15 @@ from pygraph.algorithms.minmax import minimal_spanning_tree
 import evaluate
 import config
 import model
+import ring
+import helpers
+
 import gruyere
 import nos6
 import cluster
-import ring
-import helpers
+
+import scheduling
+import sort_longest
 
 import pdb
 import argparse
@@ -59,17 +63,22 @@ def build_and_simulate():
 
     # --------------------------------------------------
     # Output graphs
-
-    # helpers.output_graph(gr, 'gruyere')
-    # helpers.output_graph(g_numa, 'numa')
-    # helpers.output_graph(final_graph, 'mst')
+    helpers.output_graph(gr, '%s_full_mesh' % m.get_name())
+    helpers.output_graph(final_graph, '%s_%s' % (m.get_name(), args.overlay))
 
     # --------------------------------------------------
-    print "Cost for tree is: %d" % evaluate.evalute(final_graph, root)
+    sched = sort_longest.SortLongest(final_graph)
+    print "Cost for tree is: %d" % evaluate.evalute(final_graph, root, sched)
+
+    # --------------------------------------------------
+    # Output c configuration for quorum program
+    helpers.output_quorum_configuration(m, final_graph, root, sched)
+
 
 def _run_mst(gr, model):
     """
     Run MST algorithm
+    XXX Move somewhere else
     """
     mst = graph()
     mst.add_nodes(range(model.get_num_cores()))
