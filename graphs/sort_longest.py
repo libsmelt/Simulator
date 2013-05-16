@@ -3,6 +3,7 @@
 import scheduling
 
 import pdb
+import logging
 
 from pygraph.algorithms.minmax import shortest_path
 from pygraph.classes.graph import graph
@@ -43,7 +44,8 @@ class SortLongest(scheduling.Scheduling):
                 indent = ''
                 for i in range(depth):
                     indent += ' '
-                print "%sPath length from %d via %d is %d" % (indent, node, n, ltmp)
+                logging.info("%sPath length from %d via %d is %d" % 
+                             (indent, node, n, ltmp))
                 l = max(l, ltmp)
         return l
 
@@ -54,10 +56,11 @@ class SortLongest(scheduling.Scheduling):
         """
         paths = []
 
+        logging.info("__get_longest_path------------------------------")
+
         assert not omit == None
         omit.append(src)
 
-        print "=================================================="
         for n in self.graph.neighbors(src):
             if not n in omit:
                 m = self.graph.edge_weight((src, n)) + \

@@ -1,6 +1,8 @@
 # Copyright (c) 2007, 2008, 2009, 2010, 2011, 2012, 2013 ETH Zurich.
 
 import pdb
+import logging
+
 from pygraph.algorithms.minmax import shortest_path
 from pygraph.classes.graph import graph
 from pygraph.classes.digraph import digraph
@@ -79,8 +81,8 @@ class Model(object):
                 src = (n1+c1)
                 dest = (n2+c2)
                 if src < dest:
-                    print "Adding edge %d -> %d with weight %d" % \
-                        (src, dest, cost)
+                    logging.info("Adding edge %d -> %d with weight %d" % \
+                                     (src, dest, cost))
                     graph.add_edge((src, dest), cost)
 
     def _connect_numa_nodes(self, g, g_numa, src, ):

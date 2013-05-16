@@ -6,6 +6,7 @@ sys.path.append('..')
 sys.path.append('/usr/lib/graphviz/python/')
 sys.path.append('/usr/lib64/graphviz/python/')
 import gv
+import logging
 
 # Import pygraph
 from pygraph.classes.graph import graph
@@ -45,8 +46,9 @@ class Cluster(overlay.Overlay):
             g_numa.add_node(c)
             for co in self.coordinators:
                 if co<c:
-                    print "Adding edge to NUMA node %d %d, with weight %d" % \
-                        (c, co, self.mod.get_graph().edge_weight((c, co)))
+                    logging.info("Adding edge to NUMA node %d %d, " \
+                                     "with weight %d" % \
+                                     (c, co, self.mod.get_graph().edge_weight((c, co))))
                     g_numa.add_edge((c, co),
                                     self.mod.get_graph().edge_weight((c, co)))
 

@@ -23,6 +23,7 @@ import sort_longest
 
 import pdb
 import argparse
+import logging
 
 def arg_machine(string):
     if string == "gruyere":
@@ -68,11 +69,14 @@ def build_and_simulate():
 
     # --------------------------------------------------
     sched = sort_longest.SortLongest(final_graph)
-    print "Cost for tree is: %d" % evaluate.evalute(final_graph, root, sched)
 
     # --------------------------------------------------
     # Output c configuration for quorum program
     helpers.output_quorum_configuration(m, final_graph, root, sched)
+
+    # --------------------------------------------------
+    # Evaluate
+    print "Cost for tree is: %d" % evaluate.evalute(final_graph, root, sched)
 
 
 def _run_mst(gr, model):

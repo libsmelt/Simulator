@@ -3,6 +3,7 @@
 from pygraph.classes.graph import graph
 from pygraph.classes.digraph import digraph
 import Queue
+import logging
 
 def binary_tree(m, nodes=[], out_degree=2):
     """
@@ -90,12 +91,12 @@ def merge_graphs(g1, g2):
         try: 
             g.add_edge(e, g1.edge_weight(e))
         except:
-            print "merge_graphs: adding edge %d %d" % (e[0], e[1])
+            logging.info("merge_graphs: adding edge %d %d" % (e[0], e[1]))
     for e in g2.edges():
         try: 
             g.add_edge(e, g2.edge_weight(e))
         except:
-            print "merge_graphs: adding edge %d %d" % (e[0], e[1])
+            logging.info("merge_graphs: adding edge %d %d" % (e[0], e[1]))
     return g
 
     

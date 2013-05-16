@@ -22,10 +22,10 @@ class Overlay(object):
         Selects one coordinator per node for given model. 
         """
         coordinators=[]
-        for core in range(len(mod.get_graph())):
+        for core in range(len(self.mod.get_graph())):
             new_coordinator = True
             for c in coordinators:
-                if mod.on_same_numa_node(core, c):
+                if self.mod.on_same_numa_node(core, c):
                     new_coordinator = False
             if new_coordinator:
                 coordinators.append(core)
