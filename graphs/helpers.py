@@ -11,6 +11,7 @@ import Queue
 
 from pygraph.readwrite.dot import write
 
+
 def output_graph(graph, name, algorithm='neato'):
     """
     Output the graph as png image and also as text file
@@ -79,8 +80,9 @@ def fill_matrix(s, children, parent, mat, sched):
             mat[s][r] = i
             i += 1
     if not parent == None:
-        mat[s][parent] = -1
-            
+        assert len(children)<90
+        mat[s][parent] = 99
+
 
 def __matrix_to_c(mat):
     """
