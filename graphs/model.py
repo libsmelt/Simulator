@@ -67,6 +67,12 @@ class Model(object):
             if self.on_same_numa_node(core1, node):
                 numa_node.append(node)
         return numa_node
+
+    def get_numa_id(self, core1):
+        """
+        Determine NUMA node for the given core
+        """
+        return core1 / self.get_cores_per_node()
         
     # --------------------------------------------------
 

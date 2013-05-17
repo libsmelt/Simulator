@@ -76,7 +76,8 @@ def build_and_simulate():
 
     # --------------------------------------------------
     # Evaluate
-    print "Cost for tree is: %d" % evaluate.evalute(final_graph, root, sched)
+    print "Cost for tree is: %d" % \
+        evaluate.evalute(final_graph, root, m, sched)
 
 
 def _run_mst(gr, model):
