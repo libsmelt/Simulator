@@ -68,6 +68,7 @@ def build_and_simulate():
     helpers.output_graph(final_graph, '%s_%s' % (m.get_name(), args.overlay))
 
     # --------------------------------------------------
+    # XXX Make this an argument
     sched = sort_longest.SortLongest(final_graph)
 
     # --------------------------------------------------
