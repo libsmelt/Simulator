@@ -16,7 +16,7 @@ class Output():
             # Background
             cidx = int(self.model.get_numa_id(i)) % int(len(self.color_map))
             color = self.color_map[cidx]
-            self.f.write("\\draw[fill,color=%s!10] (0,%fmm) rectangle (30cm,%fmm);\n" % \
+            self.f.write("\\draw[fill,color=%s!10] (-3cm,%fmm) rectangle (30cm,%fmm);\n" % \
                              ( \
                     color, 
                     self._y_coord_for_core(i) + (self.height_per_core/2.), \
