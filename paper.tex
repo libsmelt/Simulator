@@ -693,6 +693,39 @@ bind, no source identifier is send along\footnote{Check if this is
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Atomic broadcast}
 
+%--------------------------------------------------
+\subsubsection{Comparison to shared-memory implementations}
+
+A shared memory equivalent implementation for atomic broadcasts could
+be:
+\begin{itemize}
+\item Messages should (but don't have to be) cache-line size. This
+  prevents false-sharing. Larger messages can be fragmented. 
+\item A FIFO queue that guarantees the order of messages (and therefore
+  a lock)
+\item A counter that is incremented whenever a process reads the
+  message from the FIFO queue. To guarantee atomic broadcast
+  attributes, elements from the queue must not be removed before all
+  processes have read it.
+\end{itemize}
+
+This sounds pretty expensive. Need to evaluate this. The question is
+whether any sane person would use such a queue for high level
+applications. If so, which ones?
+
+There are some libraries providing synchronization primitives such as
+barriers, critical sections, atomic updates and locks.
+
+\begin{itemize}
+\item Is there an OpenMP equivalent? \emph{OpenMP} has a shared-memory
+  based programming model that is targeted to the HPC
+  world. \stefan{So what exactly is the relationship between OpenMP
+    and MPI? MPI seems to be more low-level. Does OpenMP implement
+    MPI?}
+\item \emph{Pthreads} also has a shared-memory model for low-end
+  systems~\cite{OpenMP_paper}
+\end{itemize}
+
 %-------------------------------------------------
 \subsubsection{Simulation}
 
