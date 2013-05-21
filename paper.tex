@@ -63,12 +63,10 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Introduction}
 
-Atomic broadcast is a building-block for many higher-level distributed
-algorithm such as state-machine replication. Such distributed
-algorithms are increasingly used to overcome scalability challenges on
-multicore machines. Examples are databases~\cite{Salomie2011,
-  Wiesmann2000} and operating systems~\cite{fos:osr09, tornado:osdi99,
-  barrelfish:sosp09}.
+Distributed algorithms are increasingly used to overcome scalability
+challenges on multicore machines. Examples are
+databases~\cite{Salomie2011, Wiesmann2000} and operating
+systems~\cite{fos:osr09, tornado:osdi99, barrelfish:sosp09}.
 
 % What do you want to enable?
 We want to investigate how to achieve better performance of atomic
@@ -86,13 +84,13 @@ to understand, but important to consider for application performance.
 
 % New ideas
 Instead of manually tuning algorithms to characteristics of individual
-machines, we automatically configure our atomic broadcast
-implementation based on a machine model. We represent this model as an
+machines, we automatically configure distributed algorithm
+implementations based on a machine model. We represent this model as an
 annotated graph. One question we are looking at is which information
 should actually be part of this machine model.
 
 % How will you go about it?
-We will base our atomic broadcast on \emph{overlay networks}, which we
+We base the configuration of algorithms on \emph{overlay networks}, which we
 automatically configure. We execute our configuration stage on a model
 representing the concrete machine the algorithm is intended to run
 on. %
@@ -109,8 +107,8 @@ We auto-configure a wide range of different multicore machines and
 compare the performance of our implementation with hand-tuned
 implementations on all of these machines.
 % Hypothesis
-Our hypothesis is that automatic tuning of atomic broadcast (and other
-distributed algorithms) to machine characteristics is worth
+Our hypothesis is that automatic tuning of distributed algorithms 
+to machine characteristics is worth
 doing. Obviously, we cannot achieve performance of hand-tuned
 implementations, but we hope to get close enough to argue that loosing
 a bit of performance to avoid tedious manual reconfiguration is worth
@@ -131,6 +129,21 @@ We break the problem down into three steps:
   order to send messages. We investigate this scheduling problem in
   Section~\ref{sec:scheduling}.
 \end{inparaenum}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Distributed algorithms}
+\label{sec:distalgo}
+
+In order to evaluate our ideas, we pick two concrete distributed
+algorithms and implement them for a multicore machine:
+
+\paragraph{Atomic broadcast} \stefan{Explain the guarantees provided
+  by atomic broadcasts}. Atomic broadcasts are frequently used to
+implement higher-level distributed algorithms on top of it: examples
+are replication such as state machine replication. 
+
+\paragraph{Barriers} \stefan{Explain}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -195,18 +208,26 @@ with it.
 
 \begin{description}
 \item[NUMA affinity] A list of cores on the same NUMA node.
-\item[synchrony] Parts of a multicore machine are synchronous, i.e.\
-  cores execute in lock-steps, where every node can send a message to
-  every other node in one such step. This implies that there is a
-  global time and message delivery time is bound. Both can be assumed
-  on today's multicores. The global time comes from the fact that
-  cores are driven by the same quartz or, if not, they are
-  synchronized such that the jitter is less than a cycle, which leads
-  to cores seeing the same time. %
-  For these reasons, synchrony is not part of our current machine
-  model. Within today's multicores, synchrony can be
-  assumed. \stefan{Can it?}
-\item[failure] Can nodes fail? If so, how? (Byzantine, crash). We do
+\item[Synchrony] Synchronous systems are characterized by two
+  attributes: First, cores execute their programs in lock-steps and
+  second that message delivery time is bound.
+  % 
+  The existence of lock-steps implies the existence of a global time.
+  This is often true on multicore machines since cores are driven by
+  the same quartz or, if not, they are synchronized such that the
+  jitter is less than a cycle, which leads to cores seeing the same
+  time. %
+  Bounded delivery time is harder to reason about. CPUs on multicores
+  are typically time-multiplexed. On such systems, several programs
+  execute on the same processing unit one at a time. A scheduler
+  decides the order in which to run these applications. In very
+  contented systems, timely receipt of messages cannot be guaranteed
+  globally for all applications since many of them compete for a CPU
+  core. Even if we could guarantee timely delivery of messages by use
+  of a deterministic scheduler, worst-case propagation times would
+  still be orders of magnitude higher than best-case propagation
+  (which is essentially zero). \stefan{gang-scheduling?}
+\item[Failure] Can nodes fail? If so, how? (Byzantine, crash). We do
   not consider failures at the moment, but believe that we will
   inevitably have to do so for future multicores, where it is unlikely
   that hardware can hide failures from software.
@@ -693,6 +714,8 @@ bind, no source identifier is send along\footnote{Check if this is
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Atomic broadcast}
 
+
+
 %--------------------------------------------------
 \subsubsection{Comparison to shared-memory implementations}
 
@@ -960,11 +983,22 @@ implementations.
 \section{Future work}
 
 \begin{itemize}
+\item Think about synchronous implementations and see if they are
+  applicable for some of our machines.
 \item Arguing that group communication/atomic broadcast is important
   and showing that we can do it well might be enough (appeal to atomic
   broadcasts as the foundation for other distributed algorithms, and
   the MPI primitives, that can/need to be mapped to
   group-communication (have a list of them)
+  \begin{itemize}
+  \item MPI_Bcast: send a broadcast message to every node (including
+    the sending one)
+  \item MPI_Scatter
+  \item MPI_Gather
+  \item MPI_Reduce
+  \end{itemize}
+  These primitives are synchronous. They return only once every other
+  node received the message. 
 \item Need higher-level applications, such as:
   \begin{itemize}
   \item capability system? \stefan{Ask Simon how expensive revocation
