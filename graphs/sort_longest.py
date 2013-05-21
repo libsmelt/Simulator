@@ -17,6 +17,13 @@ class SortLongest(scheduling.Scheduling):
     Send messages in the order encoded in the model.
     """
 
+    def __search(self, n1, n2):
+        res = cmp(n1[0], n2[0])
+        if res == 0:
+            return -1*cmp(n1[1], n2[1])
+        else:
+            return -1*res
+
     def find_schedule(self, sending_node):
         """
         Find a schedule for the given node.
@@ -25,7 +32,7 @@ class SortLongest(scheduling.Scheduling):
         @return List of neighbors in FIFO order.
         """
         nb=self.__get_longest_path(sending_node, [])
-        nb.sort(key=lambda tup: tup[0], reverse=True)
+        nb.sort(self.__search)
         return nb
 
     def __get_longest_path_for_node(self, node, omit, depth):

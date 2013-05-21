@@ -24,9 +24,12 @@ class NodeState(object):
         self.seq_no = 0
 
 
-def evalute(tree, root, sched):
+def evalute(tree, root, m, sched):
     """
     Evaluate the latency of sending an individual message along the tree
+    @param tree: Overlay as determined by simulator
+    @param m: Model representing machine
+    @param sched: Scheduler for sending messages
     """
     global round
     global node_queues
@@ -41,7 +44,7 @@ def evalute(tree, root, sched):
 
     # Construct visualization instance
     global visu
-    visu = draw.Output("visu.tex", len(model))
+    visu = draw.Output("visu.tex", m)
     
     send(root, round, [])
 

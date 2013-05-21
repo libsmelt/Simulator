@@ -54,6 +54,7 @@ def build_and_simulate():
         final_graph = _run_mst(gr, m)
 
     elif args.overlay == "cluster":
+        # Rename to hierarchical 
         clustering = cluster.Cluster(m)
         final_graph = clustering.get_broadcast_tree()
 
@@ -68,6 +69,7 @@ def build_and_simulate():
     helpers.output_graph(final_graph, '%s_%s' % (m.get_name(), args.overlay))
 
     # --------------------------------------------------
+    # XXX Make this an argument
     sched = sort_longest.SortLongest(final_graph)
 
     # --------------------------------------------------
@@ -76,7 +78,8 @@ def build_and_simulate():
 
     # --------------------------------------------------
     # Evaluate
-    print "Cost for tree is: %d" % evaluate.evalute(final_graph, root, sched)
+    print "Cost for tree is: %d" % \
+        evaluate.evalute(final_graph, root, m, sched)
 
 
 def _run_mst(gr, model):
