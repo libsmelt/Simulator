@@ -54,6 +54,7 @@ def build_and_simulate():
         final_graph = _run_mst(gr, m)
 
     elif args.overlay == "cluster":
+        # Rename to hierarchical 
         clustering = cluster.Cluster(m)
         final_graph = clustering.get_broadcast_tree()
 
