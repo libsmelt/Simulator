@@ -11,12 +11,16 @@ from pygraph.algorithms.minmax import minimal_spanning_tree
 import evaluate
 import config
 import model
-import ring
 import helpers
 
+# Machines
 import gruyere
 import nos6
+
+# Overlays
 import cluster
+import ring
+import binarytree
 
 import scheduling
 import sort_longest
@@ -24,6 +28,8 @@ import sort_longest
 import pdb
 import argparse
 import logging
+import sys
+import os
 
 def arg_machine(string):
     if string == "gruyere":
@@ -40,9 +46,16 @@ def build_and_simulate():
     """
     parser = argparse.ArgumentParser(
         description='Simulator for multicore machines')
+    parser.add_argument('--evaluate-model', dest="action", action="store_const",
+                        const="evaluate", default="simulate", 
+                        help="Dump machine model instead of simulating")
     parser.add_argument('machine', choices=['nos', 'gruyere'],
                         help="Machine to simulate")
-    parser.add_argument('overlay', choices=["ring", "cluster", "tree"],
+    parser.add_argument('overlay', choices=[ "ring", 
+                                             "cluster", 
+                                             "mst", 
+                                             "bintree" 
+                                             ],
                         help="Overlay to use for atomic broadcast")
     args = parser.parse_args()
 
@@ -50,7 +63,7 @@ def build_and_simulate():
     gr = m.get_graph()
     
     root = 0
-    if args.overlay == "tree":
+    if args.overlay == "mst":
         final_graph = _run_mst(gr, m)
 
     elif args.overlay == "cluster":
@@ -62,6 +75,20 @@ def build_and_simulate():
         r = ring.Ring(m)
         final_graph = r.get_broadcast_tree()
         root = 8
+
+    elif args.overlay == "bintree":
+        r = binarytree.BinaryTree(m)
+        final_graph = r.get_broadcast_tree()
+        root = 0
+
+    if args.action == "simulate":
+        print "Starting simulation"
+    elif args.action == "evaluate":
+        print "Evaluating model"
+        helpers.parse_measurement(range(m.get_num_cores()), args.machine, args.overlay, 
+                                  ("%s/measurements/atomic_broadcast/%s_%s" % 
+                                   (os.getenv("HOME"), args.machine, args.overlay)))
+        return 0
 
     # --------------------------------------------------
     # Output graphs
