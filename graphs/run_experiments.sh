@@ -41,6 +41,11 @@ do
 
 	# Compile the program
 	ssh emmentaler2.ethz.ch emntlr_make_generic /local/skaestle/bf.quorum
+	if [ $? -ne 0 ]
+	then
+	    echo "Compilation failed, exiting"
+	    exit 1
+	fi
 
 	# Run the machine
 	console $m >$TMP & # Start console process .. 
