@@ -2,6 +2,7 @@
 
 import pdb
 import logging
+import evaluate
 
 from pygraph.algorithms.minmax import shortest_path
 from pygraph.classes.graph import graph
@@ -9,6 +10,8 @@ from pygraph.classes.digraph import digraph
 
 # --------------------------------------------------
 class Model(object):
+
+    evaluation = None
 
     def __init__(self, graph):
         """
@@ -43,6 +46,17 @@ class Model(object):
         and the inner list the cores in that NUMA node.
         """
         return None
+
+    # --------------------------------------------------
+    # Results from evaluation
+    def set_evaluation_result(self, ev):
+        """
+        Save the evaluation result as part of the model. The estimated
+        cost should be part of the model
+
+        @param t Result as in evaluate.Result
+        """
+        self.evaluation = ev
 
     # --------------------------------------------------
     # Methods used for building overlay + scheduling

@@ -21,6 +21,7 @@ import nos6
 import cluster
 import ring
 import binarytree
+import sequential
 
 import scheduling
 import sort_longest
@@ -54,7 +55,8 @@ def build_and_simulate():
     parser.add_argument('overlay', choices=[ "ring", 
                                              "cluster", 
                                              "mst", 
-                                             "bintree" 
+                                             "bintree",
+                                             "sequential"
                                              ],
                         help="Overlay to use for atomic broadcast")
     args = parser.parse_args()
@@ -81,6 +83,11 @@ def build_and_simulate():
         final_graph = r.get_broadcast_tree()
         root = 0
 
+    elif args.overlay == "sequential":
+        r = sequential.Sequential(m)
+        final_graph = r.get_broadcast_tree()
+        root = 0
+
     if args.action == "simulate":
         print "Starting simulation"
     elif args.action == "evaluate":
@@ -100,13 +107,13 @@ def build_and_simulate():
     sched = sort_longest.SortLongest(final_graph)
 
     # --------------------------------------------------
-    # Output c configuration for quorum program
-    helpers.output_quorum_configuration(m, final_graph, root, sched)
+    # Evaluate
+    ev = evaluate.evalute(final_graph, root, m, sched) 
+    print "Cost for tree is: %d, last node is %d" % (ev.time, ev.last_node)
 
     # --------------------------------------------------
-    # Evaluate
-    print "Cost for tree is: %d" % \
-        evaluate.evalute(final_graph, root, m, sched)
+    # Output c configuration for quorum program
+    helpers.output_quorum_configuration(m, final_graph, root, sched)
 
 
 def _run_mst(gr, model):

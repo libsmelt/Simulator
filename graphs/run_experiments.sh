@@ -4,12 +4,13 @@ MODEL=model.h
 QDIR=$HOME/bf/quorum/usr/quorum/
 TMP=`mktemp`
 RESULTDIR=~/measurements/atomic_broadcast/
+PATTERN="Quorum.*everything done.*exiting"
 
 # check the output
 # --------------------------------------------------
 function wait_result() {
 
-    while [[ ! grep "workload_thread terminating" $TMP x]]
+    while ! grep -q "$PATTERN" $TMP
     do
 	sleep 2
     done
@@ -19,7 +20,7 @@ function wait_result() {
 # --------------------------------------------------
 for m in gruyere
 do
-    for t in cluster
+    for t in sequential
     do
 	# Cleanup 
 	rm -f $MODEL
@@ -32,7 +33,7 @@ do
 	if [[ ! -e $MODEL ]]
 	then
 	    echo "The simulator failed to find the model"
-	    return 1
+	    exit 1
 	fi
 
 	# Copy the model
@@ -42,13 +43,19 @@ do
 	ssh emmentaler2.ethz.ch emntlr_make_generic /local/skaestle/bf.quorum
 
 	# Run the machine
-	console $m >$TMP & ;; PID=$! # Start console process and get PID
-	rackboot.sh -c $m # Reboot the machine
-	wait_result() # Wait for result
+	console $m >$TMP & # Start console process .. 
+	PID=$! # .. and get PID
+	rackboot.sh $m # Reboot the machine
+	wait_result # Wait for result
+	kill $PID # Kill console process
+
+	echo "Benchmark terminating"
 
 	# Copy result
-	cp -b $TMP $RESULTDIR/${m}_${t}-`date +%Y%m%d%H%I%S`
+	cp -b $TMP $RESULTDIR/${m}_${t}
+	
+	./simulator.py --evaluate $m $t
     done
 done
 
-return 0
+exit 0

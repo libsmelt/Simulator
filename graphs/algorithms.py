@@ -46,6 +46,13 @@ def binary_tree(m, nodes=[], out_degree=2):
 
 def simple_tree(m, nodes, coordinator):
     """
+    @deprecated Use sequential instead
+    """
+    return sequential(m, nodes, coordinator)
+
+
+def sequential(m, nodes, coordinator):
+    """
     Construct a simple two-level tree. The coordinator is the root, and all 
     the other nodes are its children
 
@@ -71,6 +78,7 @@ def simple_tree(m, nodes, coordinator):
             g.add_edge((n, coordinator), \
                            m.edge_weight((n, coordinator)))
     return g
+
 
 def merge_graphs(g1, g2):
     """
@@ -98,9 +106,3 @@ def merge_graphs(g1, g2):
         except:
             logging.info("merge_graphs: adding edge %d %d" % (e[0], e[1]))
     return g
-
-    
-
-            
-        
-    

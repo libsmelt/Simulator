@@ -15,6 +15,7 @@ round = 0
 event_queue = []
 model = {}
 node_state = []
+last_node = -1
 
 class NodeState(object):
     """
@@ -22,6 +23,14 @@ class NodeState(object):
     """
     def __init__(self):
         self.seq_no = 0
+
+class Result():
+    """
+    Store result of evaluation
+    """
+    def __init__(self, time, last_node):
+        self.time = time
+        self.last_node = last_node
 
 
 def evalute(tree, root, m, sched):
@@ -36,6 +45,7 @@ def evalute(tree, root, m, sched):
     global model
     global node_state
     global schedule
+    global last_node
 
     model = tree
     schedule = sched
@@ -53,7 +63,9 @@ def evalute(tree, root, m, sched):
 
     # XXX dirty hack: receive of last node is missing
     # as our nodes are homogeneous, we just add the receive time of the root
-    return round + receive_cost(root)
+    r = Result((round + receive_cost(root)), last_node)
+    m.set_evaluation_result(r)
+    return r
 
 def consume_event():
     """
@@ -86,6 +98,8 @@ def receive(src, dest):
     """
     print "{%d}: receiving message from {%d} in round %d" \
         % (dest, src, round)
+    global last_node
+    last_node = dest
     visu.receive(dest, src, round, receive_cost(dest))
     send(dest, round+receive_cost(dest), [src])
 
