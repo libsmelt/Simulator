@@ -27,7 +27,7 @@ def output_graph(graph, name, algorithm='neato'):
     gv.render(gvv, 'png', ('%s.png' % name))
 
 
-def output_quorum_configuration(model, graph, root, sched):
+def output_quorum_configuration(model, graph, root, sched, topo):
     """
     Output a C array representing overlay and scheduling
     """
@@ -44,7 +44,7 @@ def output_quorum_configuration(model, graph, root, sched):
 
     # Generate c code
     stream = open("model.h", "w")
-    __c_header(stream, model.evaluation.last_node)
+    __c_header(stream, model.evaluation.last_node, type(model), type(topo))
     __matrix_to_c(stream, mat)
     __c_footer(stream)
 
@@ -111,10 +111,12 @@ def __matrix_to_c(stream, mat):
     stream.write("};\n\n")
 
 
-def __c_header(stream, last_node):
-    stream.write("#ifndef MULTICORE_MODEL\n")
-    stream.write("#define MULTICORE_MODEL 1\n\n")
-    stream.write("#define LAST_NODE %d\n\n" % last_node)
+def __c_header(stream, last_node, machine, topology):
+    stream.write('#ifndef MULTICORE_MODEL\n')
+    stream.write('#define MULTICORE_MODEL 1\n\n')
+    stream.write('#define MACHINE "%s"\n' % machine)
+    stream.write('#define TOPOLOGY "%s"\n' % topology)
+    stream.write('#define LAST_NODE %d\n\n' % last_node)
 
 
 def __c_footer(stream):

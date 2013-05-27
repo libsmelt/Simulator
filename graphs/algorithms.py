@@ -44,6 +44,7 @@ def binary_tree(m, nodes=[], out_degree=2):
 
     return g
 
+
 def simple_tree(m, nodes, coordinator):
     """
     @deprecated Use sequential instead
@@ -80,6 +81,34 @@ def sequential(m, nodes, coordinator):
     return g
 
 
+def invert_weights(g):
+    """
+    Invert the weights of the given graph.
+
+    The most expensive links will then be the cheapest and vice versa.
+    """
+    
+    # Determine the most expensive edge
+    w = 0
+    for (s,d) in g.edges():
+        w = max(w, g.edge_weight((s,d)))
+    print 'Maximum edge weight is %d' % w
+    w += 1 # Make sure the most expensive edge will have a cost of 1 afterwards
+    g_inv = graph()
+    for n in g.nodes():
+        g_inv.add_node(n)
+    for (s,d) in g.edges():
+        assert g.edge_weight((s,d))<w
+        w_inv = w-g.edge_weight((s,d))
+        assert w_inv>0
+        try:
+            g_inv.add_edge((s,d), w_inv)
+        except:
+            assert g_inv.edge_weight((s,d)) == w_inv
+            print "Edge %d %d already in graph, ignoring .. " % (s,d)
+    return g_inv
+
+
 def merge_graphs(g1, g2):
     """
     Merge two graphs to a new graph (V, E) with V = g1.nodes \union g2.nodes
@@ -106,3 +135,4 @@ def merge_graphs(g1, g2):
         except:
             logging.info("merge_graphs: adding edge %d %d" % (e[0], e[1]))
     return g
+

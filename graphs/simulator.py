@@ -22,6 +22,7 @@ import cluster
 import ring
 import binarytree
 import sequential
+import badtree
 
 import scheduling
 import sort_longest
@@ -56,7 +57,8 @@ def build_and_simulate():
                                              "cluster", 
                                              "mst", 
                                              "bintree",
-                                             "sequential"
+                                             "sequential",
+                                             "badtree"
                                              ],
                         help="Overlay to use for atomic broadcast")
     args = parser.parse_args()
@@ -67,11 +69,12 @@ def build_and_simulate():
     root = 0
     if args.overlay == "mst":
         final_graph = _run_mst(gr, m)
+        r = "mst"
 
     elif args.overlay == "cluster":
         # Rename to hierarchical 
-        clustering = cluster.Cluster(m)
-        final_graph = clustering.get_broadcast_tree()
+        r = cluster.Cluster(m)
+        final_graph = r.get_broadcast_tree()
 
     elif args.overlay == "ring":
         r = ring.Ring(m)
@@ -85,6 +88,11 @@ def build_and_simulate():
 
     elif args.overlay == "sequential":
         r = sequential.Sequential(m)
+        final_graph = r.get_broadcast_tree()
+        root = 0
+
+    elif args.overlay == "badtree":
+        r = badtree.BadTree(m)
         final_graph = r.get_broadcast_tree()
         root = 0
 
@@ -113,7 +121,7 @@ def build_and_simulate():
 
     # --------------------------------------------------
     # Output c configuration for quorum program
-    helpers.output_quorum_configuration(m, final_graph, root, sched)
+    helpers.output_quorum_configuration(m, final_graph, root, sched, r)
 
 
 def _run_mst(gr, model):
