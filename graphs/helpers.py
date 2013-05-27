@@ -7,7 +7,7 @@ sys.path.append('/usr/lib/graphviz/python/')
 sys.path.append('/usr/lib64/graphviz/python/')
 import gv
 import Queue
-from numpy import *
+import numpy
 from datetime import *
 
 from pygraph.readwrite.dot import write
@@ -150,6 +150,27 @@ def unpack_line(line):
     assert len(el) == 5
     return _unpack_line_header(el[0]) + (int(el[2]), int(el[4]))
 
+
+def statistics_cropped(l, r=.1):
+    """
+    Print statistics for the given list of integers
+    @param r Crop ratio. .1 corresponds to dropping the 10% highest values
+    @return A tuple (mean, stderr, min, max)
+    """
+    if not isinstance(l, list) or len(l)<1:
+        return None
+
+    crop = int(len(l)*r)
+    m = 0
+    for i in range(crop):
+        m = 0
+        for e in l:
+            m = max(m, e)
+        l.remove(m)
+
+    return statistics(l)
+
+
 def statistics(l):
     """
     Print statistics for the given list of integers
@@ -157,12 +178,14 @@ def statistics(l):
     """
     if not isinstance(l, list) or len(l)<1:
         return None
-    nums = array(l)
+
+    nums = numpy.array(l)
 
     m = nums.mean(axis=0)
+    median = numpy.median(nums, axis=0)
     d = nums.std(axis=0)
 
-    return (m, d, nums.min(), nums.max())
+    return (m, d, median, nums.min(), nums.max())
 
 
 def _pgf_plot_header(f, plotname, caption, xlabel, ylabel):
@@ -214,6 +237,7 @@ def parse_measurement(coreids, machine, topo, f):
     """
     Parse the given file for measurements
     """
+    print "parse_measurement for file %s" % f
     dic = dict()
     for c in coreids:
         dic[c] = []
@@ -226,9 +250,18 @@ def parse_measurement(coreids, machine, topo, f):
     result = []
     stat = []
     for c in coreids:
-        s = statistics(dic[c])
-        if s != None:
-            stat.append((c, s[0], s[1]))
+        l = len(dic[c])
+        if l > 0:
+            print "core %d, length %d" % (c, len(dic[c]))
+            assert len(dic[c])==100
+            s = statistics_cropped(dic[c])
+            if s != None:
+                stat.append((c, s[0], s[1]))
+    return stat
+
+
+def parse_and_plot_measurements(coreids, machine, topo, f):
+    stat = parse_measurement(coreids, machine, topo, f)
     do_pgf_plot(open("../measurements/%s_%s.tex" % (machine, topo), "w+"), stat,
                 "Atomic broadcast on %s with %s topology" % (machine, topo), 
                 "coreid", "cost [cycles]")

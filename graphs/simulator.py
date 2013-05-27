@@ -36,7 +36,7 @@ import os
 def arg_machine(string):
     if string == "gruyere":
         return gruyere.Gruyere()
-    elif string == "nos":
+    elif string == "nos6":
         return nos6.Nos()
     else:
         return None
@@ -46,20 +46,25 @@ def build_and_simulate():
     """
     Build a tree model and simulate sending a message along it
     """
+    topologies = [
+        "ring", 
+        "cluster", 
+        "mst", 
+        "bintree",
+        "sequential",
+        "badtree"
+        ]
     parser = argparse.ArgumentParser(
         description='Simulator for multicore machines')
     parser.add_argument('--evaluate-model', dest="action", action="store_const",
                         const="evaluate", default="simulate", 
                         help="Dump machine model instead of simulating")
-    parser.add_argument('machine', choices=['nos', 'gruyere'],
+    parser.add_argument('--evaluate-machine', dest="action", action="store_const",
+                        const="evaluate-machine", default="simulate", 
+                        help="Dump machine model instead of simulating")
+    parser.add_argument('machine', choices=['nos6', 'gruyere'],
                         help="Machine to simulate")
-    parser.add_argument('overlay', choices=[ "ring", 
-                                             "cluster", 
-                                             "mst", 
-                                             "bintree",
-                                             "sequential",
-                                             "badtree"
-                                             ],
+    parser.add_argument('overlay', choices=topologies,
                         help="Overlay to use for atomic broadcast")
     args = parser.parse_args()
 
@@ -100,9 +105,26 @@ def build_and_simulate():
         print "Starting simulation"
     elif args.action == "evaluate":
         print "Evaluating model"
-        helpers.parse_measurement(range(m.get_num_cores()), args.machine, args.overlay, 
-                                  ("%s/measurements/atomic_broadcast/%s_%s" % 
-                                   (os.getenv("HOME"), args.machine, args.overlay)))
+        helpers.parse_and_plot_measurement(
+            range(m.get_num_cores()), args.machine, args.overlay, 
+            ("%s/measurements/atomic_broadcast/%s_%s" % 
+             (os.getenv("HOME"), args.machine, args.overlay)))
+        return 0
+    elif args.action == "evaluate-machine":
+        print "Evaluate all measurements for given machine"
+        results = []
+        for t in topologies:
+            f = ("%s/measurements/atomic_broadcast/%s_%s" % 
+                 (os.getenv("HOME"), args.machine, t))
+            if os.path.isfile(f):
+                stat = helpers.parse_measurement(
+                    range(m.get_num_cores()), args.machine, t, f)
+                assert len(stat) == 1 # Only measurements for one core
+                results.append((t, stat[0][1], stat[0][2]))
+            else:
+                print 'Did not find measurement %s' % f
+
+        print results
         return 0
 
     # --------------------------------------------------
