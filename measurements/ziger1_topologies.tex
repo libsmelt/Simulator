@@ -1,0 +1,17 @@
+\begin{table}[htb]
+  \centering
+  \begin{tabular}{lrrrrr}
+  \toprule
+  & \multicolumn{3}{c}{Real hardware} & \multicolumn{2}{c}{Simulation} \\
+  topology & time [cycles] & factor & stderr & time [units] & factor \\
+  \midrule
+  cluster & 3209.08 & 1.042 & 108.07 & 121 & 1.000 \\
+  mst & 3080.18 & 1.000 & 63.61 & 232 & 1.917 \\
+  bintree & 3337.63 & 1.084 & 81.04 & 343 & 2.835 \\
+  sequential & 3874.08 & 1.258 & 303.02 & 454 & 3.752 \\
+  badtree & 5673.08 & 1.842 & 65.12 & 565 & 4.669 \\
+  \midrule
+  \end{tabular}
+  \caption{Evaluation of different topologies for ziger1}
+  \label{tab:ziger1}
+\end{table}

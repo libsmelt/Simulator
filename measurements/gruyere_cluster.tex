@@ -1,0 +1,20 @@
+Plot~\ref{pgfplot:20130531} shows ...
+\begin{figure}
+  \caption{Atomic broadcast on gruyere with cluster topology}
+  \label{pgfplot:20130531}
+  \begin{tikzpicture}
+    \begin{axis}[
+        xlabel={coreid},
+        ylabel={cost [cycles]}
+        ]
+    \addplot[
+        color=red,
+        mark=x,
+        error bars/y dir=both,
+        error bars/y explicit
+        ] coordinates {
+      (29,4062.855556) +- (199.391773,199.391773)
+    };
+    \end{axis}
+  \end{tikzpicture}
+\end{figure}

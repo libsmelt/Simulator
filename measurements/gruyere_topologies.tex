@@ -1,0 +1,17 @@
+\begin{table}[htb]
+  \centering
+  \begin{tabular}{lrrrrr}
+  \toprule
+  & \multicolumn{3}{c}{Real hardware} & \multicolumn{2}{c}{Simulation} \\
+  topology & time [cycles] & factor & stderr & time [units] & factor \\
+  \midrule
+  cluster & 4062.86 & 1.000 & 199.39 & 151 & 1.000 \\
+  mst & 4131.61 & 1.017 & 137.15 & 292 & 1.934 \\
+  bintree & 4416.53 & 1.087 & 245.34 & 433 & 2.868 \\
+  sequential & 6860.67 & 1.689 & 811.51 & 574 & 3.801 \\
+  badtree & 4729.43 & 1.164 & 250.85 & 715 & 4.735 \\
+  \midrule
+  \end{tabular}
+  \caption{Evaluation of different topologies for gruyere}
+  \label{tab:gruyere}
+\end{table}
