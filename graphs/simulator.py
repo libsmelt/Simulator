@@ -16,6 +16,10 @@ import helpers
 # Machines
 import gruyere
 import nos6
+import ziger
+import sbrinz
+import gottardo
+import appenzeller
 
 # Overlays
 import cluster
@@ -33,11 +37,21 @@ import logging
 import sys
 import os
 
-def arg_machine(string):
+def arg_machine(s):
+    # Remove digits from machine name!
+    string = ''.join([i for i in s if not i.isdigit()])
     if string == "gruyere":
         return gruyere.Gruyere()
-    elif string == "nos6":
+    elif string == "nos":
         return nos6.Nos()
+    elif string == 'ziger':
+        return ziger.Ziger()
+    elif string == 'sbrinz':
+        return sbrinz.Sbrinz()
+    elif string == 'gottardo':
+        return gottardo.Gottardo()
+    elif string == 'appenzeller':
+        return appenzeller.Appenzeller()
     else:
         return None
 
@@ -54,6 +68,14 @@ def build_and_simulate():
         "sequential",
         "badtree"
         ]
+    machines = [
+        "nos6",
+        "ziger1",
+        "gruyere",
+        'sbrinz1', 'sbrinz2',
+        'gottardo',
+        'appenzeller'
+        ]
     parser = argparse.ArgumentParser(
         description='Simulator for multicore machines')
     parser.add_argument('--evaluate-model', dest="action", action="store_const",
@@ -62,15 +84,67 @@ def build_and_simulate():
     parser.add_argument('--evaluate-machine', dest="action", action="store_const",
                         const="evaluate-machine", default="simulate", 
                         help="Dump machine model instead of simulating")
-    parser.add_argument('machine', choices=['nos6', 'gruyere'],
+    parser.add_argument('machine', choices=machines,
                         help="Machine to simulate")
     parser.add_argument('overlay', choices=topologies,
                         help="Overlay to use for atomic broadcast")
     args = parser.parse_args()
 
     m = arg_machine(args.machine)
+    assert m != None
     gr = m.get_graph()
     
+    # --------------------------------------------------
+    # Switch main action
+    # XXX Cleanup required
+    if args.action == "simulate":
+        (final_graph, ev, root, sched, topology) = _simulation_wrapper(args, m, gr)
+        print "Cost for tree is: %d, last node is %d" % (ev.time, ev.last_node)
+        # Output c configuration for quorum program
+        helpers.output_quorum_configuration(m, final_graph, root, sched, topology)
+
+    elif args.action == "evaluate":
+        print "Evaluating model"
+        helpers.parse_and_plot_measurement(
+            range(m.get_num_cores()), args.machine, args.overlay, 
+            ("%s/measurements/atomic_broadcast/%s_%s" % 
+             (os.getenv("HOME"), args.machine, args.overlay)))
+        return 0
+    elif args.action == "evaluate-machine":
+        print "Evaluate all measurements for given machine"
+        results = []
+        sim_results = []
+        for t in topologies:
+            f = ("%s/measurements/atomic_broadcast/%s_%s" % 
+                 (os.getenv("HOME"), args.machine, t))
+            if not os.path.isfile(f):
+                print 'Did not find measurement %s' % f
+                continue
+            # Real hardware
+            stat = helpers.parse_measurement(f, range(m.get_num_cores()))
+            assert len(stat) == 1 # Only measurements for one core
+            results.append((t, stat[0][1], stat[0][2]))
+            # XXX Simulation
+            (final_graph, ev, root, sched, topo) = _simulation_wrapper(args, m, gr)
+            sim_results.append((t, ev.time))
+        helpers.output_machine_results(args.machine, results, sim_results)
+        return 0
+
+    # --------------------------------------------------
+    # Output graphs
+    helpers.output_graph(gr, '%s_full_mesh' % m.get_name())
+    helpers.output_graph(final_graph, '%s_%s' % (m.get_name(), args.overlay))
+
+    # --------------------------------------------------
+    # XXX Make this an argument
+    sched = sort_longest.SortLongest(final_graph)
+
+    # --------------------------------------------------
+    # Evaluate
+    ev = evaluate.evalute(final_graph, root, m, sched) 
+
+
+def _simulation_wrapper(args, m, gr):
     root = 0
     if args.overlay == "mst":
         final_graph = _run_mst(gr, m)
@@ -101,32 +175,6 @@ def build_and_simulate():
         final_graph = r.get_broadcast_tree()
         root = 0
 
-    if args.action == "simulate":
-        print "Starting simulation"
-    elif args.action == "evaluate":
-        print "Evaluating model"
-        helpers.parse_and_plot_measurement(
-            range(m.get_num_cores()), args.machine, args.overlay, 
-            ("%s/measurements/atomic_broadcast/%s_%s" % 
-             (os.getenv("HOME"), args.machine, args.overlay)))
-        return 0
-    elif args.action == "evaluate-machine":
-        print "Evaluate all measurements for given machine"
-        results = []
-        for t in topologies:
-            f = ("%s/measurements/atomic_broadcast/%s_%s" % 
-                 (os.getenv("HOME"), args.machine, t))
-            if os.path.isfile(f):
-                stat = helpers.parse_measurement(
-                    range(m.get_num_cores()), args.machine, t, f)
-                assert len(stat) == 1 # Only measurements for one core
-                results.append((t, stat[0][1], stat[0][2]))
-            else:
-                print 'Did not find measurement %s' % f
-
-        print results
-        return 0
-
     # --------------------------------------------------
     # Output graphs
     helpers.output_graph(gr, '%s_full_mesh' % m.get_name())
@@ -139,11 +187,9 @@ def build_and_simulate():
     # --------------------------------------------------
     # Evaluate
     ev = evaluate.evalute(final_graph, root, m, sched) 
-    print "Cost for tree is: %d, last node is %d" % (ev.time, ev.last_node)
-
-    # --------------------------------------------------
-    # Output c configuration for quorum program
-    helpers.output_quorum_configuration(m, final_graph, root, sched, r)
+    
+    # Return result
+    return (final_graph, ev, root, sched, r)
 
 
 def _run_mst(gr, model):

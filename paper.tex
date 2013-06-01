@@ -141,7 +141,11 @@ algorithms and implement them for a multicore machine:
 \paragraph{Atomic broadcast} \stefan{Explain the guarantees provided
   by atomic broadcasts}. Atomic broadcasts are frequently used to
 implement higher-level distributed algorithms on top of it: examples
-are replication such as state machine replication. 
+are replication such as state machine replication. As a first step, we
+evaluate the performance of sending one message as a broadcast to all
+nodes. Broadcasts are one of the most important communication
+operations for parallel applications~\cite{Bruck1992} \stefan{Database
+  joins}.
 
 \paragraph{Barriers} \stefan{Explain}
 
@@ -374,6 +378,11 @@ We now look at tree-based atomic broadcast implementations. The first
 challenge is to find efficient spanning trees for arbitrary
 machines. We now discuss different strategies to select trees based on
 the model representing the machine.
+
+Several optimizations are possible. First, nodes further up the tree
+should have a higher degree i.e.\ send more messages so that they do
+not idle~\cite{Bar-Noy1994}. An example of such a tree is a Fibonacci
+tree. 
 
 %-------------------------------------------------
 \subsubsection{Binary Tree}
@@ -1118,6 +1127,8 @@ something entirely message-passing based like MPI versions.
 \label{LastPage}
 
 \newpage
-\input{measurements/gruyere_both}
+\input{measurements/gruyere_topologies}
+\input{measurements/ziger1_topologies}
+\input{measurements/sbrinz1_topologies}
 
 \end{document}

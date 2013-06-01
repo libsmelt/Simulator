@@ -233,23 +233,32 @@ def do_pgf_plot(f, data, caption, xlabel, ylabel):
     _pgf_plot_footer(f)
 
 
-def parse_measurement(coreids, machine, topo, f):
+def parse_measurement(f, coreids=None):
     """
     Parse the given file for measurements
     """
+
     print "parse_measurement for file %s" % f
     dic = dict()
-    for c in coreids:
-        dic[c] = []
-    for line in open(f):
+    coresfound = []
+
+    # If argument is a path (i.e. string), we need to open it
+    if isinstance(f, basestring):
+        f = open(f)
+
+    for line in f:
         if line.startswith("sk_m"):
             d = unpack_line(clear_line(line))
             assert len(d)==4
-            if d[0] in coreids:
+            if coreids == None or d[0] in coreids:
+                if not d[0] in dic:
+                    dic[d[0]] = []
                 dic[d[0]].append(d[3])
+                if not d[0] in coresfound:
+                    coresfound.append(d[0])
     result = []
     stat = []
-    for c in coreids:
+    for c in coresfound:
         l = len(dic[c])
         if l > 0:
             print "core %d, length %d" % (c, len(dic[c]))
@@ -260,11 +269,53 @@ def parse_measurement(coreids, machine, topo, f):
     return stat
 
 
-def parse_and_plot_measurements(coreids, machine, topo, f):
-    stat = parse_measurement(coreids, machine, topo, f)
+def parse_and_plot_measurement(coreids, machine, topo, f):
+    stat = parse_measurement(f, coreids)
     do_pgf_plot(open("../measurements/%s_%s.tex" % (machine, topo), "w+"), stat,
                 "Atomic broadcast on %s with %s topology" % (machine, topo), 
                 "coreid", "cost [cycles]")
-                
 
-    
+
+def _output_table_header(f):
+    f.write(("\\begin{table}[htb]\n"
+             "  \\centering\n"
+             "  \\begin{tabular}{lrrrrr}\n"
+             "  \\toprule\n"
+             "  & \\multicolumn{3}{c}{Real hardware} & \\multicolumn{2}{c}{Simulation} \\\\\n"
+             "  topology & time [cycles] & factor & stderr & time [units] & factor \\\\\n"
+             "  \\midrule\n"
+             ))
+
+
+def _output_table_footer(f, label, caption):
+    f.write(("  \\midrule\n"
+             "  \\end{tabular}\n"
+             "  \\caption{%s}\n"
+             "  \\label{tab:%s}\n"
+             "\\end{table}\n") % (caption, label))
+
+
+def _output_table_row(f, item, min_evaluation, min_simulation):
+    assert len(item)==4
+    f.write("  %s & %.2f & %.3f & %.2f & %.0f & %.3f \\\\\n" %
+            (item[0], item[1], item[1]/float(min_evaluation), item[2], 
+             item[3], item[3]/float(min_simulation)))
+
+def output_machine_results(machine, res_measurement, res_simulator):
+    """
+    Generates a LaTeX table for the given result list.
+
+    @param machine Name of the machine
+    @param results List of (topology, mean, stderr)
+    """
+    f = open('../measurements/%s_topologies.tex' % machine, 'w+')
+    cap = "Evaluation of different topologies for %s" % machine
+
+    _output_table_header(f)
+    min_evaluation = min(time for (topo, time, err) in res_measurement)
+    min_simulation = min(time for (topo, time) in res_simulator)
+    for e in zip(res_measurement, res_simulator):
+        assert(e[0][0] == e[1][0])
+        _output_table_row(f, (e[0][0], e[0][1], e[0][2], e[1][1]), 
+                          min_evaluation, min_simulation)
+    _output_table_footer(f, machine, cap)

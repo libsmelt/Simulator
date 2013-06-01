@@ -10,17 +10,33 @@ PATTERN="Quorum.*everything done.*exiting"
 # --------------------------------------------------
 function wait_result() {
 
+	m=$1
+	i=0
+
+	# one iteration = 2 seconds
+	# This should terminate after 5 minutes = 300 seconds = 150 iterations
     while ! grep -q "$PATTERN" $TMP
     do
-	sleep 2
+		sleep 2
+		i=$(($i+1))
+
+		if [[ i -ge 150 ]]
+		then
+			echo "Timeout, restarting machine"
+			rackpower -r $m
+			i=0
+		fi
     done
 }
 
 # main
 # --------------------------------------------------
-for m in gruyere
+# gruyere sbrinz1
+for m in ziger1 gruyere sbrinz1 
 do
-    for t in sequential
+	# ring,cluster,mst,bintree,sequential,badtree
+	# cluster mst bintree sequential 
+    for t in badtree cluster mst bintree sequential 
     do
 	# Cleanup 
 	rm -f $MODEL
@@ -50,16 +66,19 @@ do
 	# Run the machine
 	console $m >$TMP & # Start console process .. 
 	PID=$! # .. and get PID
+	ps -p $PID
 	rackboot.sh $m # Reboot the machine
-	wait_result # Wait for result
+	wait_result $m # Wait for result
 	kill $PID # Kill console process
+	ps -p $PID
 
 	echo "Benchmark terminating"
 
 	# Copy result
 	cp -b $TMP $RESULTDIR/${m}_${t}
+	rm $TMP
 	
-	./simulator.py --evaluate $m $t
+	./simulator.py --evaluate-model $m $t
     done
 done
 
