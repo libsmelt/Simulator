@@ -38,7 +38,10 @@ class Ring(overlay.Overlay):
         """
         super(Ring, self).__init__(mod)
 
-    def get_broadcast_tree(self):
+    def get_name(self):
+        return "ring"
+
+    def _get_broadcast_tree(self):
         """
         This currently only works for 8x4x1 model
         """
@@ -57,7 +60,8 @@ class Ring(overlay.Overlay):
         helpers.output_graph(g, 'ring', 'neato')
         return g
 
-
+    def get_root_node(self):
+        return 8
 
     def _get_outer_rings(self):
         """

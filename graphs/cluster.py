@@ -35,7 +35,10 @@ class Cluster(overlay.Overlay):
         super(Cluster, self).__init__(mod)
         self.coordinators = self.get_coordinators()
         
-    def get_broadcast_tree(self):
+    def get_name(self):
+        return "cluster"
+
+    def _get_broadcast_tree(self):
         """
         Return the broadcast tree as a graph
         """

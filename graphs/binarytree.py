@@ -34,7 +34,10 @@ class BinaryTree(overlay.Overlay):
         """
         super(BinaryTree, self).__init__(mod)
         
-    def get_broadcast_tree(self):
+    def get_name(self):
+        return "binarytree"
+
+    def _get_broadcast_tree(self):
         """
         Return the broadcast tree as a graph
         """

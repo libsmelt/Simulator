@@ -33,7 +33,7 @@ class Result():
         self.last_node = last_node
 
 
-def evalute(tree, root, m, sched):
+def evalute(topo, root, m, sched):
     """
     Evaluate the latency of sending an individual message along the tree
     @param tree: Overlay as determined by simulator
@@ -47,14 +47,17 @@ def evalute(tree, root, m, sched):
     global schedule
     global last_node
 
+    tree = topo.get_broadcast_tree()
     model = tree
     schedule = sched
+    round = 0
 
     node_state = [NodeState()]*len(model)
 
     # Construct visualization instance
     global visu
-    visu = draw.Output("visu.tex", m)
+    visu = draw.Output(("visu_%s_%s.tex" % (m.get_name(), topo.get_name())), 
+                       m, topo)
     
     send(root, round, [])
 

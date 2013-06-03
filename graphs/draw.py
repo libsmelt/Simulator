@@ -8,9 +8,10 @@ class Output():
     height_per_core = 15
 
     "Wrapper to enable visualization output to file"
-    def __init__(self, name, model):
+    def __init__(self, name, model, topo):
         self.name = name
         self.model = model
+        self.topo =  topo
         self.f = open(name, 'w')
         for i in range(self.model.get_num_cores()):
             # Background
@@ -29,6 +30,11 @@ class Output():
             self.f.write("\\draw[color=black!30] (20mm,%dmm) -- (30cm,%dmm);\n" % \
                              (self._y_coord_for_core(i), \
                                   self._y_coord_for_core(i)))
+        self.f.write("\\node at (0mm,%dmm) {Machine: %s, topology: %s};\n" % (
+                self._y_coord_for_core(self.model.get_num_cores()),
+                self.model.get_name(),
+                self.topo.get_name()
+                ))
 
     def _y_coord_for_core(self, core):
         "Determines padding between cores"
@@ -64,6 +70,7 @@ class Output():
         if isinstance(self.model, numa_model.NUMAModel):
             if not self.model.on_same_numa_node(core, sender):
                 settings.append('very thick')
+                settings.append('color=red')
         # Arrow indicating flow
         self.f.write("\\draw[->%s] (s_%d_%d.center) -- (r_%d_%d.center); \n" % \
                          (','.join(settings), sender, core, sender, core))

@@ -35,6 +35,8 @@ class Fibonacci(overlay.Overlay):
         super(Fibonacci, self).__init__(mod)
         self.coordinators = self.get_coordinators()
 
+    def get_name(self):
+        return "fibonacci"
 
     def fibonacci(self, depth):
         g = digraph()
@@ -52,7 +54,7 @@ class Fibonacci(overlay.Overlay):
     
 
         
-    def get_broadcast_tree(self):
+    def _get_broadcast_tree(self):
         """
         Return the broadcast tree as a graph
         """

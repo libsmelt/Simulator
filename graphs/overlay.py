@@ -6,16 +6,34 @@ class Overlay(object):
     """
     Base class for finding the right overlay topology for a model
     """
-
     def __init__(self, mod):
         """
         Initialize the clustering algorithm
         """
         assert isinstance(mod, model.Model)
         self.mod = mod
+        self.broadcast_tree = None
 
-    def get_broadcast_tree(self):
+    def _get_broadcast_tree(self):
         return None
+
+    def get_root_node(self):
+        return 0
+
+    def get_name(self):
+        return None
+    
+    def get_broadcast_tree(self):
+        """
+        Return broadcast tree
+        
+        Will call _get_broadcast_tree on first execution and store
+        tree in broadcast_tree
+        """
+        if self.broadcast_tree is None:
+            self.broadcast_tree = self._get_broadcast_tree()
+        assert not self.broadcast_tree is None
+        return self.broadcast_tree
 
     def get_coordinators(self):
         """

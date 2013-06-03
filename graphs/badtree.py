@@ -36,7 +36,10 @@ class BadTree(overlay.Overlay):
         """
         super(BadTree, self).__init__(mod)
         
-    def get_broadcast_tree(self):
+    def get_name(self):
+        return "badtree"
+
+    def _get_broadcast_tree(self):
         """
         Return the broadcast tree as a graph
         """

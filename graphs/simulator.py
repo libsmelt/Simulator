@@ -5,7 +5,6 @@ from pygraph.classes.graph import graph
 from pygraph.classes.digraph import digraph
 from pygraph.algorithms.searching import breadth_first_search
 from pygraph.algorithms.minmax import shortest_path
-from pygraph.algorithms.minmax import minimal_spanning_tree
 
 # Import own code
 import evaluate
@@ -27,6 +26,7 @@ import ring
 import binarytree
 import sequential
 import badtree
+import mst
 
 import scheduling
 import sort_longest
@@ -36,6 +36,24 @@ import argparse
 import logging
 import sys
 import os
+
+topologies = [
+    "ring", 
+    "cluster", 
+    "mst", 
+    "bintree",
+    "sequential",
+    "badtree"
+    ]
+machines = [
+    "nos6",
+    "ziger1",
+    "gruyere",
+    'sbrinz1', 'sbrinz2',
+    'gottardo',
+    'appenzeller'
+    ]
+
 
 def arg_machine(s):
     # Remove digits from machine name!
@@ -60,22 +78,6 @@ def build_and_simulate():
     """
     Build a tree model and simulate sending a message along it
     """
-    topologies = [
-        "ring", 
-        "cluster", 
-        "mst", 
-        "bintree",
-        "sequential",
-        "badtree"
-        ]
-    machines = [
-        "nos6",
-        "ziger1",
-        "gruyere",
-        'sbrinz1', 'sbrinz2',
-        'gottardo',
-        'appenzeller'
-        ]
     parser = argparse.ArgumentParser(
         description='Simulator for multicore machines')
     parser.add_argument('--evaluate-model', dest="action", action="store_const",
@@ -98,7 +100,8 @@ def build_and_simulate():
     # Switch main action
     # XXX Cleanup required
     if args.action == "simulate":
-        (final_graph, ev, root, sched, topology) = _simulation_wrapper(args, m, gr)
+        (topo, ev, root, sched, topology) = _simulation_wrapper(args, m, gr)
+        final_graph = topo.get_broadcast_tree()
         print "Cost for tree is: %d, last node is %d" % (ev.time, ev.last_node)
         # Output c configuration for quorum program
         helpers.output_quorum_configuration(m, final_graph, root, sched, topology)
@@ -125,7 +128,8 @@ def build_and_simulate():
             assert len(stat) == 1 # Only measurements for one core
             results.append((t, stat[0][1], stat[0][2]))
             # XXX Simulation
-            (final_graph, ev, root, sched, topo) = _simulation_wrapper(args, m, gr)
+            (topo, ev, root, sched, topo) = _simulation_wrapper(args, m, gr)
+            final_graph = topo.get_broadcast_tree()
             sim_results.append((t, ev.time))
         helpers.output_machine_results(args.machine, results, sim_results)
         return 0
@@ -141,39 +145,31 @@ def build_and_simulate():
 
     # --------------------------------------------------
     # Evaluate
-    ev = evaluate.evalute(final_graph, root, m, sched) 
+    ev = evaluate.evalute(topo, root, m, sched) 
 
 
 def _simulation_wrapper(args, m, gr):
-    root = 0
     if args.overlay == "mst":
-        final_graph = _run_mst(gr, m)
-        r = "mst"
+        r = mst.Mst(m)
 
     elif args.overlay == "cluster":
-        # Rename to hierarchical 
+        # XXX Rename to hierarchical 
         r = cluster.Cluster(m)
-        final_graph = r.get_broadcast_tree()
 
     elif args.overlay == "ring":
         r = ring.Ring(m)
-        final_graph = r.get_broadcast_tree()
-        root = 8
 
     elif args.overlay == "bintree":
         r = binarytree.BinaryTree(m)
-        final_graph = r.get_broadcast_tree()
-        root = 0
 
     elif args.overlay == "sequential":
         r = sequential.Sequential(m)
-        final_graph = r.get_broadcast_tree()
-        root = 0
 
     elif args.overlay == "badtree":
         r = badtree.BadTree(m)
-        final_graph = r.get_broadcast_tree()
-        root = 0
+
+    root = r.get_root_node()
+    final_graph = r.get_broadcast_tree()
 
     # --------------------------------------------------
     # Output graphs
@@ -186,27 +182,10 @@ def _simulation_wrapper(args, m, gr):
 
     # --------------------------------------------------
     # Evaluate
-    ev = evaluate.evalute(final_graph, root, m, sched) 
+    ev = evaluate.evalute(r, root, m, sched) 
     
     # Return result
-    return (final_graph, ev, root, sched, r)
-
-
-def _run_mst(gr, model):
-    """
-    Run MST algorithm
-    XXX Move somewhere else
-    """
-    mst = graph()
-    mst.add_nodes(range(model.get_num_cores()))
-
-    mst_edges = minimal_spanning_tree(gr)
-    for i in range(len(mst_edges)):
-        if mst_edges[i] != None:
-            mst.add_edge((mst_edges[i], i), \
-                             gr.edge_weight((mst_edges[i], i)))
-    return mst
-
+    return (r, ev, root, sched, r)
 
 if __name__ == "__main__":
     build_and_simulate()

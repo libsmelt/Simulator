@@ -34,7 +34,10 @@ class Sequential(overlay.Overlay):
         """
         super(Sequential, self).__init__(mod)
         
-    def get_broadcast_tree(self):
+    def get_name(self):
+        return "sequential"
+
+    def _get_broadcast_tree(self):
         """
         Return the broadcast tree as a graph
         """
