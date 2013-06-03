@@ -31,24 +31,25 @@ def figure(content, caption='',
     if not ref.startswith('fig:'):
         ref = 'fig:%s' % ref
     return (
-        '\\begin{figure}[h]\n'
+        '\\begin{figure}[h!]\n'
         '%s\n'
         '\\caption{%s}\n'
         '\\label{%s}\n'
-        '\\end{figure}\n') % (content, caption, ref)
+        '\\end{figure}\n'
+        ) % (content, caption, ref)
 
 # --------------------------------------------------
 
 for m in simulator.machines:
     m = ''.join([i for i in m if not i.isdigit()])
+    w(command('newpage'))
+    w(command('clearpage'))
     w(section(m))
     for t in simulator.topologies:
         tex = 'visu_%s_%s' % (m, t)
         if os.path.exists(tex + '.tex'):
-            command('newpage')
             w(section(t, 2))
             opt = [ 'transform shape', 'scale=.25' ]
-#            w(tikz('\\input{graphs/%s}' % tex, opt))
             w(figure(tikz('\\input{graphs/%s}' % tex, opt), 
                      'Atomic broadcast on %s using %s topology' % (m, t),
                      'ab_%s_%s' % (m, t)))
