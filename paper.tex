@@ -382,7 +382,14 @@ the model representing the machine.
 Several optimizations are possible. First, nodes further up the tree
 should have a higher degree i.e.\ send more messages so that they do
 not idle~\cite{Bar-Noy1994}. An example of such a tree is a Fibonacci
-tree. 
+tree, which is known to be optimal for the case that send and receive
+time are equal~\cite{Bar-Noy1994}. 
+
+In contrast, we assume that the model is given, which allows us to
+simulate sending messages along the broadcast tree. Whenever a node is
+idle in the model, it will send a message to one of the cores, that
+did not receive any messages yet. For the special case that send
+equals receive time, this should also yield a Fibonacci tree.
 
 %-------------------------------------------------
 \subsubsection{Binary Tree}
