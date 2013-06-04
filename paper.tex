@@ -998,7 +998,20 @@ implementations.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Future work}
 
+\newcommand{\nary}{$n$-ary\xspace}
+
 \begin{itemize}
+\item Other topologies (mainly based on~\cite{Bruck1992}):
+  \begin{itemize}
+  \item Fibonacci trees: more efficient since nodes further up the
+    tree send more messages, but not considering the hierarchy of the
+    machine 
+  \item \nary trees: play with the out-degree of nodes. The ideal
+    value for the out-degree depends on the machine. For
+    $t_{propagation} << max(t_{send}, t_{receive})$, $n = 2$ should be
+    optimal, since it still increases parallelism, but the latency
+    induced by the $n$ send operation is not too high.
+  \end{itemize}
 \item Think about synchronous implementations and see if they are
   applicable for some of our machines.
 \item Arguing that group communication/atomic broadcast is important
