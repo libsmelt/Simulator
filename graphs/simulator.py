@@ -30,6 +30,7 @@ import mst
 
 import scheduling
 import sort_longest
+import ump
 
 import pdb
 import argparse
@@ -86,6 +87,9 @@ def build_and_simulate():
     parser.add_argument('--evaluate-machine', dest="action", action="store_const",
                         const="evaluate-machine", default="simulate", 
                         help="Dump machine model instead of simulating")
+    parser.add_argument('--ump-breakdown', dest="action", action="store_const",
+                        const="ump-breakdown", default="simulate", 
+                        help="Dump machine model instead of simulating")
     parser.add_argument('machine', choices=machines,
                         help="Machine to simulate")
     parser.add_argument('overlay', choices=topologies,
@@ -105,6 +109,10 @@ def build_and_simulate():
         print "Cost for tree is: %d, last node is %d" % (ev.time, ev.last_node)
         # Output c configuration for quorum program
         helpers.output_quorum_configuration(m, final_graph, root, sched, topology)
+
+    elif args.action == 'ump-breakdown':
+        ump.execute_ump_breakdown()
+        return 0
 
     elif args.action == "evaluate":
         print "Evaluating model"

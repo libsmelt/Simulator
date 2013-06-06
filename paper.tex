@@ -12,7 +12,7 @@
 \usepackage{amssymb}
 \usepackage[colorlinks=true]{hyperref}
 \usepackage[ruled,vlined]{algorithm2e}
-
+\usepackage[toc,page]{appendix}
 % ==================================================
 
 \graphicspath{{figs/}}
@@ -730,8 +730,6 @@ bind, no source identifier is send along\footnote{Check if this is
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Atomic broadcast}
 
-
-
 %--------------------------------------------------
 \subsubsection{Comparison to shared-memory implementations}
 
@@ -1146,11 +1144,160 @@ something entirely message-passing based like MPI versions.
 
 \label{LastPage}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{appendices}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{UMP performance}
+
+Plot~\ref{pgfplot:20130605} shows the latency of UMP on ziger as the
+number of cycles required for a RTT between core 0 and each of the
+other cores.
+
+\begin{figure}
+  \caption{UMP latency between core 0 and target core}
+  \label{pgfplot:20130605}
+  \begin{tikzpicture}
+    \begin{axis}[
+        xlabel={target core},
+        ylabel={cycles},
+        ymin=0
+        ]
+    \addplot[
+        color=red,
+        mark=x,
+        error bars/y dir=both,
+        error bars/y explicit
+        ] coordinates {
+      (0,905.302469) +- (5.475974,5.475974)
+      (1,899.453086) +- (4.273189,4.273189)
+      (2,900.216049) +- (6.050119,6.050119)
+      (3,908.808642) +- (6.189132,6.189132)
+      (4,900.155556) +- (5.692577,5.692577)
+      (5,1139.145679) +- (5.447710,5.447710)
+      (6,1139.200000) +- (5.011050,5.011050)
+      (7,1135.722222) +- (7.258244,7.258244)
+      (8,1141.523457) +- (6.521385,6.521385)
+      (9,1132.918519) +- (5.502482,5.502482)
+      (10,1131.333333) +- (4.893432,4.893432)
+      (11,1151.814815) +- (6.316764,6.316764)
+      (12,1153.251852) +- (6.078156,6.078156)
+      (13,1153.269136) +- (5.148574,5.148574)
+      (14,1150.670370) +- (4.862935,4.862935)
+      (15,1152.801235) +- (7.096426,7.096426)
+      (16,1157.601235) +- (7.356042,7.356042)
+      (17,1395.401235) +- (5.607601,5.607601)
+      (18,1394.076543) +- (7.313209,7.313209)
+      (19,1390.329630) +- (5.080219,5.080219)
+      (20,1391.237037) +- (5.837986,5.837986)
+      (21,1390.192593) +- (4.992087,4.992087)
+      (22,1397.954321) +- (4.711073,4.711073)
+    };
+    \end{axis}
+  \end{tikzpicture}
+\end{figure}
+
+Plot~\ref{pgfplot:20130605_send} shows the send cost for sending a message
+from each core to core 0. This cost is nearly independent from which
+core sends the message.
+
+\begin{figure}
+  \caption{UMP send cost between core 0 and target core}
+  \label{pgfplot:20130605_send}
+  \begin{tikzpicture}
+    \begin{axis}[
+        xlabel={target core},
+        ylabel={cycles},
+        ymin=0
+        ]
+    \addplot[
+        color=red,
+        mark=x,
+        error bars/y dir=both,
+        error bars/y explicit
+        ] coordinates {
+      (0,244.197531) +- (4.324549,4.324549)
+      (1,246.407407) +- (4.943577,4.943577)
+      (2,245.567901) +- (2.985307,2.985307)
+      (3,244.543210) +- (5.632905,5.632905)
+      (4,243.530864) +- (4.237069,4.237069)
+      (5,245.061728) +- (5.160021,5.160021)
+      (6,245.901235) +- (2.386200,2.386200)
+      (7,247.481481) +- (4.643092,4.643092)
+      (8,245.901235) +- (3.723814,3.723814)
+      (9,243.197531) +- (3.305139,3.305139)
+      (10,246.530864) +- (2.277569,2.277569)
+      (11,243.913580) +- (4.795053,4.795053)
+      (12,246.259259) +- (3.640573,3.640573)
+      (13,243.469136) +- (4.121867,4.121867)
+      (14,242.283951) +- (3.732522,3.732522)
+      (15,244.851852) +- (6.142568,6.142568)
+      (16,242.209877) +- (4.302500,4.302500)
+      (17,258.012346) +- (4.010769,4.010769)
+      (18,256.765432) +- (4.266642,4.266642)
+      (19,256.592593) +- (6.050768,6.050768)
+      (20,255.382716) +- (4.226804,4.226804)
+      (21,258.666667) +- (5.003702,5.003702)
+      (22,255.567901) +- (4.219117,4.219117)
+    };
+    \end{axis}
+  \end{tikzpicture}
+\end{figure}
+
+Plot~\ref{pgfplot:20130605} shows the receive time on every core when
+receiving a UMP message from core 0.
+
+\begin{figure}
+  \caption{UMP receive time between core 0 and target core}
+  \label{pgfplot:20130605}
+  \begin{tikzpicture}
+    \begin{axis}[
+        xlabel={target core},
+        ylabel={cycles},
+        ymin=0
+        ]
+    \addplot[
+        color=red,
+        mark=x,
+        error bars/y dir=both,
+        error bars/y explicit
+        ] coordinates {
+      (0,262.716049) +- (19.216913,19.216913)
+      (1,250.864198) +- (18.156897,18.156897)
+      (2,253.271605) +- (16.264794,16.264794)
+      (3,264.481481) +- (19.195621,19.195621)
+      (4,262.876543) +- (20.073558,20.073558)
+      (5,406.592593) +- (12.717032,12.717032)
+      (6,417.086420) +- (16.644576,16.644576)
+      (7,414.913580) +- (19.692198,19.692198)
+      (8,417.024691) +- (15.754267,15.754267)
+      (9,416.345679) +- (20.657800,20.657800)
+      (10,417.320988) +- (15.662984,15.662984)
+      (11,432.172840) +- (28.319513,28.319513)
+      (12,427.814815) +- (22.042110,22.042110)
+      (13,429.234568) +- (26.883963,26.883963)
+      (14,424.814815) +- (18.533994,18.533994)
+      (15,426.283951) +- (17.456991,17.456991)
+      (16,425.444444) +- (15.939701,15.939701)
+      (17,506.333333) +- (9.086688,9.086688)
+      (18,503.679012) +- (7.018190,7.018190)
+      (19,518.222222) +- (9.838197,9.838197)
+      (20,522.506173) +- (9.367824,9.367824)
+      (21,517.111111) +- (9.108401,9.108401)
+      (22,504.703704) +- (6.788597,6.788597)
+    };
+    \end{axis}
+  \end{tikzpicture}
+\end{figure}
+
 \newpage
 \input{measurements/gruyere_topologies}
 \input{measurements/ziger1_topologies}
 \input{measurements/sbrinz1_topologies}
 
 \input{graphs/visall}
+
+\end{appendices}
 
 \end{document}

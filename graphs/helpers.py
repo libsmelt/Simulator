@@ -174,7 +174,7 @@ def statistics_cropped(l, r=.1):
 def statistics(l):
     """
     Print statistics for the given list of integers
-    @return A tuple (mean, stderr, min, max)
+    @return A tuple (mean, stderr, median, min, max)
     """
     if not isinstance(l, list) or len(l)<1:
         return None
@@ -188,17 +188,19 @@ def statistics(l):
     return (m, d, median, nums.min(), nums.max())
 
 
-def _pgf_plot_header(f, plotname, caption, xlabel, ylabel):
+def _pgf_plot_header(f, plotname, caption, xlabel, ylabel, attr=[], desc='...'):
     label = "pgfplot:%s" % plotname
-    s = (("Plot~\\ref{%s} shows ...\n"
+    s = (("Plot~\\ref{%s} shows %s\n"
+          "\\pgfplotsset{width=\linewidth}\n"
           "\\begin{figure}\n"
           "  \\caption{%s}\n"
           "  \\label{%s}\n"
           "  \\begin{tikzpicture}\n"
           "    \\begin{axis}[\n"
+          "        %s,\n" 
           "        xlabel={%s},\n"
           "        ylabel={%s}\n"
-          "        ]\n") % (label, caption, label, xlabel, ylabel))
+          "        ]\n") % (label, desc, caption, label, ','.join(attr), xlabel, ylabel))
     f.write(s)
 
 
@@ -209,7 +211,7 @@ def _pgf_plot_footer(f):
     f.write(s)
 
     
-def do_pgf_plot(f, data, caption, xlabel, ylabel):
+def do_pgf_plot(f, data, caption='', xlabel='', ylabel=''):
     """
     Generate PGF plot code for the given data
     @param f File to write the code to
@@ -230,6 +232,72 @@ def do_pgf_plot(f, data, caption, xlabel, ylabel):
             f.write("      (%d,%f) +- (%f,%f)\n" % (d[0], d[1], d[2], d[2]))
 
     f.write("    };\n");
+    _pgf_plot_footer(f)
+
+def _latex_header(f):
+    header = (
+        "\\documentclass[a4wide]{article}\n"
+        "\\usepackage{url,color,xspace,verbatim,subfig,ctable,multirow,listings}\n"
+        "\\usepackage[utf8]{inputenc}\n"
+        "\\usepackage[T1]{fontenc}\n"
+        "\\usepackage{txfonts}\n"
+        "\\usepackage{rotating}\n"
+        "\\usepackage{paralist}\n"
+        "\\usepackage{subfig}\n"
+        "\\usepackage{graphics}\n"
+        "\\usepackage{enumitem}\n"
+        "\\usepackage{times}\n"
+        "\\usepackage{amssymb}\n"
+        "\\usepackage[colorlinks=true]{hyperref}\n"
+        "\\usepackage[ruled,vlined]{algorithm2e}\n"
+        "\n"
+        "\\graphicspath{{figs/}}\n"
+        "\\urlstyle{sf}\n"
+        "\n"
+        "\\usepackage{tikz}\n"
+        "\\usepackage{pgfplots}\n"
+        "\\usetikzlibrary{shapes,positioning,calc,snakes,arrows,shapes}\n"
+        "\n"
+        "\\begin{document}\n"
+        "\n"
+        )
+    f.write(header)
+
+def _latex_footer(f):
+    footer = (
+        "\n"
+        "\\end{document}\n"
+        )
+    f.write(footer)
+
+def do_pgf_stacked_plot(f, tuple_data, caption='', xlabel='', ylabel='', desc='...'):
+    """
+    Generate PGF plot code for the given data
+    @param f File to write the code to
+    @param data Data points to print as list of tuples (x, y, err)
+    """
+    now = datetime.today()
+    plotname = "%02d%02d%02d%02d%02d" % (now.year, now.month, now.day, now.hour, now.minute)
+    _pgf_plot_header(f, plotname, caption, xlabel, ylabel, 
+                     [ 'ybar stacked', 'ymin=0', 
+                       ('legend style={'
+                        ' at={(0.5,-0.20)},'
+                        ' anchor=north,'
+                        ' legend columns=-1'
+                        '}') ], desc)
+
+    labels = []
+    for (l,data) in tuple_data:
+        # Header
+        f.write(("    \\addplot coordinates {\n"))
+        # Data
+        for d in data:
+            f.write("      (%d,%f)\n" % (d[0], d[1]))
+        # Footer
+        f.write("    };\n");
+        labels.append(l)
+
+    f.write("     \\legend{%s}\n" % ', '.join(labels))
     _pgf_plot_footer(f)
 
 
