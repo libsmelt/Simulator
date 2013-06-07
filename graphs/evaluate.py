@@ -67,7 +67,11 @@ def evalute(topo, root, m, sched):
     # XXX dirty hack: receive of last node is missing
     # as our nodes are homogeneous, we just add the receive time of the root
     r = Result((round + receive_cost(root)), last_node)
+    
     m.set_evaluation_result(r)
+
+    visu.finalize()
+
     return r
 
 def consume_event():
