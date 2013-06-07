@@ -8,7 +8,7 @@ class Output():
     height_per_core = 5
     obj_per_node = dict()
     obj = []
-    scale_x = .6
+    scale_x = .4
     last_node = None
 
     "Wrapper to enable visualization output to file"
@@ -111,7 +111,7 @@ class Output():
 
         # X-axes
         for i in range(self.model.get_num_cores()):
-            self.f.write("\\draw[color=black!30] let \\p1 = (core_31_label.east), \\p2 = (allobjects.east) in (\\x1,%dmm) -- (\\x2,%dmm);\n" % \
+            self.f.write("\\draw[color=black!30] let \\p1 = (core_10_label.east), \\p2 = (allobjects.east) in (\\x1,%dmm) -- (\\x2,%dmm);\n" % \
                              (self._y_coord_for_core(i), self._y_coord_for_core(i)))
 
 

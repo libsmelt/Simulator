@@ -3,7 +3,7 @@
 # Makefile for LaTeX docs
 #
 
-DEPS=$(wildcard plots/*/*.pdf) $(wildcard figs/*.pdf)
+DEPS=$(wildcard plots/*/*.pdf) $(wildcard figs/*.pdf) graphs/visall.tex
 DOT=$(patsubst %.dot,%.tex,$(wildcard graphs/final_*.dot))
 
 PAPER=paper

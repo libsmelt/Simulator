@@ -4,6 +4,7 @@ import simulator
 import random
 import string
 import os
+import subprocess
 
 f = open('visall.tex', 'w+')
 
@@ -31,26 +32,38 @@ def figure(content, caption='',
     if not ref.startswith('fig:'):
         ref = 'fig:%s' % ref
     return (
-        '\\begin{figure}[h!]\n'
+        '\\begin{figure}[ht!]\n'
         '%s\n'
         '\\caption{%s}\n'
         '\\label{%s}\n'
         '\\end{figure}\n'
         ) % (content, caption, ref)
 
+def append_to_report():
+    for m in simulator.machines:
+        m = ''.join([i for i in m if not i.isdigit()])
+        w(command('newpage'))
+        w(command('clearpage'))
+        w(section(m))
+        for t in simulator.topologies:
+            tex = 'visu_%s_%s' % (m, t)
+            if os.path.exists(tex + '.tex'):
+                w(section(t, 2))
+                opt = [ 'transform shape' ]
+                w(figure(tikz('\\input{graphs/%s}' % tex, opt), 
+                         'Atomic broadcast on %s using %s topology' % (m, t),
+                         'ab_%s_%s' % (m, t)))
+                w(command('clearpage'))
+
+def run_all_simulations():
+    for m in simulator.machines:
+        for t in simulator.topologies:
+            if t != 'ring' and m != 'appenzeller':
+                res = subprocess.call(['./simulator.py', m, t])
+                assert res == 0
+
 # --------------------------------------------------
 
-for m in simulator.machines:
-    m = ''.join([i for i in m if not i.isdigit()])
-    w(command('newpage'))
-    w(command('clearpage'))
-    w(section(m))
-    for t in simulator.topologies:
-        tex = 'visu_%s_%s' % (m, t)
-        if os.path.exists(tex + '.tex'):
-            w(section(t, 2))
-            opt = [ 'transform shape', 'scale=.25' ]
-            w(figure(tikz('\\input{graphs/%s}' % tex, opt), 
-                     'Atomic broadcast on %s using %s topology' % (m, t),
-                     'ab_%s_%s' % (m, t)))
-            w(command('clearpage'))
+run_all_simulations()
+append_to_report()
+

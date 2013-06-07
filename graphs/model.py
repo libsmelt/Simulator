@@ -31,7 +31,11 @@ class Model(object):
         return None
 
     def get_cores_per_node(self):
-        return self.get_num_cores() / self.get_num_numa_nodes()
+        assert self.get_num_numa_nodes() is not None # Should be overriden in childs
+        if self.get_num_numa_nodes()>0:
+            return self.get_num_cores() / self.get_num_numa_nodes()
+        else:
+            return self.get_num_cores()
 
     def get_cost_within_numa(self):
         return 1

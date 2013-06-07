@@ -79,6 +79,7 @@ def build_and_simulate():
     """
     Build a tree model and simulate sending a message along it
     """
+    # XXX The arguments are totally broken. Fix them!
     parser = argparse.ArgumentParser(
         description='Simulator for multicore machines')
     parser.add_argument('--evaluate-model', dest="action", action="store_const",
@@ -95,6 +96,8 @@ def build_and_simulate():
     parser.add_argument('overlay', choices=topologies,
                         help="Overlay to use for atomic broadcast")
     args = parser.parse_args()
+
+    print "machine: %s, topology: %s" % (args.machine, args.overlay)
 
     m = arg_machine(args.machine)
     assert m != None
