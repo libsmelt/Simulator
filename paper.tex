@@ -516,21 +516,29 @@ NUMA domain corresponds to one cluster.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Ring topology}
 
-Next, we evaluate ring topologies. Rings have the advantage that the
-implicitly acknowledge messages once they arrive back to the
-sender. This is beneficial for some algorithms such as quorums, where
-nodes report back to the sender. This, however, only works if forwarding
-along the ring is only done after all local nodes acknowledge a
-message.
+Next, we evaluate ring topologies. Rings experience a certain level of
+redundancy. The sending node receives the node back on the ring. This
+is unnecessary for applications with uni-directional traffic executed
+on reliable communication channels
+
+For applications that require some form of feedback (as well as
+unreliable channels, which we do not consider at this point), rings
+have the advantage that they can piggy-back some information that will
+eventually arrive back on the sender. This is beneficial for some
+algorithms such as quorums, where nodes report the result of the
+quorum back to the sender.
 
 The downside is that some state is required on every node to remember
 whether or not a message was received before. If messages are just
 forwarded as they arrive, message transport does never terminate.
 
 To add more parallelism, we add a second ring, which we send the
-message on in parallel. The overlay ring network is visualized in
-Figure~\ref{fig:gruyere_ring}. Node that the link from node 20 to 8 is
-a two hop link and, thus, has a cost of 20 instead of the usual 10.
+message on in parallel. Acknowledgments, however, only work if
+forwarding along the ring is only done after all local nodes (as in
+nodes from the outer rings) acknowledge a message. In
+Figure~\ref{fig:gruyere_ring}, we visualize an example of two
+intertwined ring topologies. Node that the link from node 20 to 8 is a
+two hop link and, thus, has a cost of 20 instead of the usual 10.
 
 \begin{figure}
 \begin{tikzpicture}[>=latex,line join=bevel,scale=.5]

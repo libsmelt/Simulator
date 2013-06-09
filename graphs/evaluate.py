@@ -4,7 +4,9 @@ import draw
 import config
 import pdb
 
-# Evaluation is round-based
+# Evaluation is event based. We realize this using a priority heap
+# with the time at which the event is happening as priority and pop
+# the top of this queue in every step.
 
 # Assumptions:
 # 1) nodes never have to process different events at the same time
@@ -14,9 +16,18 @@ import pdb
 round = 0
 event_queue = []
 model = {}
+# Some topologies require state (e.g. rings). We store this state
+# in a list of node states (sequence number for rings)
 node_state = []
 last_node = -1
+# Keep track of which nodes are active
+# * lists of nodes that: 
+#  -> received the message already (nodes_active)
+#  -> did _not_ yet receive the message (nodes_inactive)
+nodes_active = []
+nodes_inactive = []
 
+# ==================================================
 class NodeState(object):
     """
     Store node state for evaluation
@@ -24,6 +35,7 @@ class NodeState(object):
     def __init__(self):
         self.seq_no = 0
 
+# ==================================================
 class Result():
     """
     Store result of evaluation
@@ -32,7 +44,7 @@ class Result():
         self.time = time
         self.last_node = last_node
 
-
+# ==================================================
 def evalute(topo, root, m, sched):
     """
     Evaluate the latency of sending an individual message along the tree
@@ -56,10 +68,12 @@ def evalute(topo, root, m, sched):
 
     # Construct visualization instance
     global visu
-    visu = draw.Output(("visu_%s_%s.tex" % (m.get_name(), topo.get_name())), 
+    visu = draw.Output(("visu_%s_%s_send_events.tex" % \
+                        (m.get_name(), topo.get_name())), 
                        m, topo)
-    
-    send(root, round, [])
+
+    nodes_active.append(root)
+    heapq.heappush(event_queue, (round, events.Send(root, None)))
 
     while not terminate():
         consume_event()
@@ -90,6 +104,10 @@ def consume_event():
     if isinstance(e, events.Receive):
         receive(e.src, e.dest)
 
+    if isinstance(e, events.Send):
+        assert e.dest is None
+        send(e.src)
+
 def propagate(src, dest):
     """
     Process propagation event.
@@ -100,20 +118,32 @@ def propagate(src, dest):
 
 def receive(src, dest):
     """
-    Receive a message on dest
-    Send will be called to trigger sending of messages to children
+    Receive a message on dest XXX This is a bit of a misnomer. _dest_
+    is the node where the message is received. Send will be called to
+    trigger sending of messages to children.
     """
     print "{%d}: receiving message from {%d} in round %d" \
         % (dest, src, round)
     global last_node
     last_node = dest
     visu.receive(dest, src, round, receive_cost(dest))
-    send(dest, round+receive_cost(dest), [src])
+
+    # For rings: sequence number
+    # Abort in case the message was seen before
+    if isinstance(node_state[dest], NodeState) and node_state[dest].seq_no > 0:
+        print "Node %d Received message that was send before, aborting!" % dest
+        return
+    node_state[dest] = NodeState()
+    node_state[dest].seq_no = 1
+
+    recv_cmpl = round + receive_cost(dest)
+    heapq.heappush(event_queue, (recv_cmpl, events.Send(dest, None)))
 
 def send_cost(node):
     """
     Return send cost. This is constant for the time being as we
     evaluate heterogeneous machines only.
+    XXX read from model
     """
     return 10
 
@@ -121,49 +151,49 @@ def receive_cost(node):
     """
     Return send cost. This is constant for the time being as we
     evaluate heterogeneous machines only.
+    XXX read from model
     """
     return 10
 
-def send(src, cost, omit):
+def send(src):
     """
     Simulate sending a message from given node.
     No message will be send towards nodes given in omit
     """
-    assert isinstance(omit, list)
+    send_time = round
     assert src<len(model)
-    send_time = cost
     nb = []
-    # For rings: sequence number
-    if isinstance(node_state[src], NodeState) and node_state[src].seq_no > 0:
-        print "Node %d Received message that was send before, aborting!" % src
-        return
-    node_state[src] = NodeState()
-    node_state[src].seq_no = 1
+
     # Get a list of neighbors from the scheduler
     nb = schedule.find_schedule(src)
-    # # Create list of children first, and the cost of the message list
-    # for dest in model.neighbors(src):
-    #     if not dest in omit:
-    #         nb.append((model.edge_weight((src, dest)), dest))
-    # # Find longest path for all neighbors
-    # if config.SCHEDULING_SORT_LONGEST_PATH:
-    #     nb = get_longest_path(src, omit)
-    #     for (nbc, nbn) in nb:
-    #         print "longest path from node %d via %d is %d\n" % (src, nbn, nbc)
-    # # Sort this list
-    # if config.SCHEDULING_SORT or config.SCHEDULING_SORT_LONGEST_PATH:
-    #     nb.sort(key=lambda tup: tup[0], reverse=True)
-    # # Sort this list
-    # if config.SCHEDULING_SORT_ID:
-    #     nb.sort(key=lambda tup: tup[1], reverse=False) # Sort by node ID
-    # # Walk the list and send messages
-    for (cost, dest) in nb:
-        if not dest in omit:
-            visu.send(src, dest, send_time, send_cost(src))
-            send_time += send_cost(src)
-            heapq.heappush(\
-                event_queue, \
-                    (send_time, events.Propagate(src, dest)))
+    # Walk the list and send messages
+
+    # XXX Very dirty way of removing every element of <nodes_active>
+    # from <nb> -> fix
+    nb_filtered = []
+    for (cost, tmp) in nb:
+        if tmp not in nodes_active:
+            nb_filtered.append(tmp)
+
+    if len(nb_filtered) > 0:
+        dest = nb_filtered[0]
+        visu.send(src, dest, send_time, send_cost(src))
+        send_compl = send_time + send_cost(src)
+        # Add propagation event to the heap to signal to propagate
+        #  the message after the send operation completes
+        heapq.heappush(\
+            event_queue, \
+                (send_compl, events.Propagate(src, dest)))
+        # Add send event to signal that further messages can be
+        # sent once the current message completed the current send
+        # operation.
+        heapq.heappush(\
+            event_queue, \
+                (send_compl, events.Send(src, None)))
+
+        # receiver becomes active
+        nodes_active.append(dest)
+
 
 def terminate():
     """
