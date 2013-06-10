@@ -37,10 +37,30 @@ class Model(object):
         else:
             return self.get_num_cores()
 
+    # Transport cost
     def get_cost_within_numa(self):
         return 1
 
     def get_cost_across_numa(self):
+        return 10
+
+    # Node processing cost
+    def get_receive_cost(self, src, dest):
+        """
+        The cost of receive operations on dest for messages from
+        src. This is essentially the time required for the memory read
+        in case of a new message, which in turn is the time required
+        by the cache-coherency protocol to update the (at this point
+        invalid) cache-line in the local cache with the updates
+        version in the senders cache.
+        """
+        return 10
+
+    def get_send_cost(self, src, dest):
+        """
+        The cost of the send operation (e.g. to work to done on the
+        sending node) when sending a message to core dest
+        """
         return 10
     
     def get_numa_information(self):

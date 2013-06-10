@@ -15,7 +15,7 @@ import pdb
 
 round = 0
 event_queue = []
-model = {}
+topology = {}
 # Some topologies require state (e.g. rings). We store this state
 # in a list of node states (sequence number for rings)
 node_state = []
@@ -54,17 +54,19 @@ def evalute(topo, root, m, sched):
     """
     global round
     global node_queues
+    global topology
     global model
     global node_state
     global schedule
     global last_node
 
     tree = topo.get_broadcast_tree()
-    model = tree
+    topology = tree
     schedule = sched
+    model = m
     round = 0
 
-    node_state = [NodeState()]*len(model)
+    node_state = [NodeState()]*len(topology)
 
     # Construct visualization instance
     global visu
@@ -78,10 +80,8 @@ def evalute(topo, root, m, sched):
     while not terminate():
         consume_event()
 
-    # XXX dirty hack: receive of last node is missing
-    # as our nodes are homogeneous, we just add the receive time of the root
-    r = Result((round + receive_cost(root)), last_node)
-    
+    # XXX Check if this includes the receive cost on the last node (but it should)
+    r = Result(round, last_node)
     m.set_evaluation_result(r)
 
     visu.finalize()
@@ -113,7 +113,7 @@ def propagate(src, dest):
     Process propagation event.
     This will queue a receive event on the receiving side
     """
-    w = model.edge_weight((src, dest))
+    w = topology.edge_weight((src, dest))
     heapq.heappush(event_queue, (round + w, events.Receive(src, dest)))
 
 def receive(src, dest):
@@ -126,7 +126,8 @@ def receive(src, dest):
         % (dest, src, round)
     global last_node
     last_node = dest
-    visu.receive(dest, src, round, receive_cost(dest))
+    cost = model.get_receive_cost(src, dest)
+    visu.receive(dest, src, round, cost)
 
     # For rings: sequence number
     # Abort in case the message was seen before
@@ -136,24 +137,9 @@ def receive(src, dest):
     node_state[dest] = NodeState()
     node_state[dest].seq_no = 1
 
-    recv_cmpl = round + receive_cost(dest)
+    recv_cmpl = round + cost
     heapq.heappush(event_queue, (recv_cmpl, events.Send(dest, None)))
 
-def send_cost(node):
-    """
-    Return send cost. This is constant for the time being as we
-    evaluate heterogeneous machines only.
-    XXX read from model
-    """
-    return 10
-
-def receive_cost(node):
-    """
-    Return send cost. This is constant for the time being as we
-    evaluate heterogeneous machines only.
-    XXX read from model
-    """
-    return 10
 
 def send(src):
     """
@@ -161,7 +147,7 @@ def send(src):
     No message will be send towards nodes given in omit
     """
     send_time = round
-    assert src<len(model)
+    assert src<len(topology)
     nb = []
 
     # Get a list of neighbors from the scheduler
@@ -177,8 +163,9 @@ def send(src):
 
     if len(nb_filtered) > 0:
         dest = nb_filtered[0]
-        visu.send(src, dest, send_time, send_cost(src))
-        send_compl = send_time + send_cost(src)
+        cost = model.get_send_cost(src, dest)
+        visu.send(src, dest, send_time, cost)
+        send_compl = send_time + cost
         # Add propagation event to the heap to signal to propagate
         #  the message after the send operation completes
         heapq.heappush(\
