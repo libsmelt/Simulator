@@ -190,7 +190,7 @@ def statistics(l):
 
 def _pgf_plot_header(f, plotname, caption, xlabel, ylabel, attr=[], desc='...'):
     label = "pgfplot:%s" % plotname
-    s = (("Plot~\\ref{%s} shows %s\n"
+    s = (("Figure~\\ref{%s} shows %s\n"
           "\\pgfplotsset{width=\linewidth}\n"
           "\\begin{figure}\n"
           "  \\caption{%s}\n"
