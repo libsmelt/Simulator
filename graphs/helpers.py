@@ -8,6 +8,8 @@ sys.path.append('/usr/lib64/graphviz/python/')
 import gv
 import Queue
 import numpy
+import subprocess
+
 from datetime import *
 
 from pygraph.readwrite.dot import write
@@ -188,25 +190,36 @@ def statistics(l):
     return (m, d, median, nums.min(), nums.max())
 
 
-def _pgf_plot_header(f, plotname, caption, xlabel, ylabel, attr=[], desc='...'):
-    label = "pgfplot:%s" % plotname
-    s = (("Figure~\\ref{%s} shows %s\n"
-          "\\pgfplotsset{width=\linewidth}\n"
-          "\\begin{figure}\n"
+def _pgf_header(f, caption='TODO', label='TODO'):
+    s = (("\\begin{figure}\n"
           "  \\caption{%s}\n"
           "  \\label{%s}\n"
-          "  \\begin{tikzpicture}\n"
-          "    \\begin{axis}[\n"
-          "        %s,\n" 
-          "        xlabel={%s},\n"
-          "        ylabel={%s}\n"
-          "        ]\n") % (label, desc, caption, label, ','.join(attr), xlabel, ylabel))
+          "  \\begin{tikzpicture}\n") 
+         % (caption, label))
     f.write(s)
 
 
+def _pgf_plot_header(f, plotname, caption, xlabel, ylabel, attr=[], desc='...'):
+    label = "pgfplot:%s" % plotname
+    s = (("Figure~\\ref{%s} shows %s\n"
+          "\\pgfplotsset{width=\linewidth}\n") % (label, desc))
+    t = (("    \\begin{axis}[\n"
+          "        %s,\n" 
+          "        xlabel={%s},\n"
+          "        ylabel={%s}\n"
+          "        ]\n") % (','.join(attr), xlabel, ylabel))
+    f.write(s)
+    _pgf_header(f, caption, label)
+    f.write(t)
+
+
 def _pgf_plot_footer(f):
-    s = ("    \\end{axis}\n"
-         "  \\end{tikzpicture}\n"
+    f.write("    \\end{axis}\n")
+    _pgf_footer(f)
+
+
+def _pgf_footer(f):
+    s = ("  \\end{tikzpicture}\n"
          "\\end{figure}\n")
     f.write(s)
 
@@ -256,7 +269,7 @@ def _latex_header(f):
         "\n"
         "\\usepackage{tikz}\n"
         "\\usepackage{pgfplots}\n"
-        "\\usetikzlibrary{shapes,positioning,calc,snakes,arrows,shapes}\n"
+        "\\usetikzlibrary{shapes,positioning,calc,snakes,arrows,shapes,fit,backgrounds}\n"
         "\n"
         "\\begin{document}\n"
         "\n"
@@ -387,3 +400,10 @@ def output_machine_results(machine, res_measurement, res_simulator):
         _output_table_row(f, (e[0][0], e[0][1], e[0][2], e[1][1]), 
                           min_evaluation, min_simulation)
     _output_table_footer(f, machine, cap)
+
+def run_pdflatex(fname):
+    if subprocess.call(['pdflatex', 
+                     '-output-directory', '/tmp/', 
+                     '-interaction', 'nonstopmode',
+                        fname], cwd='/tmp') == 0:
+        subprocess.call(['okular', fname.replace('.tex', '.pdf')])

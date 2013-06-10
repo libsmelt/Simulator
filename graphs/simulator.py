@@ -37,6 +37,7 @@ import argparse
 import logging
 import sys
 import os
+import tempfile
 
 topologies = [
     "ring", 
@@ -95,6 +96,7 @@ def build_and_simulate():
                         help="Machine to simulate")
     parser.add_argument('overlay', choices=topologies,
                         help="Overlay to use for atomic broadcast")
+    parser.add_argument('--debug', action='store_const', default=False, const=True)
     args = parser.parse_args()
 
     print "machine: %s, topology: %s" % (args.machine, args.overlay)
@@ -157,6 +159,18 @@ def build_and_simulate():
     # --------------------------------------------------
     # Evaluate
     ev = evaluate.evalute(topo, root, m, sched) 
+
+    if args.debug:
+        (fid, fname) = tempfile.mkstemp(suffix='.tex')
+        f = open(fname, 'w+')
+        helpers._latex_header(f)
+        helpers._pgf_header(f)
+        f.write('\\input{%s/%s}\n' % (os.getcwd(), ev.visu_name.replace('.tex','')))
+        helpers._pgf_footer(f)
+        helpers._latex_footer(f)
+        f.close()
+
+        helpers.run_pdflatex(fname)
 
 
 def _simulation_wrapper(args, m, gr):

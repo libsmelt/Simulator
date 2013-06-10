@@ -40,9 +40,10 @@ class Result():
     """
     Store result of evaluation
     """
-    def __init__(self, time, last_node):
+    def __init__(self, time, last_node, visu_name):
         self.time = time
         self.last_node = last_node
+        self.visu_name = visu_name
 
 # ==================================================
 def evalute(topo, root, m, sched):
@@ -70,9 +71,9 @@ def evalute(topo, root, m, sched):
 
     # Construct visualization instance
     global visu
-    visu = draw.Output(("visu_%s_%s_send_events.tex" % \
-                        (m.get_name(), topo.get_name())), 
-                       m, topo)
+    visu_name = ("visu_%s_%s_send_events.tex" % 
+                 (m.get_name(), topo.get_name()))
+    visu = draw.Output(visu_name, m, topo)
 
     nodes_active.append(root)
     heapq.heappush(event_queue, (round, events.Send(root, None)))
@@ -80,8 +81,8 @@ def evalute(topo, root, m, sched):
     while not terminate():
         consume_event()
 
-    # XXX Check if this includes the receive cost on the last node (but it should)
-    r = Result(round, last_node)
+    # XXX Check if this includes the receive cost on the last node (it should)
+    r = Result(round, last_node, visu_name)
     m.set_evaluation_result(r)
 
     visu.finalize()
