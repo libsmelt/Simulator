@@ -54,14 +54,14 @@ class Model(object):
         invalid) cache-line in the local cache with the updates
         version in the senders cache.
         """
-        return 10
+        return 25
 
     def get_send_cost(self, src, dest):
         """
         The cost of the send operation (e.g. to work to done on the
         sending node) when sending a message to core dest
         """
-        return 10
+        return 25
     
     def get_numa_information(self):
         """

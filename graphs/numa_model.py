@@ -4,6 +4,7 @@ import model
 import helpers
 
 from pygraph.classes.graph import graph
+from pygraph.algorithms.minmax import shortest_path
 
 # --------------------------------------------------
 class NUMAModel(model.Model):
@@ -11,6 +12,13 @@ class NUMAModel(model.Model):
     def __init__(self, g):
         super(NUMAModel, self).__init__(g)
 
+    # --------------------------------------------------
+
+    def get_num_numa_hops(self, src, dest):
+        (tree, hops) = shortest_path(self.g_numa, src)
+        return hops.get(dest)
+
+    # --------------------------------------------------
 
     def _build_numa_graph(self):
         return None
@@ -19,14 +27,14 @@ class NUMAModel(model.Model):
         """
         Build a graph model for a NUMA machine
         """
-        g_numa = self._build_numa_graph()
-        helpers.output_graph(g_numa, '%s_numa' % self.get_name())
+        self.g_numa = self._build_numa_graph()
+        helpers.output_graph(self.g_numa, '%s_numa' % self.get_name())
 
         gr = graph()
         gr.add_nodes(range(self.get_num_cores()))
 
         for n in range(self.get_num_numa_nodes()):
-            self._connect_numa_nodes(gr, g_numa, n)
+            self._connect_numa_nodes(gr, self.g_numa, n)
 
         return gr
 
@@ -54,8 +62,13 @@ class NUMAModel(model.Model):
         """
         g_numa = graph()
         g_numa.add_nodes(range(self.get_num_numa_nodes()))
-        for n in range(self.get_num_numa_nodes()):
-            g_numa.add_edge((n, (n+1) % self.get_num_numa_nodes()))
+
+        if self.get_num_numa_nodes() == 4:
+            for e in [(0,1), (1,3), (3,2), (2,0)]:
+                g_numa.add_edge(e)
+        else:
+            raise Exception(('Do not know how to build a NUMA model for a '
+                             'machine with %d cores') % self.get_num_numa_nodes())
 
         helpers.output_graph(g_numa, '%s_numa' % self.get_name());
 

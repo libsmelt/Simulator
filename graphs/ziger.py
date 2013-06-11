@@ -10,12 +10,17 @@ from pygraph.classes.digraph import digraph
 # --------------------------------------------------
 class Ziger(numa_model.NUMAModel):
 
+    recv_cost = { 0: 25, 1: 42, 2: 50 }
+
     def __init__(self):
         """
         Build the model and use it to initialize the Model superclass
         """
         g = super(Ziger, self)._build_graph()
         super(Ziger, self).__init__(g)
+        
+        # for c in range(1, self.get_num_cores()):
+        #     print "%d -> %d: %d" % (0, c, self.get_recieve_cost(0, c))
 
     # --------------------------------------------------
     # Characteritics of model
@@ -27,6 +32,11 @@ class Ziger(numa_model.NUMAModel):
 
     def get_num_cores(self):
         return 24
+
+    def get_receive_cost(self, src, dest):
+        hops = self.get_num_numa_hops(self.get_numa_id(src), 
+                                      self.get_numa_id(dest))
+        return self.recv_cost[hops]
 
     def get_numa_information(self):
         return super(Ziger, self)._auto_generate_numa_information()
