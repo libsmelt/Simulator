@@ -153,14 +153,9 @@ def send(src):
 
     # Get a list of neighbors from the scheduler
     nb = schedule.find_schedule(src)
-    # Walk the list and send messages
-
-    # XXX Very dirty way of removing every element of <nodes_active>
-    # from <nb> -> fix
-    nb_filtered = []
-    for (cost, tmp) in nb:
-        if tmp not in nodes_active:
-            nb_filtered.append(tmp)
+    
+    # Ignore all nodes that received the message already
+    nb_filtered = [ tmp for (cost, tmp) in nb if tmp not in nodes_active ]
 
     if len(nb_filtered) > 0:
         dest = nb_filtered[0]
