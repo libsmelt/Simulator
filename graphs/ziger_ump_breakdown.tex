@@ -1,4 +1,26 @@
-Figure~\ref{pgfplot:201306061829} shows the breakdown of the cost for sending UMP messages depending on which cores communicate. The measurement has been executed on ziger1. Propagation time is calculated from the round-trip time minus send and receive time on sender minus processing time on server
+Figure~\ref{pgfplot:201306061829} shows the breakdown of the cost for
+sending UMP messages on ziger1 for communication between core 0 and
+all other cores.
+
+Latency is calculated from the round-trip time minus send and receive
+time on sender minus processing time on server. However, send time on
+one end of a channel seems to overlap with received time on the other
+end of the channel, which makes it hard to calculate actual
+latency. Thus, we assume the server processing time to be 300 cycles.
+
+\stefan{We can measure latency on a machine with synchronized clocks
+  when adding timestamps as payload to the ump messages.}
+
+Send time is independent of which core the message is send
+to. Internally, the send operation is a write operation to the local
+cache. The cache coherency protocol will then invalidate all other
+copies of this line in the system. 
+
+Receive time on the other hand does depend on which cores
+communicate. When polling the cache-line, which is invalid at this
+time, the cache coherency protocol will transfer this cache-line from
+the sending to the receiving core.
+
 \pgfplotsset{width=\linewidth}
 \begin{figure}
   \caption{UMP breakdown}
