@@ -12,6 +12,8 @@ import subprocess
 
 from datetime import *
 
+from pygraph.classes.graph import graph
+
 from pygraph.readwrite.dot import write
 from pygraph.algorithms.minmax import shortest_path
 
@@ -32,6 +34,7 @@ def output_graph(graph, name, algorithm='neato'):
 def output_quorum_configuration(model, graph, root, sched, topo):
     """
     Output a C array representing overlay and scheduling
+
     """
     
     dim = model.get_num_cores()
@@ -51,13 +54,15 @@ def output_quorum_configuration(model, graph, root, sched, topo):
     __c_footer(stream)
 
 
-def walk_graph(graph, root, func, mat, sched):
+def walk_graph(g, root, func, mat, sched):
     """
     Function to walk the tree starting from root
 
     active = reachable, but not yet dealt with. Elements are tuples (node, parent)
     done = reachable and also handled
+
     """
+    assert isinstance(g, graph)
     active = Queue.Queue()
     done = []
 
@@ -71,7 +76,7 @@ def walk_graph(graph, root, func, mat, sched):
         done.append(a)
         # mark the inactive neighbors as active
         nbs = []
-        for nb in graph.neighbors(a):
+        for nb in g.neighbors(a):
             if not nb in done:
                 active.put((nb, a))
                 nbs.append(nb)
@@ -83,8 +88,10 @@ def walk_graph(graph, root, func, mat, sched):
 def fill_matrix(s, children, parent, mat, sched):
     """
     """
+    print "%d -> %s" % (s, ','.join([ str(c) for c in children ]))
     i = 1
-    for (cost, r) in sched.find_schedule(s):
+    for (cost, r) in sched.get_final_schedule(s):
+        print "%d -> %d [%r]" % (s, r, r in children)
         if r in children:
             mat[s][r] = i
             i += 1
@@ -96,6 +103,7 @@ def fill_matrix(s, children, parent, mat, sched):
 def __matrix_to_c(stream, mat):
     """
     Print given matrix as C code
+
     """
     dim = len(mat)
     stream.write(("#define MODEL_NUM_CORES %d\n\n" % dim))

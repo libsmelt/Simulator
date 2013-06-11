@@ -1,5 +1,13 @@
 #!/usr/bin/env python
 
+"""
+The simulator consists of:
+* machine model
+* topology
+* scheduler
+
+"""
+
 # Import pygraph
 from pygraph.classes.graph import graph
 from pygraph.classes.digraph import digraph
@@ -27,9 +35,9 @@ import binarytree
 import sequential
 import badtree
 import mst
+import adaptive
 
 import scheduling
-import sort_longest
 import ump
 
 import pdb
@@ -45,7 +53,8 @@ topologies = [
     "mst", 
     "bintree",
     "sequential",
-    "badtree"
+    "badtree",
+    "adaptivetree"
     ]
 machines = [
     "nos6",
@@ -58,7 +67,10 @@ machines = [
 
 
 def arg_machine(s):
-    # Remove digits from machine name!
+    """
+    Remove digits from machine name!
+
+    """
     string = ''.join([i for i in s if not i.isdigit()])
     if string == "gruyere":
         return gruyere.Gruyere()
@@ -79,6 +91,7 @@ def arg_machine(s):
 def build_and_simulate():
     """
     Build a tree model and simulate sending a message along it
+
     """
     # XXX The arguments are totally broken. Fix them!
     parser = argparse.ArgumentParser(
@@ -153,8 +166,7 @@ def build_and_simulate():
     helpers.output_graph(final_graph, '%s_%s' % (m.get_name(), args.overlay))
 
     # --------------------------------------------------
-    # XXX Make this an argument
-    sched = sort_longest.SortLongest(final_graph)
+    sched = topo.get_scheduler(final_graph)
 
     # --------------------------------------------------
     # Evaluate
@@ -193,17 +205,20 @@ def _simulation_wrapper(args, m, gr):
     elif args.overlay == "badtree":
         r = badtree.BadTree(m)
 
+    elif args.overlay == "adaptivetree":
+        r = adaptive.AdapativeTree(m)
+
     root = r.get_root_node()
     final_graph = r.get_broadcast_tree()
 
     # --------------------------------------------------
     # Output graphs
     helpers.output_graph(gr, '%s_full_mesh' % m.get_name())
-    helpers.output_graph(final_graph, '%s_%s' % (m.get_name(), args.overlay))
+    if final_graph is not None:
+        helpers.output_graph(final_graph, '%s_%s' % (m.get_name(), args.overlay))
 
     # --------------------------------------------------
-    # XXX Make this an argument
-    sched = sort_longest.SortLongest(final_graph)
+    sched = r.get_scheduler(final_graph)
 
     # --------------------------------------------------
     # Evaluate

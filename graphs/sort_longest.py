@@ -24,7 +24,7 @@ class SortLongest(scheduling.Scheduling):
         else:
             return -1*res
 
-    def find_schedule(self, sending_node):
+    def find_schedule(self, sending_node, active_nodes=None):
         """
         Find a schedule for the given node.
 

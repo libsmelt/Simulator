@@ -3,6 +3,7 @@ import heapq
 import draw
 import config
 import pdb
+import logging
 
 # Evaluation is event based. We realize this using a priority heap
 # with the time at which the event is happening as priority and pop
@@ -113,6 +114,7 @@ def propagate(src, dest):
     """
     Process propagation event.
     This will queue a receive event on the receiving side
+
     """
     w = topology.edge_weight((src, dest))
     heapq.heappush(event_queue, (round + w, events.Receive(src, dest)))
@@ -123,8 +125,8 @@ def receive(src, dest):
     is the node where the message is received. Send will be called to
     trigger sending of messages to children.
     """
-    print "{%d}: receiving message from {%d} in round %d" \
-        % (dest, src, round)
+    logging.info("{%d}: receiving message from {%d} in round %d" \
+                     % (dest, src, round))
     global last_node
     last_node = dest
     cost = model.get_receive_cost(src, dest)
@@ -144,29 +146,40 @@ def receive(src, dest):
 
 def send(src):
     """
-    Simulate sending a message from given node.
-    No message will be send towards nodes given in omit
+    Simulate sending a message from given node. No message will be
+    send towards nodes given in omit
+
     """
     send_time = round
     assert src<len(topology)
     nb = []
 
     # Get a list of neighbors from the scheduler
-    nb = schedule.find_schedule(src)
+    nb = schedule.find_schedule(src, nodes_active)
+    assert isinstance(nb, list)
+    assert isinstance(nodes_active, list)
     
     # Ignore all nodes that received the message already
     nb_filtered = [ tmp for (cost, tmp) in nb if tmp not in nodes_active ]
+    assert len(nb_filtered) == len(nb) or pdb.set_trace()
 
     if len(nb_filtered) > 0:
         dest = nb_filtered[0]
         cost = model.get_send_cost(src, dest)
+        
+        # Adaptive models: need to add edge
+        if not topology.has_edge((src,dest)):
+            topology.add_edge((src, dest), model.graph.edge_weight((src, dest)))
+
         visu.send(src, dest, send_time, cost)
         send_compl = send_time + cost
+
         # Add propagation event to the heap to signal to propagate
-        #  the message after the send operation completes
+        # the message after the send operation completes
         heapq.heappush(\
             event_queue, \
                 (send_compl, events.Propagate(src, dest)))
+
         # Add send event to signal that further messages can be
         # sent once the current message completed the current send
         # operation.

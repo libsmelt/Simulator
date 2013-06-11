@@ -72,6 +72,14 @@ class Model(object):
         return None
 
     # --------------------------------------------------
+    # Helpers
+    def get_cores(self):
+        """
+        Return a list of cores
+        """
+        return [ c for c in range(self.get_num_cores()) ] 
+
+    # --------------------------------------------------
     # Results from evaluation
     def set_evaluation_result(self, ev):
         """
@@ -136,8 +144,8 @@ class Model(object):
         """
         self._connect_numa_internal(g, src)
         cost = shortest_path(g_numa, src)[1]
-        print "connect numa nodes for %d: cost array size is: %d" % \
-            (src, len(cost))
+        logging.info("connect numa nodes for %d: cost array size is: %d" % \
+                         (src, len(cost)))
         for trg in range(len(cost)):
             if src!=trg:
                 self._add_numa(g, src, trg, 

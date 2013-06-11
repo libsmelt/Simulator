@@ -1,6 +1,9 @@
 # Copyright (c) 2007, 2008, 2009, 2010, 2011, 2012, 2013 ETH Zurich.
 
 import model
+import scheduling
+import sort_longest
+import sched_adaptive
 
 class Overlay(object):
     """
@@ -50,5 +53,11 @@ class Overlay(object):
         print "Coordinator nodes are: %s" % str(coordinators)
         return coordinators
 
+    def get_scheduler(self, final_graph):
+        """
+        XXX Currently only one scheduler per model
+
+        """
+        return sort_longest.SortLongest(final_graph)
 
 

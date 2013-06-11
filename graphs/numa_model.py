@@ -15,8 +15,19 @@ class NUMAModel(model.Model):
     # --------------------------------------------------
 
     def get_num_numa_hops(self, src, dest):
+        """
+        Get number of NUMA hops for communication between given pair
+        of NUMA nodes.
+        """
         (tree, hops) = shortest_path(self.g_numa, src)
         return hops.get(dest)
+
+    def get_num_numa_hops_for_cores(self, src, dest):
+        """
+        Get number of NUMA hops for communication between given pair of cores
+        """
+        return self.get_num_numa_hops(self.get_numa_id(src),
+                                      self.get_numa_id(dest))
 
     # --------------------------------------------------
 

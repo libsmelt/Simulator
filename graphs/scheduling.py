@@ -14,18 +14,29 @@ class Scheduling(object):
         """
         self.graph = graph
 
-    def find_schedule(self, sending_node):
+    def find_schedule(self, sending_node, active_nodes):
         """
         Find a schedule for the given node.
 
         @param sending_node Sending node for which to determine scheduling
+        @param active_nodes A list of active nodes.
         @return List of neighbors in FIFO order.
         """
         return None
 
+    def get_final_schedule(self, sending_node, active_nodes=None):
+        """
+        Get the final schedule. This is equal to what will be returned
+        from find_schedule except for adaptive models, that just
+        replay what they generated before.
+
+        """
+        return self.find_schedule(sending_node, active_nodes)
+
     def _return_neighbors(self, src):
         """
         Create list of children first, and the cost of the message list
+
         """
         nb = []
         for dest in self.graph.neighbors(src):
