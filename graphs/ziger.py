@@ -37,6 +37,3 @@ class Ziger(numa_model.NUMAModel):
         hops = self.get_num_numa_hops(self.get_numa_id(src), 
                                       self.get_numa_id(dest))
         return self.recv_cost[hops]
-
-    def get_numa_information(self):
-        return super(Ziger, self)._auto_generate_numa_information()

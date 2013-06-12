@@ -27,6 +27,3 @@ class Sbrinz(numa_model.NUMAModel):
 
     def get_num_cores(self):
         return 16
-
-    def get_numa_information(self):
-        return super(Sbrinz, self)._auto_generate_numa_information()

@@ -27,6 +27,3 @@ class Gottardo(numa_model.NUMAModel):
 
     def get_num_cores(self):
         return 32 # XXX Hyperthreading still disabled?
-
-    def get_numa_information(self):
-        return super(Gottardo, self)._auto_generate_numa_information()
