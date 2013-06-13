@@ -5,11 +5,13 @@
   & \multicolumn{3}{c}{Real hardware} & \multicolumn{2}{c}{Simulation} \\
   topology & time [cycles] & factor & stderr & time [units] & factor \\
   \midrule
-  cluster & 2765.07 & 1.077 & 112.90 & 101 & 1.000 \\
-  mst & 2567.22 & 1.000 & 119.15 & 192 & 1.901 \\
-  bintree & 2999.23 & 1.168 & 224.12 & 283 & 2.802 \\
-  sequential & 3057.91 & 1.191 & 667.68 & 374 & 3.703 \\
-  badtree & 4112.49 & 1.602 & 127.63 & 465 & 4.604 \\
+  ring & 0.00 & 0.000 & 0.00 & -1 & -1.000 \\
+  cluster & 2765.07 & 1.077 & 112.90 & 221 & 1.047 \\
+  mst & 2567.22 & 1.000 & 119.15 & 221 & 1.047 \\
+  bintree & 2999.23 & 1.168 & 224.12 & 272 & 1.289 \\
+  sequential & 3057.91 & 1.191 & 667.68 & 401 & 1.900 \\
+  badtree & 4112.49 & 1.602 & 127.63 & 365 & 1.730 \\
+  adaptivetree & 0.00 & 0.000 & 0.00 & 211 & 1.000 \\
   \midrule
   \end{tabular}
   \caption{Evaluation of different topologies for sbrinz1}
