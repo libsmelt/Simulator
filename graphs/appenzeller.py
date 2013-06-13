@@ -26,9 +26,9 @@ class Appenzeller(numa_model.NUMAModel):
         return 8
 
     def get_num_cores(self):
-        return 6
+        return 48 # 8x6
 
-    def get_numa_information(self):
+    def _build_numa_graph(self):
         g_numa = graph()
         g_numa.add_nodes(range(self.get_num_numa_nodes()))
 
@@ -44,9 +44,9 @@ class Appenzeller(numa_model.NUMAModel):
 
         errors = 0
         for s in range(8):
-            for d in d[s]:
+            for e in d[s]:
                 try:
-                    g_numa.add_edge((s,d))
+                    g_numa.add_edge((s,e))
                 except:
                     errors += 1
                     

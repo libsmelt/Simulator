@@ -9,10 +9,13 @@ import gv
 import Queue
 import numpy
 import subprocess
+import logging
+import pdb
 
 from datetime import *
 
 from pygraph.classes.graph import graph
+from pygraph.classes.digraph import digraph
 
 from pygraph.readwrite.dot import write
 from pygraph.algorithms.minmax import shortest_path
@@ -62,7 +65,7 @@ def walk_graph(g, root, func, mat, sched):
     done = reachable and also handled
 
     """
-    assert isinstance(g, graph)
+    assert isinstance(g, graph) or isinstance(g, digraph)
     active = Queue.Queue()
     done = []
 
@@ -88,10 +91,10 @@ def walk_graph(g, root, func, mat, sched):
 def fill_matrix(s, children, parent, mat, sched):
     """
     """
-    print "%d -> %s" % (s, ','.join([ str(c) for c in children ]))
+    logging.info("%d -> %s" % (s, ','.join([ str(c) for c in children ])))
     i = 1
     for (cost, r) in sched.get_final_schedule(s):
-        print "%d -> %d [%r]" % (s, r, r in children)
+        logging.info("%d -> %d [%r]" % (s, r, r in children))
         if r in children:
             mat[s][r] = i
             i += 1
@@ -202,7 +205,7 @@ def _pgf_header(f, caption='TODO', label='TODO'):
     s = (("\\begin{figure}\n"
           "  \\caption{%s}\n"
           "  \\label{%s}\n"
-          "  \\begin{tikzpicture}\n") 
+          "  \\begin{tikzpicture}[scale=.75]\n") 
          % (caption, label))
     f.write(s)
 
@@ -386,9 +389,17 @@ def _output_table_footer(f, label, caption):
 
 def _output_table_row(f, item, min_evaluation, min_simulation):
     assert len(item)==4
+    fac1 = -1 if float(min_evaluation) == 0 else item[1]/float(min_evaluation)
+    fac2 = -1 if float(min_simulation) == 0 else item[3]/float(min_simulation)
+    t_sim = item[3]
+
+    if t_sim == sys.maxint:
+        t_sim = -1
+        fac2 = -1
+
     f.write("  %s & %.2f & %.3f & %.2f & %.0f & %.3f \\\\\n" %
-            (item[0], item[1], item[1]/float(min_evaluation), item[2], 
-             item[3], item[3]/float(min_simulation)))
+            (item[0], item[1], fac1, item[2], 
+             t_sim, fac2))
 
 def output_machine_results(machine, res_measurement, res_simulator):
     """
@@ -397,12 +408,23 @@ def output_machine_results(machine, res_measurement, res_simulator):
     @param machine Name of the machine
     @param results List of (topology, mean, stderr)
     """
+
+    if len(res_measurement)<1 or len(res_simulator)<1:
+        return
+
     f = open('../measurements/%s_topologies.tex' % machine, 'w+')
     cap = "Evaluation of different topologies for %s" % machine
 
     _output_table_header(f)
-    min_evaluation = min(time for (topo, time, err) in res_measurement)
+
+    ev_times = [time for (topo, time, err) in res_measurement if time != 0]
+    assert len(ev_times)>0
+    min_evaluation = min(ev_times)
     min_simulation = min(time for (topo, time) in res_simulator)
+    # Otherwise, the simulation didn't work
+    assert min_evaluation>0 
+    assert min_simulation>0 
+
     for e in zip(res_measurement, res_simulator):
         assert(e[0][0] == e[1][0])
         _output_table_row(f, (e[0][0], e[0][1], e[0][2], e[1][1]), 

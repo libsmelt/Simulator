@@ -36,6 +36,8 @@ class Ring(overlay.Overlay):
         """
         Initialize the ring algorithm
         """
+        # if mod.get_num_cores()!=32:
+        #     raise Exception('Rings only supported on machines with 32 cores')
         super(Ring, self).__init__(mod)
 
     def get_name(self):

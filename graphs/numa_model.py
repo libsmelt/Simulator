@@ -63,7 +63,7 @@ class NUMAModel(model.Model):
         return res
 
     def get_numa_information(self):
-        return super(NUMAModel, self)._auto_generate_numa_information()
+        return self._auto_generate_numa_information()
 
     def _build_numa_graph(self):
         """
