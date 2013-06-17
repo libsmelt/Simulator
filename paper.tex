@@ -130,6 +130,14 @@ We break the problem down into three steps:
   Section~\ref{sec:scheduling}.
 \end{inparaenum}
 
+\begin{figure}[htb]
+  \centering
+  \includegraphics[width=\linewidth]{Overview_Model_Evaluation_Parser}
+  \caption{Overview of configuration of atomic broadcast using a Model 
+    \stefan{Draw figure properly}}
+  \label{fig:overview}
+\end{figure}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Distributed algorithms}
@@ -634,6 +642,7 @@ be to start with the child from which the longest path emerges.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Implementation}
+\label{sec:implementation}
 
 % Our implementation
 Assuming the tree, we now implement an atomic broadcast for multicore
@@ -842,6 +851,13 @@ the current MST, but will be better in many cases. \stefan{We need to
 
 %-------------------------------------------------
 \subsubsection{Real hardware}
+
+\stefan{Describe benchmark application} 
+\begin{itemize}
+\item One process on every core
+\item Management process on core 2 (i.e.\ not core 0)
+\item Uses atomic broadcast as described in Section~\ref{sec:implementation}
+\end{itemize}
 
 \paragraph{Binary tree on sbrinz2}
 

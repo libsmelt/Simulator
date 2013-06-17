@@ -52,9 +52,16 @@ def output_quorum_configuration(model, graph, root, sched, topo):
 
     # Generate c code
     stream = open("model.h", "w")
-    __c_header(stream, model.evaluation.last_node, type(model), type(topo))
+    defstream = open("model_defs.h", "w")
+    __c_header_model_defs(defstream, 
+                          model.evaluation.last_node, 
+                          type(model), 
+                          type(topo),
+                          len(mat))
+    __c_header_model(stream)
     __matrix_to_c(stream, mat)
     __c_footer(stream)
+    __c_footer(defstream)
 
 
 def walk_graph(g, root, func, mat, sched):
@@ -109,8 +116,9 @@ def __matrix_to_c(stream, mat):
 
     """
     dim = len(mat)
-    stream.write(("#define MODEL_NUM_CORES %d\n\n" % dim))
-    stream.write(("int model[%d][%d] = {\n" % (dim, dim)))
+    stream.write("int model[MODEL_NUM_CORES][MODEL_NUM_CORES] = {\n")
+    # x-axis labens
+    stream.write(("//   %s\n" % ' '.join([ "%2d" % x for x in range(dim) ])))
     for x in range(dim):
         stream.write("    {")
         for y in range(dim):
@@ -118,19 +126,26 @@ def __matrix_to_c(stream, mat):
             if y+1 != dim:
                 stream.write(",")
         stream.write("}")
-        if x+1 != dim:
-            stream.write(",")
+        stream.write(',' if x+1 != dim else ' ')
+        stream.write((" // %2d" % x))
         stream.write("\n")
     stream.write("};\n\n")
 
 
-def __c_header(stream, last_node, machine, topology):
-    stream.write('#ifndef MULTICORE_MODEL\n')
-    stream.write('#define MULTICORE_MODEL 1\n\n')
+def __c_header(stream, name):
+    stream.write('#ifndef %s\n' % name)
+    stream.write('#define %s 1\n\n' % name)
+
+def __c_header_model_defs(stream, last_node, machine, topology, dim):
+    __c_header(stream, 'MULTICORE_MODEL_DEFS')                               
     stream.write('#define MACHINE "%s"\n' % machine)
     stream.write('#define TOPOLOGY "%s"\n' % topology)
-    stream.write('#define LAST_NODE %d\n\n' % last_node)
+    stream.write('#define LAST_NODE %d\n' % last_node)
+    stream.write("#define MODEL_NUM_CORES %d\n\n" % dim)
 
+def __c_header_model(stream):
+    __c_header(stream, 'MULTICORE_MODEL')                               
+    stream.write('#include "model_defs.h"\n\n')
 
 def __c_footer(stream):
     stream.write("#endif\n")

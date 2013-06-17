@@ -3,7 +3,7 @@
 MODEL=model.h
 QDIR=$HOME/bf/quorum/usr/quorum/
 TMP=`mktemp`
-RESULTDIR=~/measurements/atomic_broadcast/
+RESULTDIR=~/measurements/atomic_broadcast_new_model/
 PATTERN="Quorum.*everything done.*exiting"
 
 # check the output
@@ -20,7 +20,7 @@ function wait_result() {
 		sleep 2
 		i=$(($i+1))
 
-		if [[ i -ge 150 ]]
+		if [[ i -ge 300 ]]
 		then
 			echo "Timeout, restarting machine"
 			rackpower -r $m
@@ -32,18 +32,18 @@ function wait_result() {
 # main
 # --------------------------------------------------
 # gruyere sbrinz1
-for m in ziger1 gruyere sbrinz1 
+for m in appenzeller # sbrinz1 #gruyere sbrinz1 # ziger1 
 do
 	# ring,cluster,mst,bintree,sequential,badtree
 	# cluster mst bintree sequential 
-    for t in badtree cluster mst bintree sequential 
+    for t in badtree cluster mst bintree sequential adaptivetree
     do
 	# Cleanup 
 	rm -f $MODEL
 	echo "" >$TMP
 	
 	# Run the simulator
-	./simulator.py $m $t
+	./simulator.py $m $t || exit 1
 
 	# Quit if generating the model failed
 	if [[ ! -e $MODEL ]]
