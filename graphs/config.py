@@ -4,3 +4,21 @@
 SCHEDULING_SORT=True
 SCHEDULING_SORT_ID=False
 SCHEDULING_SORT_LONGEST_PATH=False
+
+topologies = [
+    "ring", 
+    "cluster", 
+    "mst", 
+    "bintree",
+    "sequential",
+    "badtree",
+    "adaptivetree"
+    ]
+machines = [
+    "nos6",
+    "ziger1",
+    "gruyere",
+    'sbrinz1', 'sbrinz2',
+    'gottardo',
+    'appenzeller'
+    ]

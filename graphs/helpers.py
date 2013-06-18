@@ -2,6 +2,7 @@
 
 # Import graphviz
 import sys
+import os
 sys.path.append('..')
 sys.path.append('/usr/lib/graphviz/python/')
 sys.path.append('/usr/lib64/graphviz/python/')
@@ -11,6 +12,9 @@ import numpy
 import subprocess
 import logging
 import pdb
+import traceback
+import simulation
+from config import topologies, machines
 
 from datetime import *
 
@@ -412,9 +416,11 @@ def _output_table_row(f, item, min_evaluation, min_simulation):
         t_sim = -1
         fac2 = -1
 
-    f.write("  %s & %.2f & %.3f & %.2f & %.0f & %.3f \\\\\n" %
-            (item[0], item[1], fac1, item[2], 
-             t_sim, fac2))
+    f1 = "\colorbox{gray}{%.3f}" % fac1 if fac1 == 1.0 else "%.3f" % fac1
+    f2 = "\colorbox{gray}{%.3f}" % fac2 if fac2 == 1.0 else "%.3f" % fac2
+
+    f.write("  %s & %.2f & %s & %.2f & %.0f & %s \\\\\n" %
+            (item[0], item[1], f1, item[2], t_sim, f2))
 
 def output_machine_results(machine, res_measurement, res_simulator):
     """
@@ -452,3 +458,37 @@ def run_pdflatex(fname):
                      '-interaction', 'nonstopmode',
                         fname], cwd='/tmp') == 0:
         subprocess.call(['okular', fname.replace('.tex', '.pdf')])
+
+def extract_machine_results(model):
+    """
+    Extract result for simulation and real-hardware from log files
+    
+    """
+    results = []
+    sim_results = []
+    machine = model.get_name()
+    for t in topologies:
+        f = ("%s/measurements/atomic_broadcast_new_model/%s_%s" % 
+             (os.getenv("HOME"), machine, t))
+
+        # Real hardware
+        if os.path.isfile(f):
+            stat = parse_measurement(f, range(model.get_num_cores()))
+            assert len(stat) == 1 # Only measurements for one core
+            results.append((t, stat[0][1], stat[0][2]))
+        else: 
+            results.append((t, 0, 0))
+
+        # Simulation
+        try:
+            (topo, ev, root, sched, topo) = \
+                simulation._simulation_wrapper(t, model, model.get_graph())
+            final_graph = topo.get_broadcast_tree()
+            sim_results.append((t, ev.time))
+        except:
+            print traceback.format_exc()
+            print 'Simulation failed for machine [%s] and topology [%s]' %\
+                (machine, t)
+            sim_results.append((t, sys.maxint))
+
+    return (results, sim_results)

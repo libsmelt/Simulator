@@ -19,6 +19,7 @@ import evaluate
 import config
 import model
 import helpers
+import simulation
 
 # Machines
 import gruyere
@@ -47,25 +48,7 @@ import sys
 import os
 import tempfile
 import traceback
-
-topologies = [
-    "ring", 
-    "cluster", 
-    "mst", 
-    "bintree",
-    "sequential",
-    "badtree",
-    "adaptivetree"
-    ]
-machines = [
-    "nos6",
-    "ziger1",
-    "gruyere",
-    'sbrinz1', 'sbrinz2',
-    'gottardo',
-    'appenzeller'
-    ]
-
+from config import topologies, machines
 
 def arg_machine(s):
     """
@@ -124,7 +107,7 @@ def build_and_simulate():
     # XXX Cleanup required
     if args.action == "simulate":
         (topo, ev, root, sched, topology) = \
-            _simulation_wrapper(args.overlay, m, gr)
+            simulation._simulation_wrapper(args.overlay, m, gr)
         final_graph = topo.get_broadcast_tree()
         print "Cost for tree is: %d, last node is %d" % (ev.time, ev.last_node)
         # Output c configuration for quorum program
@@ -144,31 +127,9 @@ def build_and_simulate():
         return 0
     elif args.action == "evaluate-machine":
         print "Evaluate all measurements for given machine"
-        results = []
-        sim_results = []
 
-        for t in topologies:
-            f = ("%s/measurements/atomic_broadcast/%s_%s" % 
-                 (os.getenv("HOME"), args.machine, t))
-
-            # Real hardware
-            if os.path.isfile(f):
-                stat = helpers.parse_measurement(f, range(m.get_num_cores()))
-                assert len(stat) == 1 # Only measurements for one core
-                results.append((t, stat[0][1], stat[0][2]))
-            else: 
-                results.append((t, 0, 0))
-
-            # Simulation
-            try:
-                (topo, ev, root, sched, topo) = _simulation_wrapper(t, m, gr)
-                final_graph = topo.get_broadcast_tree()
-                sim_results.append((t, ev.time))
-            except:
-                print traceback.format_exc()
-                print 'Simulation failed for machine [%s] and topology [%s]' %\
-                    (args.machine, t)
-                sim_results.append((t, sys.maxint))
+        assert m.get_name() == args.machine
+        (results, sim_results) = helpers.extract_machine_results(m)
 
         # debug output
         for ((t, v, e), (t_sim, v_sim)) in zip(results, sim_results):
@@ -201,57 +162,6 @@ def build_and_simulate():
         f.close()
 
         helpers.run_pdflatex(fname)
-
-
-def _simulation_wrapper(overlay, m, gr):
-    """
-    Wrapper for simulationg machines
-
-    """
-    print 'Simulating machine [%s] with topology [%s]' % \
-        (m.get_name(), overlay)
-
-    if overlay == "mst":
-        r = mst.Mst(m)
-
-    elif overlay == "cluster":
-        # XXX Rename to hierarchical 
-        r = cluster.Cluster(m)
-
-    elif overlay == "ring":
-        r = ring.Ring(m)
-
-    elif overlay == "bintree":
-        r = binarytree.BinaryTree(m)
-
-    elif overlay == "sequential":
-        r = sequential.Sequential(m)
-
-    elif overlay == "badtree":
-        r = badtree.BadTree(m)
-
-    elif overlay == "adaptivetree":
-        r = adaptive.AdapativeTree(m)
-
-    root = r.get_root_node()
-    final_graph = r.get_broadcast_tree()
-
-    # --------------------------------------------------
-    # Output graphs
-    helpers.output_graph(gr, '%s_full_mesh' % m.get_name())
-    if final_graph is not None:
-        helpers.output_graph(final_graph, '%s_%s' % (m.get_name(), overlay))
-
-    # --------------------------------------------------
-    sched = r.get_scheduler(final_graph)
-
-    # --------------------------------------------------
-    # Evaluate
-    evaluation = evaluate.Evaluate()
-    ev = evaluation.evaluate(r, root, m, sched) 
-    
-    # Return result
-    return (r, ev, root, sched, r)
 
 if __name__ == "__main__":
     try:
