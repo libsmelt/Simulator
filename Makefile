@@ -23,6 +23,16 @@ $(PAPER).pdf: $(wildcard *.tex) $(wildcard *.bib) $(DEPS) $(DOT)
 	if egrep Rerun $(PAPER).log ; then pdflatex $(LATEXOPTS) $(PAPER) ; fi
 	$(RM) *.aux *.bbl *.blg *.toc
 
+visu.pdf: $(wildcard *.tex) $(wildcard *.bib) $(DEPS) $(DOT)
+	pdflatex $(LATEXOPTS) visu
+	if egrep '\\cite' visu.tex ; then bibtex visu ; fi
+	if [ -e visu.toc ] ; then pdflatex $(LATEXOPTS) visu ; fi
+	if [ -e visu.bbl ] ; then pdflatex $(LATEXOPTS) visu ; fi
+	if egrep Rerun visu.log ; then pdflatex $(LATEXOPTS) visu ; fi
+	if egrep Rerun visu.log ; then pdflatex $(LATEXOPTS) visu ; fi
+	if egrep Rerun visu.log ; then pdflatex $(LATEXOPTS) visu ; fi
+	$(RM) *.aux *.bbl *.blg *.toc
+
 sync: $(PAPER).pdf
 	rsync -av ~/Documents/library.bib mendeley.bib
 

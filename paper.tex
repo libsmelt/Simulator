@@ -79,7 +79,7 @@ machines. Multicores come in many flavors depending on vendor and
 generation of the machine. All of these machines have fundamentally
 different characteristics such as number of nodes, NUMA
 characteristics, interconnect topologies, propagation time on
-interconnect and use of shared caches. These characteristics are hard
+interconnect and use of shared caches. These characteristics are hard~\cite{Cavage2013}
 to understand, but important to consider for application performance. 
 
 % New ideas
@@ -1026,6 +1026,7 @@ implementations.
 \newcommand{\nary}{$n$-ary\xspace}
 
 \begin{itemize}
+\item Keywords: decomposition~\cite{Cavage2013}
 \item Other topologies (mainly based on~\cite{Bruck1992}):
   \begin{itemize}
   \item Fibonacci trees: more efficient since nodes further up the
@@ -1184,8 +1185,9 @@ something entirely message-passing based like MPI versions.
 \input{measurements/gruyere_topologies}
 \input{measurements/ziger1_topologies}
 \input{measurements/sbrinz1_topologies}
+\input{measurements/appenzeller_topologies}
 
-\input{graphs/visall}
+%\input{graphs/visall}
 
 \end{appendices}
 

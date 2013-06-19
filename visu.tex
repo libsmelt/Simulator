@@ -1,0 +1,68 @@
+\documentclass{article}
+\usepackage{url,color,xspace,verbatim,subfig,ctable,multirow,listings}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{txfonts}
+\usepackage{rotating}
+\usepackage{paralist}
+\usepackage{subfig}
+\usepackage{graphics}
+\usepackage{enumitem}
+\usepackage{times}
+\usepackage{amssymb}
+\usepackage[colorlinks=true]{hyperref}
+\usepackage[ruled,vlined]{algorithm2e}
+\usepackage[toc,page]{appendix}
+% ==================================================
+
+\graphicspath{{figs/}}
+\urlstyle{sf}
+
+% tikz stuff
+\usepackage{tikz}
+\usepackage{pgfplots}
+% configuration
+\usetikzlibrary{shapes,positioning,calc,snakes,arrows,shapes,fit,backgrounds}
+\pgfplotsset{width=.9\linewidth}
+
+\lstset{
+  language=C,
+  basicstyle=\ttfamily \small,
+  flexiblecolumns=false,
+  basewidth={0.5em,0.45em},
+  boxpos=t,
+}
+
+\newcommand{\etal}{{\it et al.}\xspace}
+\newcommand{\naive}{na\"{\i}ve\xspace}
+\newcommand{\Naive}{Na\"{\i}ve\xspace}
+\newcommand{\textc}[1]{{\color{gray} {\footnotesize #1}}}
+
+\definecolor{skRed}{RGB}{155,25,25}
+\newcommand{\stefan}[1]{
+  {\color{skRed}[{\color{red}{SK}} #1]}}
+
+\setcounter{section}{0} % Start sections with 1, not 0
+\begin{document}
+
+\title{Adaptive broadcast tree for multicores}
+
+% email address
+\newcommand{\eaddr}{stefan.kaestle@inf.ethz.ch}
+\newcommand{\email}{\href{mailto:\eaddr}{\eaddr}}
+
+\author{Stefan Kaestle\\
+  \email \\
+  Systems Group, ETH Zurich}
+
+\maketitle
+
+% keywords: modeling, simulation, overlay networks, scheduling
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Visualization}
+
+\input{graphs/visall}
+
+\end{document}
