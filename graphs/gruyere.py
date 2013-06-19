@@ -3,6 +3,7 @@
 import model
 import numa_model
 import helpers
+
 from pygraph.algorithms.minmax import shortest_path
 from pygraph.classes.graph import graph
 from pygraph.classes.digraph import digraph

@@ -21,14 +21,6 @@ import model
 import helpers
 import simulation
 
-# Machines
-import gruyere
-import nos6
-import ziger
-import sbrinz
-import gottardo
-import appenzeller
-
 # Overlays
 import cluster
 import ring
@@ -50,12 +42,23 @@ import tempfile
 import traceback
 from config import topologies, machines
 
-def arg_machine(s):
+import numa_model
+
+# Machines
+import gruyere
+import nos6
+import ziger
+import sbrinz
+import gottardo
+import appenzeller
+
+
+def arg_machine(machine_name):
     """
     Remove digits from machine name!
 
     """
-    string = ''.join([i for i in s if not i.isdigit()])
+    string = ''.join([i for i in machine_name if not i.isdigit()])
     if string == "gruyere":
         return gruyere.Gruyere()
     elif string == "nos":
@@ -70,6 +73,7 @@ def arg_machine(s):
         return appenzeller.Appenzeller()
     else:
         return None
+
 
 # --------------------------------------------------
 def build_and_simulate():
@@ -86,6 +90,10 @@ def build_and_simulate():
     parser.add_argument('--evaluate-machine', dest="action", action="store_const",
                         const="evaluate-machine", default="simulate", 
                         help="Dump machine model instead of simulating")
+    parser.add_argument('--evaluate-all-machines', dest="action", 
+                        action="store_const",
+                        const="evaluate-all-machines", default="simulate", 
+                        help="Generate a plot comparing all topologies on all machines")
     parser.add_argument('--ump-breakdown', dest="action", action="store_const",
                         const="ump-breakdown", default="simulate", 
                         help="Dump machine model instead of simulating")
@@ -136,6 +144,28 @@ def build_and_simulate():
             print '%50s %7d %5d' % (t, v, v_sim)
             
         helpers.output_machine_results(args.machine, results, sim_results)
+        return 0
+    elif args.action == "evaluate-all-machines":
+        print "Evaluate all machines"
+
+        a = []
+
+        for machine in machines:
+            mod = arg_machine(machine) 
+            (results, sim_results) = helpers.extract_machine_results(mod, nosim=True)
+
+            a.append((machine, results))#, sim_results)
+        
+        fname = '/tmp/multiplot.tex'
+        f = open(fname, 'w+')
+        helpers._latex_header(f)
+
+        # Generate plot including figure environment
+        helpers.do_pgf_multi_plot(f, a)
+
+        helpers._latex_footer(f)
+        helpers.run_pdflatex(fname)
+
         return 0
 
     # --------------------------------------------------

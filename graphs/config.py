@@ -6,7 +6,7 @@ SCHEDULING_SORT_ID=False
 SCHEDULING_SORT_LONGEST_PATH=False
 
 topologies = [
-    "ring", 
+#    "ring", 
     "cluster", 
     "mst", 
     "bintree",
@@ -15,10 +15,11 @@ topologies = [
     "adaptivetree"
     ]
 machines = [
-    "nos6",
+# nos6
     "ziger1",
     "gruyere",
-    'sbrinz1', 'sbrinz2',
-    'gottardo',
+    'sbrinz1',
+# 'sbrinz2',
+#    'gottardo',
     'appenzeller'
     ]

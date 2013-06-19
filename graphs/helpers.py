@@ -277,6 +277,56 @@ def do_pgf_plot(f, data, caption='', xlabel='', ylabel=''):
     f.write("    };\n");
     _pgf_plot_footer(f)
 
+def do_pgf_multi_plot(f, multidata, caption='FIXME', xlabel='FIXME', ylabel='FIXME'):
+    """
+    Same as do_pgf_multi_plot
+    @param list of (label, [(x,y,err)])
+
+    """
+    now = datetime.today()
+    plotname = "%02d%02d%02d" % (now.year, now.month, now.day)
+    _pgf_plot_header(f, plotname, caption, xlabel, ylabel, 
+                     attr=['ybar interval=.3'])
+
+    machines = []
+    topos = []
+    data = []
+
+    for (legentry, rawdata) in multidata:
+
+        idata = []
+        topos = []
+        for d in rawdata:
+            topos.append(d[0])
+            idata.append(d[1])
+ 
+        data.append(idata)
+
+        machines.append(legentry)
+
+#   "Invert" two dimensional list
+    data_new = [[0 for i in range(len(data))] for j in range(len(data[0]))]
+    for y in range(len(data[0])):
+        for x in range(len(data)):
+            tmp = data[x][y]
+            data_new[y][x] = tmp
+#
+
+    for idata in data_new:
+         f.write(("    \\addplot coordinates {\n"))
+         i = 0
+         for d in idata:
+             f.write("      (%d,%f)\n" % (i, d))
+             i += 1
+         f.write("    };\n");
+#
+
+    f.write("\legend{%s}\n" % ','.join(topos))
+
+    _pgf_plot_footer(f)
+    
+
+
 def _latex_header(f):
     header = (
         "\\documentclass[a4wide]{article}\n"
@@ -459,7 +509,7 @@ def run_pdflatex(fname):
                         fname], cwd='/tmp') == 0:
         subprocess.call(['okular', fname.replace('.tex', '.pdf')])
 
-def extract_machine_results(model):
+def extract_machine_results(model, nosim=False):
     """
     Extract result for simulation and real-hardware from log files
     
@@ -480,15 +530,18 @@ def extract_machine_results(model):
             results.append((t, 0, 0))
 
         # Simulation
-        try:
-            (topo, ev, root, sched, topo) = \
-                simulation._simulation_wrapper(t, model, model.get_graph())
-            final_graph = topo.get_broadcast_tree()
-            sim_results.append((t, ev.time))
-        except:
-            print traceback.format_exc()
-            print 'Simulation failed for machine [%s] and topology [%s]' %\
-                (machine, t)
+        if not nosim:
+            try:
+                (topo, ev, root, sched, topo) = \
+                    simulation._simulation_wrapper(t, model, model.get_graph())
+                final_graph = topo.get_broadcast_tree()
+                sim_results.append((t, ev.time))
+            except:
+                print traceback.format_exc()
+                print 'Simulation failed for machine [%s] and topology [%s]' %\
+                    (machine, t)
+                sim_results.append((t, sys.maxint))
+        else:
             sim_results.append((t, sys.maxint))
 
     return (results, sim_results)
