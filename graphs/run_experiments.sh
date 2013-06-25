@@ -31,11 +31,8 @@ function wait_result() {
 
 # main
 # --------------------------------------------------
-# gruyere sbrinz1
-for m in appenzeller # sbrinz1 #gruyere sbrinz1 # ziger1 
+for m in sbrinz2
 do
-	# ring,cluster,mst,bintree,sequential,badtree
-	# cluster mst bintree sequential 
     for t in badtree cluster mst bintree sequential adaptivetree
     do
 	# Cleanup 

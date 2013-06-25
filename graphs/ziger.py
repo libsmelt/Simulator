@@ -19,9 +19,6 @@ class Ziger(numa_model.NUMAModel):
         g = super(Ziger, self)._build_graph()
         super(Ziger, self).__init__(g)
         
-        # for c in range(1, self.get_num_cores()):
-        #     print "%d -> %d: %d" % (0, c, self.get_recieve_cost(0, c))
-
     # --------------------------------------------------
     # Characteritics of model
     def get_name(self):

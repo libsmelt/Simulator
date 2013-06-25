@@ -423,7 +423,6 @@ def parse_measurement(f, coreids=None):
         l = len(dic[c])
         if l > 0:
             print "core %d, length %d" % (c, len(dic[c]))
-            assert len(dic[c])==100
             s = statistics_cropped(dic[c])
             if s != None:
                 stat.append((c, s[0], s[1]))

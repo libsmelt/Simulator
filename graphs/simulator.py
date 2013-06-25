@@ -97,7 +97,7 @@ def build_and_simulate():
     parser.add_argument('--ump-breakdown', dest="action", action="store_const",
                         const="ump-breakdown", default="simulate", 
                         help="Dump machine model instead of simulating")
-    parser.add_argument('machine', choices=machines,
+    parser.add_argument('machine',
                         help="Machine to simulate")
     parser.add_argument('overlay', choices=topologies,
                         help="Overlay to use for atomic broadcast")
@@ -136,7 +136,7 @@ def build_and_simulate():
     elif args.action == "evaluate-machine":
         print "Evaluate all measurements for given machine"
 
-        assert m.get_name() == args.machine
+        assert args.machine.startswith(m.get_name()) # E.g. ziger1 will be ziger, generally: machineNNN, where NNN is a number
         (results, sim_results) = helpers.extract_machine_results(m)
 
         # debug output

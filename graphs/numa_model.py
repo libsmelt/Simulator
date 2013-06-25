@@ -79,6 +79,8 @@ class NUMAModel(model.Model):
         if self.get_num_numa_nodes() == 4:
             for e in [(0,1), (1,3), (3,2), (2,0)]:
                 g_numa.add_edge(e)
+        elif self.get_num_numa_nodes() == 2:
+            g_numa.add_edge((0,1))
         else:
             raise Exception(('Do not know how to build a NUMA model for a '
                              'machine with %d cores') % self.get_num_numa_nodes())

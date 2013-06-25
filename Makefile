@@ -7,7 +7,7 @@ DEPS=$(wildcard plots/*/*.pdf) $(wildcard figs/*.pdf) $(wildcard graphs/*.tex)
 DOT=$(patsubst %.dot,%.tex,$(wildcard graphs/final_*.dot))
 
 PAPER=paper
-LATEXOPTS=-interaction=nonstopmode
+LATEXOPTS=-interaction=nonstopmode -shell-escape
 
 all: pdf
 
