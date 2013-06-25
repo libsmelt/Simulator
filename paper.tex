@@ -13,6 +13,7 @@
 \usepackage[colorlinks=true]{hyperref}
 \usepackage[ruled,vlined]{algorithm2e}
 \usepackage[toc,page]{appendix}
+\usepackage{fancyhdr}
 % ==================================================
 
 \graphicspath{{figs/}}
@@ -21,9 +22,12 @@
 % tikz stuff
 \usepackage{tikz}
 \usepackage{pgfplots}
+
 % configuration
 \usetikzlibrary{shapes,positioning,calc,snakes,arrows,shapes,fit,backgrounds}
 \pgfplotsset{width=.9\linewidth}
+\usepgfplotslibrary{external}
+%\tikzexternalize
 
 \lstset{
   language=C,
@@ -37,6 +41,13 @@
 \newcommand{\naive}{na\"{\i}ve\xspace}
 \newcommand{\Naive}{Na\"{\i}ve\xspace}
 \newcommand{\textc}[1]{{\color{gray} {\footnotesize #1}}}
+
+\fancyhf{}
+\fancyfoot[L]{\today}
+\pagestyle{fancy}
+
+% machines
+\newcommand{\ziger}{Ziger (AMD Istanbul 4x6x1)}
 
 \definecolor{skRed}{RGB}{155,25,25}
 \newcommand{\stefan}[1]{
@@ -292,6 +303,20 @@ are defined by a set of attributes (here sorted by priority):
   need to know about propagation time, as it is negligible independent
   of were messages are sent. Relevant seems to be the number of hops
   rather than the latency expressed in a concrete time.
+  \begin{description}
+  \item[send time] We assume this independent of which node we
+    communicate with (which is true for most of our machines when
+    using sender-side buffering)
+  \item[receive] On shared memory machines, receiving messages is
+    realized by reading a memory location. When the sender writes the
+    message, the receiver's copy of the cache-line is invalid. The
+    next read on it causes a transfer of the cache line from the
+    sender's to the receiver's cache, which seems to have a cost that
+    is growing with the number of hops on the interconnect for our
+    machines (although, on some machines, this is only roughly true:
+    communication with different NUMA nodes at the same interconnect
+    hop distance varies a bit. We ignore this fact for now.)
+  \end{description}
 \item[bounded delivery]
 \item[reliability] (loss, link failure, in-order delivery, phantoms,
   corruption, duplicated messages): 
@@ -317,7 +342,7 @@ automatically for a particular machine (due to the diversity of
 machines, and also the pace at which hardware changes)
 
 We now make up a machine model for evaluation. This model is based on
-a 8x4x1 AMD Shanghai machine. The topology of such a machine is shown
+a 8x4x1 AMD Barcelona machine. The topology of such a machine is shown
 in Figure~\ref{fig:gruyere}.
 
 Each of the eight NUMA nodes consists of four cores. We approximate the
@@ -361,7 +386,7 @@ over a cross-NUMA link.
     \draw[thick] (c3) -- (c8);
     \draw[thick] (c4) -- (c7);
   \end{tikzpicture}
-  \caption{Interconnect topology of 8x4x1 AMD Shanghai machine}
+  \caption{Interconnect topology of 8x4x1 AMD Barcelona machine}
   \label{fig:gruyere}
 \end{figure}
 
@@ -524,6 +549,11 @@ interconnect network.
 Another idea is to employ clustering on NUMA domains such that every
 NUMA domain corresponds to one cluster. 
 
+%--------------------------------------------------
+\subsubsection{Adaptive Tree}
+
+\stefan{Describe how this works and how we pick links}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Ring topology}
 
@@ -648,9 +678,9 @@ be to start with the child from which the longest path emerges.
 Assuming the tree, we now implement an atomic broadcast for multicore
 machines. Our implementation is based on the Barrelfish UMP
 interconnect driver. It provides reliable channels with in-order
-delivery. Flow control is build in for reliability. Communication
-starts at the root node, which acts as a
-sequentializer. See~\ref{algo:ab} for details.
+delivery and sender-side buffering \stefan{Verify this}. Flow control
+is build in for reliability. Communication starts at the root node,
+which acts as a sequentializer. See~\ref{algo:ab} for details.
 
 \begin{algorithm}[htb]
 \SetCommentSty{textc}
@@ -1181,10 +1211,196 @@ something entirely message-passing based like MPI versions.
 
 \input{graphs/ziger_ump_breakdown}
 
+\section{Shared memory performance}
+
+Plot~\ref{pgfplot:201306191213} shows some measurements for using a
+shared memory FIFO queue for communication. Core 0 sends message by
+enqueuing them to the FIFO, while all other cores poll on the queue
+for new messages.
+
+The measurement assumes the tsc clocks to be synchronized. The queues
+are also infinite. Messages are never garbage-collected. 
+
+\begin{figure}
+  \caption{Shared memory FIFO performance on brie}
+  \label{pgfplot:201306191213}
+  \begin{tikzpicture}
+    \begin{axis}[
+      ybar,
+      error bars/y dir=both,%
+      error bars/y explicit,%
+      xlabel=core,
+      xtick={1,2,3},
+      ylabel={cost [cycles]}]
+
+    \addplot coordinates {
+      (1,488.6) +- (32.1,32.1)
+      (2,761.7) +- (124.1,124.1)
+      (3,862.5) +- (118.3,118.3)
+    };
+    \end{axis}
+  \end{tikzpicture}
+\end{figure}
+
+Plot~\ref{pgfplot:201306191238} shows the same experiment for tomme.
+
+\begin{figure}
+  \caption{Shared memory FIFO performance on tomme}
+  \label{pgfplot:201306191238}
+  \begin{tikzpicture}
+    \begin{axis}[
+      ybar,
+      error bars/y dir=both,
+      error bars/y explicit,
+      xlabel=core,
+      ylabel={Cost [cycles]}]
+    \addplot coordinates {
+      (1,417.6) +- (71.0,71.0)
+      (2,776.2) +- (110.4,110.4)
+      (3,774.6) +- (111.9,111.9)
+      (4,648.0) +- (175.9,175.9)
+      (5,551.2) +- (257.5,257.5)
+      (6,652.6) +- (179.2,179.2)
+      (7,688.6) +- (116.3,116.3)
+      (8,691.2) +- (133.0,133.0)
+      (9,721.6) +- (55.8,55.8)
+      (10,633.8) +- (135.0,135.0)
+      (11,673.8) +- (86.4,86.4)
+      (12,705.0) +- (81.8,81.8)
+      (13,612.6) +- (199.1,199.1)
+      (14,699.2) +- (90.3,90.3)
+      (15,691.6) +- (93.0,93.0)
+    };
+    \end{axis}
+  \end{tikzpicture}
+\end{figure}
+
+Plot~\ref{pgfplot:201306191603} shows it for gruyere. These do not
+make sense. The numbers are far too high, especially since gruyere is
+supposed to be synchronized.
+
+This suggest that my implementation is broken .. 
+
+\begin{figure}
+  \caption{Plot}
+  \label{pgfplot:201306191603}
+  \begin{tikzpicture}
+    \begin{axis}[
+      ybar,
+      error bars/y dir=both,
+      error bars/y explicit,
+      xlabel=FIXME,
+      ylabel={Cost [cycles]}]
+    \addplot coordinates {
+      (1,2399.4) +- (3585.1,3585.1)
+      (2,8924.9) +- (11981.8,11981.8)
+      (3,4922.3) +- (4685.1,4685.1)
+      (4,6638.2) +- (3521.0,3521.0)
+      (5,5608.7) +- (4185.6,4185.6)
+      (6,5337.5) +- (3846.6,3846.6)
+      (7,5844.6) +- (2836.9,2836.9)
+      (8,5089.0) +- (3135.3,3135.3)
+      (9,5264.0) +- (3919.9,3919.9)
+      (10,5711.7) +- (3793.0,3793.0)
+      (11,5266.9) +- (3712.1,3712.1)
+      (12,8197.6) +- (3819.3,3819.3)
+      (13,8668.6) +- (3645.8,3645.8)
+      (14,8923.8) +- (2964.8,2964.8)
+      (15,7195.3) +- (2407.2,2407.2)
+      (16,8176.2) +- (3185.2,3185.2)
+      (17,8770.7) +- (3001.8,3001.8)
+      (18,4171.5) +- (2011.4,2011.4)
+      (19,8453.5) +- (3280.2,3280.2)
+      (20,13695.1) +- (3137.6,3137.6)
+      (21,13806.8) +- (2914.0,2914.0)
+      (22,13692.4) +- (2730.3,2730.3)
+      (23,14435.9) +- (2983.7,2983.7)
+      (24,9797.6) +- (3821.4,3821.4)
+      (25,8955.7) +- (4364.6,4364.6)
+      (26,7929.3) +- (3493.3,3493.3)
+      (27,11541.9) +- (3076.2,3076.2)
+      (28,10851.3) +- (4241.4,4241.4)
+      (29,8736.3) +- (3280.4,3280.4)
+      (30,11648.2) +- (2969.7,2969.7)
+      (31,7821.5) +- (2477.0,2477.0)
+    };
+    \end{axis}
+  \end{tikzpicture}
+\end{figure}
+
+Plot~\ref{pgfplot:201306191624} shows the same with more
+iterations. The result is not more stable than the one before,
+though.
+
+\begin{figure}
+  \caption{Plot}
+  \label{pgfplot:201306191624}
+  \begin{tikzpicture}
+    \begin{axis}[
+      ybar,
+      error bars/y dir=both,
+      error bars/y explicit,
+      xlabel=FIXME,
+      ylabel={Cost [cycles]}]
+    \addplot coordinates {
+      (1,11197.7) +- (8150.8,8150.8)
+      (2,10971.4) +- (6418.6,6418.6)
+      (3,10364.3) +- (7409.8,7409.8)
+      (4,9460.5) +- (6846.3,6846.3)
+      (5,11629.7) +- (7938.9,7938.9)
+      (6,12266.8) +- (8895.5,8895.5)
+      (7,12313.0) +- (8030.9,8030.9)
+      (8,13079.3) +- (7031.2,7031.2)
+      (9,10919.1) +- (6272.3,6272.3)
+      (10,4758.1) +- (3364.5,3364.5)
+      (11,4093.8) +- (2121.7,2121.7)
+      (12,10077.3) +- (1152.3,1152.3)
+      (13,8632.7) +- (1601.4,1601.4)
+      (14,6381.6) +- (1607.5,1607.5)
+      (15,8215.2) +- (1799.2,1799.2)
+      (16,6973.4) +- (1713.0,1713.0)
+      (17,8631.0) +- (1750.3,1750.3)
+      (18,13615.4) +- (2873.1,2873.1)
+      (19,11311.9) +- (1996.6,1996.6)
+      (20,17855.8) +- (2420.9,2420.9)
+      (21,15193.0) +- (1923.7,1923.7)
+      (22,18920.0) +- (2393.1,2393.1)
+      (23,19870.6) +- (2618.8,2618.8)
+      (24,17947.8) +- (4379.8,4379.8)
+      (25,21783.5) +- (4202.5,4202.5)
+      (26,24329.6) +- (3695.0,3695.0)
+      (27,22965.0) +- (3667.8,3667.8)
+      (28,20440.8) +- (4380.6,4380.6)
+      (29,17405.7) +- (4385.3,4385.3)
+      (30,19202.7) +- (4509.1,4509.1)
+      (31,21855.2) +- (3850.9,3850.9)
+    };
+    \end{axis}
+  \end{tikzpicture}
+\end{figure}
+
+
 \newpage
 \input{measurements/gruyere_topologies}
+
+Table~\ref{tab:ziger1} shows an overview of topologies for atomic
+broadcast on \ziger. We compare these numbers to cost-estimations from
+our simulator that incorporates detailed UMP breakdown measurements
+done on the same machine. Our estimations are close to what we observe
+when running on real hardware. In particular, the order of efficiency
+of the topologies matches reality. 
+
+The only exception is sequential execution. Our simulator predicts
+much worse performance than actually given by hardware. We believe the
+cause for this could be hardware extensions (e.g.\ hardware broadcast
+units or snooping). 
+
+What is particularly interesting is that a badly chosen tree with lots
+of communication across NUMA nodes is actually worse than sequentially
+sending messages.
+
 \input{measurements/ziger1_topologies}
-\input{measurements/sbrinz1_topologies}
+\input{measurements/sbrinz_topologies}
 \input{measurements/appenzeller_topologies}
 
 %\input{graphs/visall}
