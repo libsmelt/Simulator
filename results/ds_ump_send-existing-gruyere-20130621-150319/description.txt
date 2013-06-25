@@ -1,0 +1,6 @@
+test: ds_ump_send
+revision: e1dee39e8582 with local changes
+build: existing
+machine: gruyere
+start time: 2013-06-21 15:03:26.884525
+user: skaestle
