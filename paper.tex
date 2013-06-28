@@ -27,7 +27,7 @@
 \usetikzlibrary{shapes,positioning,calc,snakes,arrows,shapes,fit,backgrounds}
 \pgfplotsset{width=.9\linewidth}
 \usepgfplotslibrary{external}
-%\tikzexternalize
+\tikzexternalize
 
 \lstset{
   language=C,
@@ -44,6 +44,9 @@
 
 \fancyhf{}
 \fancyfoot[L]{\today}
+\fancyfoot[R]{\thepage}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
 \pagestyle{fancy}
 
 % machines
@@ -1210,6 +1213,46 @@ something entirely message-passing based like MPI versions.
 \section{UMP performance}
 
 \input{graphs/ziger_ump_breakdown}
+
+\subsection{Pairwise performance}
+
+Figure~\ref{pgfplot:20130627} shows the UMP RTT time for each pair of
+cores. The benchmark seems to be broken, since sending messages to
+core 40 and higher is really expensive. On the other hand. Sending
+messages from these cores back to cores with low IDs (which are on the
+other end of the machine) seems unreasonably cheap. 
+
+What we would expect is a symmetric plot. Sending a message from core
+$n$ to $m$ should be about equally expensive than sending a message
+from $m$ to $n$. 
+
+\pgfplotsset{width=\linewidth}
+\begin{figure}
+  \caption{pair-wise latency for appenzeller}
+  \label{pgfplot:20130627}
+  \begin{tikzpicture}
+    \begin{axis}[
+      zlabel={cost [cycles]},
+      xlabel={sending core},
+      ylabel={receiving core},
+      scaled z ticks = false,
+      z tick label style={/pgf/number format/fixed}
+      ]
+    \addplot3[surf] file {measurements/appenzeller_pairwise_ump.dat};
+    \end{axis}
+  \end{tikzpicture}
+\end{figure}
+
+\pgfplotsset{width=\linewidth}
+\begin{figure}
+  \caption{pair-wise latency for gottardo}
+  \label{pgfplot:20130627}
+  \begin{tikzpicture}[scale=.75]
+    \begin{axis}[scaled z ticks=false,z tick label style={/pgf/number format/fixed},zlabel={cost [cycles]},xlabel={sending core},ylabel={receiving core}]
+    \addplot3[surf] file {measurements/gottardo_pairwise_ump.dat};
+    \end{axis}
+  \end{tikzpicture}
+\end{figure}
 
 \section{Shared memory performance}
 

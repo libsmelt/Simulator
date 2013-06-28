@@ -3,10 +3,13 @@
 # Makefile for LaTeX docs
 #
 
+PAPER=paper
+
 DEPS=$(wildcard plots/*/*.pdf) $(wildcard figs/*.pdf) $(wildcard graphs/*.tex)
 DOT=$(patsubst %.dot,%.tex,$(wildcard graphs/final_*.dot))
 
-PAPER=paper
+DEP_PNG=$(patsubst %.pdf,%.png,$(wildcard $(PAPER)-figure*.pdf))
+
 LATEXOPTS=-interaction=nonstopmode -shell-escape
 
 all: pdf
@@ -51,3 +54,9 @@ clean:
 	$(RM) $(patsubst %.tex, %.ps, $(wildcard *.tex))
 	$(RM) $(patsubst %.tex, %.dvi, $(wildcard *.tex))
 	$(RM) $(patsubst %.tex, %.pdf, $(wildcard *.tex))
+
+%.png: %.pdf
+	convert -compose copy -density 200 $< $@
+
+png: $(DEP_PNG)
+.PHONY: png

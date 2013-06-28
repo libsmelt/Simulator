@@ -233,11 +233,11 @@ def _pgf_plot_header(f, plotname, caption, xlabel, ylabel, attr=[], desc='...'):
     label = "pgfplot:%s" % plotname
     s = (("Figure~\\ref{%s} shows %s\n"
           "\\pgfplotsset{width=\linewidth}\n") % (label, desc))
-    t = (("    \\begin{axis}[\n"
-          "        %s,\n" 
-          "        xlabel={%s},\n"
-          "        ylabel={%s}\n"
-          "        ]\n") % (','.join(attr), xlabel, ylabel))
+    if xlabel:
+        attr.append('xlabel={%s}' % xlabel)
+    if ylabel:
+        attr.append('ylabel={%s}' % ylabel)
+    t = ("    \\begin{axis}[%s]\n") % (','.join(attr))
     f.write(s)
     _pgf_header(f, caption, label)
     f.write(t)
@@ -277,6 +277,22 @@ def do_pgf_plot(f, data, caption='', xlabel='', ylabel=''):
     f.write("    };\n");
     _pgf_plot_footer(f)
 
+def do_pgf_3d_plot(f, datafile, caption='', xlabel=None, ylabel=None, zlabel=None):
+    """
+    Generate PGF plot code for the given data
+    @param f File to write the code to
+    @param data Data points to print as list of tuples (x, y, err)
+    """
+    attr = ['scaled z ticks=false',
+            'z tick label style={/pgf/number format/fixed}']
+    if zlabel:
+        attr.append('zlabel={%s}' % zlabel)
+    now = datetime.today()
+    plotname = "%02d%02d%02d" % (now.year, now.month, now.day)
+    _pgf_plot_header(f, plotname, caption, xlabel, ylabel, attr)
+    f.write(("    \\addplot3[surf] file {%s};\n") % datafile)
+    _pgf_plot_footer(f)
+
 def do_pgf_multi_plot(f, multidata, caption='FIXME', xlabel='FIXME', ylabel='FIXME'):
     """
     Same as do_pgf_multi_plot
@@ -304,13 +320,12 @@ def do_pgf_multi_plot(f, multidata, caption='FIXME', xlabel='FIXME', ylabel='FIX
 
         machines.append(legentry)
 
-#   "Invert" two dimensional list
+    # "Invert" two dimensional list
     data_new = [[0 for i in range(len(data))] for j in range(len(data[0]))]
     for y in range(len(data[0])):
         for x in range(len(data)):
             tmp = data[x][y]
             data_new[y][x] = tmp
-#
 
     for idata in data_new:
          f.write(("    \\addplot coordinates {\n"))
@@ -319,7 +334,6 @@ def do_pgf_multi_plot(f, multidata, caption='FIXME', xlabel='FIXME', ylabel='FIX
              f.write("      (%d,%f)\n" % (i, d))
              i += 1
          f.write("    };\n");
-#
 
     f.write("\legend{%s}\n" % ','.join(topos))
 
