@@ -78,43 +78,44 @@
 \section{Introduction}
 
 Distributed algorithms are increasingly used to overcome scalability
-challenges on multicore machines. Examples are
+challenges of multicore machines. Examples are
 databases~\cite{Salomie2011, Wiesmann2000} and operating
 systems~\cite{fos:osr09, tornado:osdi99, barrelfish:sosp09}.
 
 % What do you want to enable?
-We want to investigate how to achieve better performance of atomic
-broadcast across a wide range of multicore machines without manually
-tuning the implementation to concrete machines.
+We want to investigate how to achieve better performance of these distributed
+algorithms across a wide range of multicore machines without manually
+tuning the implementation to characteristics of individual machines.
 
 % What problem are you solving, and why is it hard?
-The problem is complexity and diversity of modern multicore
-machines. Multicores come in many flavors depending on vendor and
-generation of the machine. All of these machines have fundamentally
-different characteristics such as number of nodes, NUMA
-characteristics, interconnect topologies, propagation time on
-interconnect and use of shared caches. These characteristics are hard~\cite{Cavage2013}
-to understand, but important to consider for application performance. 
+The problem we are tackling is an increase in complexity and diversity
+of modern multicore machines. Multicores come in many flavors
+depending on vendor and product line of the machine. They also change
+heavily over time. Consequently, characteristics of such machines are
+fundamentally different. Examples are the number of cores, NUMA
+configurations, interconnect topologies, propagation time on the
+interconnect and availability of shared resources such as
+caches. These characteristics are hard~\cite{Cavage2013} to
+understand, but important to consider for application performance.
 
 % New ideas
 Instead of manually tuning algorithms to characteristics of individual
-machines, we automatically configure distributed algorithm
-implementations based on a machine model. We represent this model as an
-annotated graph. One question we are looking at is which information
-should actually be part of this machine model.
+machines, we automatically configure distributed algorithm based on a
+machine model. This is populate with online measurements to express
+detailed information about machine characteristics. We then use
+this model to predict algorithm performance for the specific machine
+and select a good implementation automatically and dynamically at
+run-time.
 
 % How will you go about it?
-We base the configuration of algorithms on \emph{overlay networks}, which we
-automatically configure. We execute our configuration stage on a model
-representing the concrete machine the algorithm is intended to run
-on. %
-Our idea is to then explore different approaches for finding overlay
-networks based on the network model graph. Approaches we are currently
-investigating are: minimum spanning tree algorithms, binary trees,
-clustering techniques as well as treating the problem
-hierarchically. Assuming the overlay network, we then need to decide
-on every node which message to send first. This is a \emph{scheduling}
-problem.
+As an example, we investigate atomic broadcasts for multicore
+machines. The space of possible implementations is large reaching from
+shared memory implementations to message based topologies for
+different topologies of overlay networks. Such topologies are: minimum
+spanning trees, binary trees, rings as well as clustering-based
+approaches. Assuming the overlay network, we then need to decide for
+every node the order in which to send messages. This is a
+\emph{scheduling} problem.
 
 % How do we show it works
 We auto-configure a wide range of different multicore machines and
