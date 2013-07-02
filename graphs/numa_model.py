@@ -10,6 +10,10 @@ from pygraph.algorithms.minmax import shortest_path
 # --------------------------------------------------
 class NUMAModel(model.Model):
 
+    # Dictionary for receive costs
+    # key is (src, dest), value is the cost in cycles/10
+    recv_cost = {}
+
     def __init__(self, g):
         super(NUMAModel, self).__init__(g)
 
@@ -97,12 +101,23 @@ class NUMAModel(model.Model):
 
         We then use these measurements for the receive cost in the simulator
         @param f: Handle to results.dat file of UMP latency benchmark
+
         """
         for l in f.readlines():
             l = l.rstrip()
-            m = re.match('\d+\s+\d+\s+[0-9.]+\s+[0-9.]+', l)
+            m = re.match('(\d+)\s+(\d+)\s+([0-9.]+)\s+([0-9.]+)', l)
             if m:
-                print l
-        
-        
+                (src, dest, cost, stderr) = (int(m.group(1)), 
+                                             int(m.group(2)),
+                                             float(m.group(3)),
+                                             float(m.group(4)))
+                assert (src, dest) not in self.recv_cost
+                self.recv_cost[(src, dest)] = cost/10
 
+    def _get_receive_cost(self, src, dest):
+        """
+        Return the receive cost for a pair (src, dest) of cores
+        
+        """
+        assert (src, dest) in self.recv_cost
+        return self.recv_cost[(src, dest)]

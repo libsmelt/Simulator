@@ -43,6 +43,4 @@ class Sbrinz(numa_model.NUMAModel):
         return 16
 
     def get_receive_cost(self, src, dest):
-        hops = self.get_num_numa_hops(self.get_numa_id(src), 
-                                      self.get_numa_id(dest))
-        return self.recv_cost[hops]
+        return super(Sbrinz, self)._get_receive_cost(src, dest)
