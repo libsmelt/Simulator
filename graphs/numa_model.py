@@ -13,6 +13,9 @@ class NUMAModel(model.Model):
     # Dictionary for receive costs
     # key is (src, dest), value is the cost in cycles/10
     recv_cost = {}
+    # Dictionary for send costs
+    # key is (src, dest), value is the cost in cycles/10
+    send_cost = {}
 
     def __init__(self, g):
         super(NUMAModel, self).__init__(g)
@@ -100,7 +103,7 @@ class NUMAModel(model.Model):
         benchmark in the Barrelfish tree.
 
         We then use these measurements for the receive cost in the simulator
-        @param f: Handle to results.dat file of UMP latency benchmark
+        @param f: Handle to results.dat file of UMP receive benchmark
 
         """
         for l in f.readlines():
@@ -114,6 +117,26 @@ class NUMAModel(model.Model):
                 assert (src, dest) not in self.recv_cost
                 self.recv_cost[(src, dest)] = cost/10
 
+    def _parse_send_result_file(self, f):
+        """
+        Parse pairwise send cost results measure with the UMP send
+        benchmark in the Barrelfish tree.
+
+        We then use these measurements for the send cost in the simulator
+        @param f: Handle to results.dat file of UMP send benchmark
+
+        """
+        for l in f.readlines():
+            l = l.rstrip()
+            m = re.match('(\d+)\s+(\d+)\s+([0-9.]+)\s+([0-9.]+)', l)
+            if m:
+                (src, dest, cost, stderr) = (int(m.group(1)), 
+                                             int(m.group(2)),
+                                             float(m.group(3)),
+                                             float(m.group(4)))
+                assert (src, dest) not in self.send_cost
+                self.send_cost[(src, dest)] = cost/10
+
     def _get_receive_cost(self, src, dest):
         """
         Return the receive cost for a pair (src, dest) of cores
@@ -121,3 +144,11 @@ class NUMAModel(model.Model):
         """
         assert (src, dest) in self.recv_cost
         return self.recv_cost[(src, dest)]
+
+    def _get_send_cost(self, src, dest):
+        """
+        Return the send cost for a pair (src, dest) of cores
+        
+        """
+        assert (src, dest) in self.send_cost
+        return self.send_cost[(src, dest)]
