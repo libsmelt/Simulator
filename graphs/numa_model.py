@@ -2,6 +2,7 @@
 
 import model
 import helpers
+import re
 
 from pygraph.classes.graph import graph
 from pygraph.algorithms.minmax import shortest_path
@@ -89,6 +90,19 @@ class NUMAModel(model.Model):
 
         return g_numa
 
+    def _parse_receive_result_file(self, f):
+        """
+        Parse pairwise receive cost results measure with the UMP receive
+        benchmark in the Barrelfish tree.
 
+        We then use these measurements for the receive cost in the simulator
+        @param f: Handle to results.dat file of UMP latency benchmark
+        """
+        for l in f.readlines():
+            l = l.rstrip()
+            m = re.match('\d+\s+\d+\s+[0-9.]+\s+[0-9.]+', l)
+            if m:
+                print l
+        
         
 

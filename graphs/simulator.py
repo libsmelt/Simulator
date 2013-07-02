@@ -83,13 +83,14 @@ def build_and_simulate():
     """
     # XXX The arguments are totally broken. Fix them!
     parser = argparse.ArgumentParser(
-        description='Simulator for multicore machines')
+        description=('Simulator for multicore machines. The default action is '
+        'to simulate the given combination of topology and machine'))
     parser.add_argument('--evaluate-model', dest="action", action="store_const",
                         const="evaluate", default="simulate", 
                         help="Dump machine model instead of simulating")
     parser.add_argument('--evaluate-machine', dest="action", action="store_const",
                         const="evaluate-machine", default="simulate", 
-                        help="Dump machine model instead of simulating")
+                        help="?")
     parser.add_argument('--evaluate-all-machines', dest="action", 
                         action="store_const",
                         const="evaluate-all-machines", default="simulate", 

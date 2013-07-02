@@ -1,0 +1,6 @@
+test: ds_ump_receive
+revision: c5fafcfaedf7 with local changes
+build: existing
+machine: sbrinz2
+start time: 2013-07-01 16:14:36.793540
+user: skaestle
