@@ -27,9 +27,12 @@ from pygraph.algorithms.minmax import shortest_path
 def output_graph(graph, name, algorithm='neato'):
     """
     Output the graph as png image and also as text file
+    @param name Name of the file to write to
     """
     dot = write(graph, True)
     gvv = gv.readstring(dot)
+
+    name = 'graphs/%s' % name
     
     with open('%s.dot'%name, 'w') as f:
         f.write(dot)

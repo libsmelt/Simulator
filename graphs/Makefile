@@ -1,5 +1,5 @@
 DEP_PYTHON=$(wildcard *.py)
-DEP_PDF=$(patsubst %.tex,%.pdf,$(wildcard visu*.tex))
+DEP_PDF=$(patsubst %.tex,%.pdf,$(wildcard visu/visu*.tex))
 
 all: graph visu
 

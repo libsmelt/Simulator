@@ -74,7 +74,7 @@ class Evaluate():
         self.node_state = [NodeState()]*len(self.topology)
 
         # Construct visualization instance
-        visu_name = ("visu_%s_%s_send_events.tex" % 
+        visu_name = ("visu/visu_%s_%s_send_events.tex" % 
                      (m.get_name(), topo.get_name()))
         self.visu = draw.Output(visu_name, m, topo)
 

@@ -46,7 +46,7 @@ def append_to_report():
         w(command('clearpage'))
         w(section(m))
         for t in simulator.topologies:
-            tex = 'visu_%s_%s' % (m, t)
+            tex = 'visu/visu_%s_%s' % (m, t)
             if os.path.exists(tex + '.tex'):
                 w(section(t, 2))
                 opt = [ 'transform shape' ]
