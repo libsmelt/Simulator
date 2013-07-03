@@ -1,4 +1,11 @@
-pyc$
-aux$
-log$
-out$
+.*results.*
+paper-figure[0-9]+\.[(png)(log)(dpth)]
+graphs/.*\.pyc$
+graphs/graphs/.*
+graphs/visu/.*
+.*\.log$
+.*\.out$
+.*~$
+.*\#$
+.*\.orig$
+.*\.auxlock$
