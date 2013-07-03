@@ -9,3 +9,6 @@ graphs/visu/.*
 .*\#$
 .*\.orig$
 .*\.auxlock$
+.*\.tgz$
+.*\.tar\.gz$
+.*\.pdf$
