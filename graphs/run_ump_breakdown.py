@@ -17,13 +17,15 @@ import results
 l = ump_latency.UMPLatency(None)
 r = l.process_data(None, open('/dev/stdin'))
 
-rows = sorted(r.rows, key=lambda x: (x[1], x[0]))
+r.to_file(open('/dev/stdout', 'w'))
 
-last = -1
-for (x,y,z,_) in rows:
-    if last != y:
-        print ''
-        last = y
-    print '%d %d %f' % (x,y,z)
+# rows = sorted(r.rows, key=lambda x: (x[1], x[0]))
+
+# last = -1
+# for (x,y,z,_) in rows:
+#     if last != y:
+#         print ''
+#         last = y
+#     print '%d %d %f' % (x,y,z)
 
 
