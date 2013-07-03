@@ -9,9 +9,7 @@ from pygraph.classes.digraph import digraph
 
 # --------------------------------------------------
 class Tomme(numa_model.NUMAModel):
-
-    # FIXME
-    recv_cost = { 0: 25, 1: 42, 2: 50 }
+# http://ark.intel.com/products/40201/Intel-Xeon-Processor-L5520-8M-Cache-2_26-GHz-5_86-GTs-Intel-QPI
 
     def __init__(self):
         """
@@ -19,6 +17,10 @@ class Tomme(numa_model.NUMAModel):
         """
         g = super(Tomme, self)._build_graph()
         super(Tomme, self).__init__(g)
+        super(Tomme, self)._parse_receive_result_file(
+            open('measurements/receive_%s' % self.get_name()))
+        super(Tomme, self)._parse_send_result_file(
+            open('measurements/send_%s' % self.get_name()))
 
     # --------------------------------------------------
     # Characteritics of model
@@ -31,7 +33,8 @@ class Tomme(numa_model.NUMAModel):
     def get_num_cores(self):
         return 16
 
+    def get_send_cost(self, src, dest):
+        return super(Tomme, self)._get_send_cost(src, dest)
+
     def get_receive_cost(self, src, dest):
-        hops = self.get_num_numa_hops(self.get_numa_id(src), 
-                                      self.get_numa_id(dest))
-        return self.recv_cost[hops]
+        return super(Tomme, self)._get_receive_cost(src, dest)
