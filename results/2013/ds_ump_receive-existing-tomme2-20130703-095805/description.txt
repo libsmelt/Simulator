@@ -1,0 +1,6 @@
+test: ds_ump_receive
+revision: 10f0541002c9 unmodified
+build: existing
+machine: tomme2
+start time: 2013-07-03 09:58:12.920079
+user: skaestle

@@ -1,4 +1,3 @@
-.*results.*
 paper-figure[0-9]+\.[(png)(log)(dpth)]
 graphs/.*\.pyc$
 graphs/graphs/.*

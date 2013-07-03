@@ -1,0 +1,1140 @@
+diff --git a/hake/ArchDefaults.hs b/hake/ArchDefaults.hs
+--- a/hake/ArchDefaults.hs
++++ b/hake/ArchDefaults.hs
+@@ -83,9 +83,12 @@
+ 
+ -- Libraries that are linked to all applications.
+ stdLibs arch = 
+-    [ In InstallTree arch "/lib/libbarrelfish.a",
++    [ Str "-Wl,--start-group",
++      In InstallTree arch "/lib/libbarrelfish.a",
++      In InstallTree arch "/lib/libidc.a",
+       In InstallTree arch "/lib/libskb.a", -- SK: need to be able to get number of cores in libbarrelfish
+       In InstallTree arch "/lib/liboctopus_parser.a", -- XXX: For NS client in libbarrelfish
++      Str "-Wl,--end-group",
+       In InstallTree arch "/errors/errno.o",
+       In InstallTree arch ("/lib/lib" ++ Config.libc ++ ".a"),
+       --In InstallTree arch "/lib/libposixcompat.a",
+diff --git a/hake/Config.hs.template b/hake/Config.hs.template
+--- a/hake/Config.hs.template
++++ b/hake/Config.hs.template
+@@ -206,6 +206,10 @@
+ oneshot_timer :: Bool
+ oneshot_timer = False
+ 
++-- Activate NUMA aware buffer allocation for UMP globally
++ump_numa :: Bool
++ump_numa = False
++
+ defines :: [RuleToken]
+ defines = [ Str ("-D" ++ d) | d <- [  
+              if microbenchmarks then "CONFIG_MICROBENCHMARKS" else "",
+@@ -250,7 +254,8 @@
+              if nxe_paging then "CONFIG_NXE" else "",
+              if libc == "oldc" then "CONFIG_OLDC" else "CONFIG_NEWLIB",
+              if oneshot_timer then "CONFIG_ONESHOT_TIMER" else "",
+-             if use_kaluga_dvm then "USE_KALUGA_DVM" else ""
++             if use_kaluga_dvm then "USE_KALUGA_DVM" else "",
++             if ump_numa then "UMP_NUMA_WARE" else ""
+              ], d /= "" ]
+ 
+ -- Sets the include path for the libc
+diff --git a/include/barrelfish/idc.h b/include/barrelfish/idc.h
+--- a/include/barrelfish/idc.h
++++ b/include/barrelfish/idc.h
+@@ -44,6 +44,9 @@
+ 
+     // request a multi-hop channel
+     IDC_BIND_FLAG_MULTIHOP = 1 << 2,
++    // do NUMA aware memory allocation
++    // currently only supported in UMP
++    IDC_BIND_FLAG_NUMA_AWARE = 1 << 3,
+ } idc_bind_flags_t;
+ 
+ #define IDC_BIND_FLAGS_DEFAULT 0
+diff --git a/include/barrelfish/ump_chan.h b/include/barrelfish/ump_chan.h
+--- a/include/barrelfish/ump_chan.h
++++ b/include/barrelfish/ump_chan.h
+@@ -78,6 +78,12 @@
+                        struct monitor_binding *monitor_binding,
+                        size_t inchanlen, size_t outchanlen,
+                        struct capref notify_cap);
++errval_t ump_chan_bind_numa(struct ump_chan *uc, 
++                            struct ump_bind_continuation cont,
++                            struct event_queue_node *qnode,  iref_t iref,
++                            struct monitor_binding *monitor_binding,
++                            size_t inchanlen, size_t outchanlen,
++                            struct capref notify_cap);
+ errval_t ump_chan_accept(struct ump_chan *uc, uintptr_t mon_id,
+                          struct capref frame, size_t inchanlen, size_t outchanlen);
+ void ump_chan_send_bind_reply(struct monitor_binding *mb,
+diff --git a/include/tools/tools.h b/include/tools/tools.h
+--- a/include/tools/tools.h
++++ b/include/tools/tools.h
+@@ -12,5 +12,7 @@
+ #define TOOLS_H 1
+ 
+ void tsc_sleep(uint64_t tics);
++void barrier_wait(int num);
++void printff(const char *fmt, ...);
+ 
+ #endif /* TOOLS_H */
+diff --git a/kernel/arch/x86_64/init.c b/kernel/arch/x86_64/init.c
+--- a/kernel/arch/x86_64/init.c
++++ b/kernel/arch/x86_64/init.c
+@@ -43,6 +43,8 @@
+ #include <dev/ia32_dev.h>
+ #include <dev/amd64_dev.h>
+ 
++lvaddr_t kernel_address = 0;
++
+ /**
+  * Used to store the address of global struct passed during boot across kernel
+  * relocations.
+@@ -607,6 +609,7 @@
+     }
+ 
+     // XXX: print kernel address for debugging with gdb
++    kernel_address = local_phys_to_mem(dest);
+     printf("Kernel starting at address 0x%"PRIxLVADDR"\n",
+            local_phys_to_mem(dest));
+ 
+diff --git a/kernel/arch/x86_64/syscall.c b/kernel/arch/x86_64/syscall.c
+--- a/kernel/arch/x86_64/syscall.c
++++ b/kernel/arch/x86_64/syscall.c
+@@ -199,6 +199,7 @@
+     err = caps_lookup_slot(&dcb_current->cspace.cap, cptr, bits,
+                                     &mapping, CAPRIGHTS_READ_WRITE);
+     if (err_is_fail(err)) {
++        printf("syscall.c\n");
+         return SYSRET(err_push(err, SYS_ERR_CAP_NOT_FOUND));
+     }
+ 
+@@ -856,6 +857,7 @@
+         retval.error = caps_lookup_cap(&dcb_current->cspace.cap, invoke_cptr,
+                                        invoke_bits, &to, CAPRIGHTS_READ);
+         if (err_is_fail(retval.error)) {
++            printf("caps_lookup_cap failed in sys_syscall\n");
+             break;
+         }
+ 
+diff --git a/kernel/capabilities.c b/kernel/capabilities.c
+--- a/kernel/capabilities.c
++++ b/kernel/capabilities.c
+@@ -35,6 +35,7 @@
+ /// Sets the specified number of low-order bits to 1
+ #define MASK(bits)      ((1UL << bits) - 1)
+ 
++extern lvaddr_t kernel_address;
+ struct capability monitor_ep;
+ 
+ /**
+@@ -639,6 +640,9 @@
+     struct cte *next_slot = caps_locate_slot(cnode_cap->u.cnode.cnode, offset);
+     // Do not return NULL type capability
+     if (next_slot->cap.type == ObjType_Null) {
++        printf("callstack: %"PRIxLVADDR"\n", 
++               ((lvaddr_t)__builtin_return_address(0) - kernel_address));
++        printf("capabilities.c\n");
+         return SYS_ERR_CAP_NOT_FOUND;
+     }
+ 
+@@ -670,6 +674,8 @@
+     struct cte *ret_cte;
+     errval_t err = caps_lookup_slot(cnode_cap, cptr, vbits, &ret_cte, rights);
+     if (err_is_fail(err)) {
++        printf("callstack in caps_lookup_cap: %"PRIxLVADDR"\n", 
++               ((lvaddr_t) __builtin_return_address(0) - kernel_address));
+         return err;
+     }
+     *ret = &ret_cte->cap;
+@@ -882,6 +888,7 @@
+     struct capability *dest_cap = &dest_cte->cap;
+     // NULL caps cannot be copied/minted
+     if (src_cap->type == ObjType_Null) {
++        printf("capabilities.c 2\n");
+         return SYS_ERR_CAP_NOT_FOUND;
+     }
+     // Parameters should be 0 if not minting
+diff --git a/lib/barrelfish/Hakefile b/lib/barrelfish/Hakefile
+--- a/lib/barrelfish/Hakefile
++++ b/lib/barrelfish/Hakefile
+@@ -12,10 +12,10 @@
+ 
+ [(let arch_dir = "arch" ./. archFamily arch
+       common_srcs = [ "capabilities.c", "init.c", "dispatch.c", "threads.c",
+-                      "thread_sync.c", "slab.c", "domain.c", "idc.c",
+-                      "waitset.c", "event_queue.c", "event_mutex.c",
+-                      "idc_export.c", "nameservice_client.c", "msgbuf.c",
+-                      "monitor_client.c", "flounder_support.c", "flounder_glue_binding.c",
++                      "thread_sync.c", "slab.c", "domain.c",
++                      "event_queue.c", "event_mutex.c",
++                      "nameservice_client.c", "msgbuf.c",
++                      "monitor_client.c",
+                       "morecore.c", "debug.c", "heap.c", "ram_alloc.c",
+                       "terminal.c", "spawn_client.c", "vspace/vspace.c", 
+                       "vspace/vregion.c", "vspace/memobj_one_frame.c",
+@@ -31,7 +31,7 @@
+       idc_srcs = concat $ map getsrcs $ optInterconnectDrivers $ options arch
+           where
+             getsrcs "lmp" = [ "lmp_chan.c", "lmp_endpoints.c" ]
+-            getsrcs "ump" = [ "ump_chan.c", "ump_endpoint.c" ]
++--            getsrcs "ump" = [ "ump_chan.c", "ump_endpoint.c" ]
+             getsrcs "multihop" = [ "multihop_chan.c" ]
+             getsrcs _ = []
+ 
+diff --git a/lib/barrelfish/monitor_client.c b/lib/barrelfish/monitor_client.c
+--- a/lib/barrelfish/monitor_client.c
++++ b/lib/barrelfish/monitor_client.c
+@@ -19,6 +19,7 @@
+ #include <if/monitor_blocking_rpcclient_defs.h>
+ #include <string.h>
+ #include <inttypes.h>
++#include <stdio.h>
+ 
+ static void error_handler(struct monitor_binding *b, errval_t err)
+ {
+@@ -57,6 +58,7 @@
+     // try to retrieve a message from the channel
+     err = lmp_chan_recv(&b->chan, &msg, &cap);
+     if (err_is_fail(err)) {
++        printf("WARNING: monitor_accept_recv_handler. Registering error_handler\n");
+         if (err_no(err) == LIB_ERR_NO_LMP_MSG) {
+             // nothing there, re-register
+             struct event_closure recv_handler = {
+@@ -82,6 +84,7 @@
+     err = lmp_chan_alloc_recv_slot(&b->chan);
+     if (err_is_fail(err)) {
+         // XXX: report the error, but continue
++        printf("WARNING: monitor_accept_recv_handler. Registering error_handler 2\n");
+         b->b.error_handler(&b->b, err_push(err, LIB_ERR_LMP_ALLOC_RECV_SLOT));
+     }
+ 
+@@ -117,6 +120,9 @@
+     }
+ 
+     /* setup error handler */
++    printf("WARNING: monitor_accept_recv_handler (%s). "
++           "Registering error_handler 3, callstack=%p\n",
++           disp_name(), __builtin_return_address(0));
+     mcb->b.error_handler = error_handler;
+ 
+     /* setup initial receive handlers */
+diff --git a/lib/barrelfish/ump_chan.c b/lib/barrelfish/ump_chan.c
+deleted file mode 100644
+--- a/lib/barrelfish/ump_chan.c
++++ /dev/null
+@@ -1,361 +0,0 @@
+-/**
+- * \file
+- * \brief Bidirectional UMP channel implementation
+- */
+-
+-/*
+- * Copyright (c) 2009, 2010, 2012, ETH Zurich.
+- * All rights reserved.
+- *
+- * This file is distributed under the terms in the attached LICENSE file.
+- * If you do not find this file, copies can be found by writing to:
+- * ETH Zurich D-INFK, Haldeneggsteig 4, CH-8092 Zurich. Attn: Systems Group.
+- */
+-
+-#include <string.h>
+-#include <barrelfish/barrelfish.h>
+-#include <barrelfish/ump_chan.h>
+-#include <barrelfish/idc_export.h>
+-#include <if/monitor_defs.h>
+-
+-/* UMP channels need to be mapped non-cacheable on SCC */
+-#ifdef __scc__
+-#  include <barrelfish_kpi/shared_mem_arch.h>
+-/* #  define UMP_MAP_ATTR VREGION_FLAGS_READ_WRITE_NOCACHE */
+-#  define UMP_MAP_ATTR VREGION_FLAGS_READ_WRITE_MPB
+-#else
+-#  define UMP_MAP_ATTR VREGION_FLAGS_READ_WRITE
+-#endif
+-
+-#ifndef CONFIG_INTERCONNECT_DRIVER_UMP
+-#error "This file shouldn't be compiled without CONFIG_INTERCONNECT_DRIVER_UMP"
+-#endif
+-
+-/**
+- * \brief Initialise a new UMP channel
+- *
+- * Most code should be using one of ump_chan_bind() or ump_chan_accept().
+- *
+- * \param uc Storage for channel state
+- * \param inbuf Pointer to incoming message buffer
+- * \param inbufsize Size of inbuf in bytes (must be multiple of UMP message size)
+- * \param outbuf Pointer to outgoing message buffer
+- * \param outbufsize Size of outbuf in bytes (must be multiple of UMP message size)
+- */
+-errval_t ump_chan_init(struct ump_chan *uc,
+-                       volatile void *inbuf, size_t inbufsize,
+-                       volatile void *outbuf, size_t outbufsize)
+-{
+-    assert(uc != NULL);
+-    errval_t err;
+-
+-    err = ump_endpoint_init(&uc->endpoint, inbuf, inbufsize);
+-    if (err_is_fail(err)) {
+-        return err;
+-    }
+-
+-    err = ump_chan_state_init(&uc->send_chan, outbuf, outbufsize, UMP_OUTGOING);
+-    if (err_is_fail(err)) {
+-        return err;
+-    }
+-
+-    uc->max_send_msgs = outbufsize / UMP_MSG_BYTES;
+-    uc->max_recv_msgs = inbufsize / UMP_MSG_BYTES;
+-
+-    memset(&uc->cap_handlers, 0, sizeof(uc->cap_handlers));
+-    uc->iref = 0;
+-    uc->monitor_binding = get_monitor_binding(); // TODO: expose non-default to caller
+-
+-    return SYS_ERR_OK;
+-}
+-
+-/// Destroy the local state associated with a given channel
+-void ump_chan_destroy(struct ump_chan *uc)
+-{
+-    ump_endpoint_destroy(&uc->endpoint);
+-}
+-
+-/// Handler for UMP bind reply messages from the Monitor
+-static void bind_ump_reply_handler(struct monitor_binding *b, uintptr_t mon_id,
+-                                   uintptr_t conn_id, errval_t success,
+-                                   struct capref notify)
+-{
+-    struct ump_chan *uc = (void *)conn_id;
+-
+-    assert(uc->connstate == UMP_BIND_WAIT);
+-
+-    if (err_is_ok(success)) { /* bind succeeded */
+-        uc->connstate = UMP_CONNECTED;
+-        uc->monitor_id = mon_id;
+-    } else { /* bind failed */
+-        uc->connstate = UMP_DISCONNECTED;
+-        /* TODO: delete endpoint, destroy local_cap */
+-    }
+-
+-    /* either way, tell the user what happened */
+-    assert(uc->bind_continuation.handler != NULL);
+-    uc->bind_continuation.handler(uc->bind_continuation.st, success, uc, notify);
+-}
+-
+-struct bind_ump_reply_state {
+-    struct monitor_binding *b;
+-    struct ump_chan *uc;
+-    struct monitor_bind_ump_reply_monitor__args args;
+-    struct event_queue_node qnode;
+-};
+-
+-static void send_bind_reply(void *arg)
+-{
+-    struct bind_ump_reply_state *st = arg;
+-    struct monitor_binding *b = st->b;
+-    errval_t err;
+-
+-    // send back a bind success/failure message to the monitor
+-    err =
+-        st->b->tx_vtbl.bind_ump_reply_monitor(st->b, NOP_CONT, st->args.mon_id,
+-                                              st->args.conn_id, st->args.err,
+-                                              st->args.notify);
+-    if (err_is_ok(err)) {
+-        event_mutex_unlock(&b->mutex);
+-        free(st);
+-    } else if (err_no(err) == FLOUNDER_ERR_TX_BUSY) {
+-        err = st->b->register_send(st->b, st->b->waitset,
+-                                   MKCONT(send_bind_reply, st));
+-        assert(err_is_ok(err)); // shouldn't fail, as we have the mutex
+-    } else {
+-        event_mutex_unlock(&b->mutex);
+-        USER_PANIC_ERR(err, "failed sending back reply to UMP bind request;"
+-                       " request dropped!");
+-        if (st->uc != NULL) {
+-            ump_chan_destroy(st->uc);
+-            // FIXME: how do we tell the binding about this!?
+-        }
+-        free(st);
+-    }
+-}
+-
+-/// Handler for UMP bind request messages from the Monitor
+-static void bind_ump_service_request_handler(struct monitor_binding *b,
+-                                             uintptr_t service_id,
+-                                             uintptr_t mon_id,
+-                                             struct capref frame,
+-                                             size_t channel_length_in,
+-                                             size_t channel_length_out,
+-                                             struct capref notify_cap)
+-{
+-    struct idc_export *e = (void *)service_id;
+-    errval_t err;
+-
+-    // call the binding's connect handler
+-    if (e->ump_connect_callback != NULL) {
+-        err = e->ump_connect_callback(e->connect_cb_st, b, mon_id, frame,
+-                                      channel_length_in, channel_length_out,
+-                                      notify_cap);
+-    } else {
+-        err = LIB_ERR_NO_UMP_BIND_HANDLER;
+-    }
+-
+-    if (err_is_fail(err)) {
+-        ump_chan_send_bind_reply(b, NULL, err, mon_id, NULL_CAP);
+-    } else {
+-        // binding is responsible for sending reply
+-    }
+-}
+-
+-void ump_chan_send_bind_reply(struct monitor_binding *mb,
+-                              struct ump_chan *uc, errval_t err,
+-                              uintptr_t monitor_id, struct capref notify_cap)
+-{
+-    struct bind_ump_reply_state *st = malloc(sizeof(struct bind_ump_reply_state));
+-    assert(st != NULL);
+-
+-    if (err_is_ok(err)) {
+-        assert(uc != NULL);
+-    } else {
+-        assert(uc == NULL);
+-    }
+-
+-    st->b = mb;
+-    st->uc = uc;
+-    st->args.err = err;
+-    st->args.mon_id = monitor_id;
+-    st->args.conn_id = err_is_ok(err) ? (uintptr_t)uc : 0;
+-    st->args.notify = notify_cap;
+-
+-    // wait for the ability to use the monitor binding
+-    event_mutex_enqueue_lock(&mb->mutex, &st->qnode,
+-                             MKCLOSURE(send_bind_reply, st));
+-}
+-
+-static void send_bind_cont(void *arg)
+-{
+-    struct ump_chan *uc = arg;
+-    struct monitor_binding *b = uc->monitor_binding;
+-    errval_t err;
+-
+-    /* Send bind request to the monitor */
+-    assert(uc->monitor_binding == b);
+-    assert(b->tx_vtbl.bind_ump_client_request);
+-    err = b->tx_vtbl.bind_ump_client_request(b, NOP_CONT, uc->iref,
+-                                             (uintptr_t)uc, uc->frame,
+-                                             uc->inchanlen, uc->outchanlen,
+-                                             uc->notify_cap);
+-    if (err_is_ok(err)) { // request sent ok
+-        event_mutex_unlock(&b->mutex);
+-    } else if (err_no(err) == FLOUNDER_ERR_TX_BUSY) {
+-        // register to retry
+-        err = b->register_send(b, b->waitset, MKCONT(send_bind_cont,uc));
+-        assert(err_is_ok(err)); // we hold the monitor binding mutex
+-    } else { // permanent failure sending message
+-        event_mutex_unlock(&b->mutex);
+-        uc->bind_continuation.handler(uc->bind_continuation.st,
+-                                      err_push(err, LIB_ERR_BIND_UMP_REQ),
+-                                      NULL, NULL_CAP);
+-    }
+-}
+-
+-/**
+- * \brief Initialise a new UMP channel and initiate a binding
+- *
+- * \param uc  Storage for channel state
+- * \param cont Continuation for bind completion/failure
+- * \param qnode Storage for an event queue node (used for queuing bind request)
+- * \param iref IREF to which to bind
+- * \param monitor_binding Monitor binding to use
+- * \param inchanlen Size of incoming channel, in bytes (rounded to #UMP_MSG_BYTES)
+- * \param outchanlen Size of outgoing channel, in bytes (rounded to #UMP_MSG_BYTES)
+- * \param notify_cap Capability to use for notifications, or #NULL_CAP
+- */
+-errval_t ump_chan_bind(struct ump_chan *uc, struct ump_bind_continuation cont,
+-                       struct event_queue_node *qnode,  iref_t iref,
+-                       struct monitor_binding *monitor_binding,
+-                       size_t inchanlen, size_t outchanlen,
+-                       struct capref notify_cap)
+-{
+-    errval_t err;
+-
+-    // round up channel sizes to message size
+-    inchanlen = ROUND_UP(inchanlen, UMP_MSG_BYTES);
+-    outchanlen = ROUND_UP(outchanlen, UMP_MSG_BYTES);
+-
+-    // compute size of frame needed and allocate it
+-    size_t framesize = inchanlen + outchanlen;
+-#ifdef __scc__
+-    ram_set_affinity(SHARED_MEM_MIN + (PERCORE_MEM_SIZE * disp_get_core_id()),
+-                     SHARED_MEM_MIN + (PERCORE_MEM_SIZE * (disp_get_core_id() + 1)));
+-#endif
+-    err = frame_alloc(&uc->frame, framesize, &framesize);
+-    if (err_is_fail(err)) {
+-        return err_push(err, LIB_ERR_FRAME_ALLOC);
+-    }
+-#ifdef __scc__
+-    ram_set_affinity(0, 0);
+-#endif
+-
+-    // map it in
+-    void *buf;
+-    err = vspace_map_one_frame_attr(&buf, framesize, uc->frame, UMP_MAP_ATTR,
+-                                    NULL, &uc->vregion);
+-    if (err_is_fail(err)) { 
+-        cap_destroy(uc->frame);
+-        return err_push(err, LIB_ERR_VSPACE_MAP);
+-    }
+-
+-    // initialise channel state
+-    err = ump_chan_init(uc, buf, inchanlen, (char *)buf + inchanlen, outchanlen);
+-    if (err_is_fail(err)) {
+-        vregion_destroy(uc->vregion);
+-        cap_destroy(uc->frame);
+-        return err;
+-    }
+-
+-    // Ids for tracing
+-    struct frame_identity id;
+-    err = invoke_frame_identify(uc->frame, &id);
+-    if (err_is_fail(err)) {
+-        vregion_destroy(uc->vregion);
+-        cap_destroy(uc->frame);
+-        return err_push(err, LIB_ERR_FRAME_IDENTIFY);
+-    }
+-    uc->recvid = (uintptr_t)id.base;
+-    uc->sendid = (uintptr_t)(id.base + inchanlen);
+-
+-    // store bind args
+-    uc->bind_continuation = cont;
+-    uc->monitor_binding = monitor_binding;
+-    uc->iref = iref;
+-    uc->inchanlen = inchanlen;
+-    uc->outchanlen = outchanlen;
+-    uc->notify_cap = notify_cap;
+-
+-    // wait for the ability to use the monitor binding
+-    uc->connstate = UMP_BIND_WAIT;
+-    event_mutex_enqueue_lock(&monitor_binding->mutex, qnode,
+-                             MKCLOSURE(send_bind_cont, uc));
+-
+-    return SYS_ERR_OK;
+-}
+-
+-/**
+- * \brief Initialise a new UMP channel to accept an incoming binding request
+- *
+- * \param uc  Storage for channel state
+- * \param mon_id Monitor's connection ID for this channel
+- * \param frame Frame capability containing channel
+- * \param inchanlen Size of incoming channel, in bytes (multiple of #UMP_MSG_BYTES)
+- * \param outchanlen Size of outgoing channel, in bytes (multiple of #UMP_MSG_BYTES)
+- */
+-errval_t ump_chan_accept(struct ump_chan *uc, uintptr_t mon_id,
+-                         struct capref frame, size_t inchanlen,
+-                         size_t outchanlen)
+-{
+-    errval_t err;
+-
+-    uc->monitor_id = mon_id;
+-    uc->frame = frame;
+-
+-    // check that the frame is big enough
+-    struct frame_identity frameid;
+-    err = invoke_frame_identify(frame, &frameid);
+-    if (err_is_fail(err)) {
+-        return err_push(err, LIB_ERR_FRAME_IDENTIFY);
+-    }
+-
+-    // Ids for tracing
+-    uc->recvid = (uintptr_t)(frameid.base + outchanlen);
+-    uc->sendid = (uintptr_t)frameid.base;
+-
+-    size_t framesize = ((uintptr_t)1) << frameid.bits;
+-    if (framesize < inchanlen + outchanlen) {
+-        return LIB_ERR_UMP_FRAME_OVERFLOW;
+-    }
+-
+-    // map it in
+-    void *buf;
+-    err = vspace_map_one_frame_attr(&buf, framesize, frame, UMP_MAP_ATTR,
+-                                    NULL, &uc->vregion);
+-    if (err_is_fail(err)) {
+-        cap_destroy(uc->frame);
+-        return err_push(err, LIB_ERR_VSPACE_MAP);
+-    }
+-
+-    // initialise channel state
+-    err = ump_chan_init(uc, (char *)buf + outchanlen, inchanlen, buf, outchanlen);
+-    if (err_is_fail(err)) {
+-        vregion_destroy(uc->vregion);
+-        cap_destroy(uc->frame);
+-        return err;
+-    }
+-
+-    /* mark connected */
+-    uc->connstate = UMP_CONNECTED;
+-    return SYS_ERR_OK;
+-}
+-
+-/// Initialise the UMP channel driver
+-void ump_init(void)
+-{
+-    struct monitor_binding *mcb = get_monitor_binding();
+-    mcb->rx_vtbl.bind_ump_reply_client = bind_ump_reply_handler;
+-    mcb->rx_vtbl.bind_ump_service_request = bind_ump_service_request_handler;
+-}
+diff --git a/lib/barrelfish/ump_endpoint.c b/lib/barrelfish/ump_endpoint.c
+deleted file mode 100644
+--- a/lib/barrelfish/ump_endpoint.c
++++ /dev/null
+@@ -1,95 +0,0 @@
+-/**
+- * \file
+- * \brief Incoming UMP endpoints
+- */
+-
+-/*
+- * Copyright (c) 2009, 2011, 2012, ETH Zurich.
+- * All rights reserved.
+- *
+- * This file is distributed under the terms in the attached LICENSE file.
+- * If you do not find this file, copies can be found by writing to:
+- * ETH Zurich D-INFK, Haldeneggsteig 4, CH-8092 Zurich. Attn: Systems Group.
+- */
+-
+-#include <barrelfish/barrelfish.h>
+-#include <barrelfish/ump_endpoint.h>
+-#include <barrelfish/ump_impl.h>
+-#include <barrelfish/waitset.h>
+-#include <barrelfish/waitset_chan.h>
+-#include "waitset_chan_priv.h"
+-
+-/**
+- * \brief Initialise a new UMP endpoint
+- *
+- * \param ep Storage for endpoint state
+- * \param buf Pointer to incoming message buffer
+- * \param bufsize Size of buf in bytes (must be multiple of UMP message size)
+- */
+-errval_t ump_endpoint_init(struct ump_endpoint *ep, volatile void *buf,
+-                           size_t bufsize)
+-{
+-    errval_t err = ump_chan_state_init(&ep->chan, buf, bufsize, UMP_INCOMING);
+-    if (err_is_fail(err)) {
+-        return err;
+-    }
+-
+-    waitset_chanstate_init(&ep->waitset_state, CHANTYPE_UMP_IN);
+-    return SYS_ERR_OK;
+-}
+-
+-/**
+- * \brief Destroy the local state associated with a given UMP endpoint
+- */
+-void ump_endpoint_destroy(struct ump_endpoint *ep)
+-{
+-    waitset_chanstate_destroy(&ep->waitset_state);
+-}
+-
+-/**
+- * \brief Register an event handler to be notified when messages can be received
+- *
+- * In the future, call the closure on the given waitset when it is likely that
+- * a message can be received on the endpoint. An endpoint may only be registered
+- * with a single event handler on a single waitset at any one time.
+- *
+- * \param ep UMP endpoint
+- * \param ws Waitset
+- * \param closure Event handler
+- */
+-errval_t ump_endpoint_register(struct ump_endpoint *ep, struct waitset *ws,
+-                                struct event_closure closure)
+-{
+-    assert(ep != NULL);
+-    assert(ws != NULL);
+-
+-    if (ump_endpoint_can_recv(ep)) { // trigger event immediately
+-        return waitset_chan_trigger_closure(ws, &ep->waitset_state, closure);
+-    } else {
+-        return waitset_chan_register_polled(ws, &ep->waitset_state, closure);
+-    }
+-}
+-
+-/**
+- * \brief Cancel an event registration made with ump_endpoint_register()
+- *
+- * \param ep UMP Endpoint
+- */
+-errval_t ump_endpoint_deregister(struct ump_endpoint *ep)
+-{
+-    assert(ep);
+-    return waitset_chan_deregister(&ep->waitset_state);
+-}
+-
+-#include <stdio.h>
+-/**
+- * \brief Migrate an event registration made with ump_endpoint_register() to a new waitset.
+- *
+- * \param ep LMP Endpoint
+- * \param ws New waitset
+- */
+-void ump_endpoint_migrate(struct ump_endpoint *ep, struct waitset *ws)
+-{
+-    printf("ump_endpoint_migrate\n");
+-    waitset_chan_migrate(&ep->waitset_state, ws);
+-}
+diff --git a/lib/tools/Hakefile b/lib/tools/Hakefile
+--- a/lib/tools/Hakefile
++++ b/lib/tools/Hakefile
+@@ -11,7 +11,8 @@
+ --------------------------------------------------------------------------
+ 
+ [ build library { target = "tools",
+-                  cFiles = [ "tools.c" ]
++                  cFiles = [ "tools.c" ],
++                  addLibraries = [ "octopus" ]
+ --                  addIncludes = [ "/include/tools" ],
+                 }
+ ]
+diff --git a/lib/tools/tools.c b/lib/tools/tools.c
+--- a/lib/tools/tools.c
++++ b/lib/tools/tools.c
+@@ -9,6 +9,10 @@
+ 
+ #include <barrelfish/barrelfish.h>
+ #include <tools/tools.h>
++#include <octopus/octopus.h>
++#include <stdio.h>
++
++static int oct_init_done = false;
+ 
+ /*
+  * \brief Wait given number of ticks before returning
+@@ -19,3 +23,57 @@
+     uint64_t start = rdtsc();
+     while (rdtsc()-start < tics) ;
+ }
++
++static void octopus_init(void) {
++
++    // Init octopus
++    errval_t err = oct_init();
++    if (err_is_fail(err)) {
++        USER_PANIC_ERR(err, "Unable to init octopus client library");
++    }
++
++    oct_init_done = true;
++}
++
++/*
++ * \brief Barrier enter
++ *
++ * XXX Should implement pthread barrier semantics
++ *
++ * \param num Number of threads expected to enter the barrier
++ *
++ */
++void barrier_wait(int num)
++{
++    if (!oct_init_done) {
++        octopus_init();
++    }
++
++    static int round = 0;
++    char *dummy;
++    char name[100];
++    sprintf(name, "tools_round_%d", round);
++    oct_barrier_enter(name, &dummy, num);
++    oct_barrier_leave(dummy);
++}
++
++/*
++ * \brief Like debug_printf, but using printf instead of sys_print
++ *
++ */
++
++void printff(const char *fmt, ...)
++{
++    va_list argptr;
++    char str[256];
++    size_t len;
++
++    len = snprintf(str, sizeof(str), "%.*s.%u: ", DISP_NAME_LEN, disp_name(),
++                   disp_get_core_id());
++    if (len < sizeof(str)) {
++        va_start(argptr, fmt);
++        vsnprintf(str + len, sizeof(str) - len, fmt, argptr);
++        va_end(argptr);
++    }
++    printf(str, sizeof(str));
++}
+diff --git a/tools/flounder/UMPCommon.hs b/tools/flounder/UMPCommon.hs
+--- a/tools/flounder/UMPCommon.hs
++++ b/tools/flounder/UMPCommon.hs
+@@ -333,27 +333,51 @@
+                 [C.Variable (new_monitor_cont_fn_name p ifn),
+                  my_bindvar, C.Variable "waitset",
+                  C.Variable "DEFAULT_LMP_BUF_WORDS"]
+-            ]
+-
+-            -- no monitor binding, but do we need to alloc notify state?
+-            (if isJust (ump_bind_alloc_notify p)
+-            then
+-                [C.Ex $ C.Assignment (chanvar `C.FieldOf` "monitor_binding")
+-                                     (C.Call "get_monitor_binding" []),
+-                 C.StmtList $ (fromJust $ ump_bind_alloc_notify p) ifn,
+-                 C.If (C.Call "err_is_fail" [errvar])
+-                    [C.Ex $ C.Assignment errvar $ C.Call "err_push"
+-                     [errvar, C.Variable "FLOUNDER_ERR_UMP_ALLOC_NOTIFY"]] [] ]
+-            else -- nothing special, just call bind
+-                [C.Ex $ C.Assignment errvar $ C.Call "ump_chan_bind"
+-                    [C.AddressOf $ statevar `C.FieldOf` "chan",
++            ][ C.If (C.Binary C.BitwiseAnd (C.Variable "flags") (C.Variable "IDC_BIND_FLAG_NUMA_AWARE")) 
++               -- ------------------------------
++               -- NUMA aware bind
++               -- no monitor binding, but do we need to alloc notify state?
++               (if isJust (ump_bind_alloc_notify p)
++                then
++                  [C.Ex $ C.Assignment (chanvar `C.FieldOf` "monitor_binding")
++                   (C.Call "get_monitor_binding" []),
++                   C.StmtList $ (fromJust $ ump_bind_alloc_notify p) ifn,
++                   C.If (C.Call "err_is_fail" [errvar])
++                   [C.Ex $ C.Assignment errvar $ C.Call "err_push"
++                    [errvar, C.Variable "FLOUNDER_ERR_UMP_ALLOC_NOTIFY"]] [] ]
++                else -- nothing special, just call bind
++                  [C.Ex $ C.Assignment errvar $ C.Call "ump_chan_bind_numa"
++                   [C.AddressOf $ statevar `C.FieldOf` "chan",
+                      C.StructConstant "ump_bind_continuation"
+                         [("handler", C.Variable (bind_cont_fn_name p ifn)),
+                          ("st", my_bindvar)],
+                      C.AddressOf $ intf_bind_var `C.FieldOf` "event_qnode",
+                      C.Variable "iref", C.Call "get_monitor_binding" [],
+                      C.Variable "inchanlen", C.Variable "outchanlen",
+-                     C.Variable "NULL_CAP"]]),
++                     C.Variable "NULL_CAP"]])
++               -- ------------------------------
++               -- _not_ using NUMA aware bind
++               -- no monitor binding, but do we need to alloc notify state?
++               (if isJust (ump_bind_alloc_notify p)
++                then
++                  [C.Ex $ C.Assignment (chanvar `C.FieldOf` "monitor_binding")
++                   (C.Call "get_monitor_binding" []),
++                   C.StmtList $ (fromJust $ ump_bind_alloc_notify p) ifn,
++                   C.If (C.Call "err_is_fail" [errvar])
++                   [C.Ex $ C.Assignment errvar $ C.Call "err_push"
++                    [errvar, C.Variable "FLOUNDER_ERR_UMP_ALLOC_NOTIFY"]] [] ]
++                else -- nothing special, just call bind
++                  [C.Ex $ C.Assignment errvar $ C.Call "ump_chan_bind"
++                   [C.AddressOf $ statevar `C.FieldOf` "chan",
++                    C.StructConstant "ump_bind_continuation"
++                    [("handler", C.Variable (bind_cont_fn_name p ifn)),
++                     ("st", my_bindvar)],
++                    C.AddressOf $ intf_bind_var `C.FieldOf` "event_qnode",
++                    C.Variable "iref", C.Call "get_monitor_binding" [],
++                    C.Variable "inchanlen", C.Variable "outchanlen",
++                    C.Variable "NULL_CAP"]])
++             ],
++
+         C.SBlank,
+         C.If (C.Call "err_is_fail" [errvar])
+             [C.Ex $ C.Call (destroy_fn_name p ifn) [my_bindvar]] [],
+diff --git a/usr/bench/ump_bench/Hakefile b/usr/bench/ump_bench/Hakefile
+--- a/usr/bench/ump_bench/Hakefile
++++ b/usr/bench/ump_bench/Hakefile
+@@ -1,10 +1,10 @@
+ --------------------------------------------------------------------------
+--- Copyright (c) 2007-2009, ETH Zurich.
++-- Copyright (c) 2007-2013, ETH Zurich.
+ -- All rights reserved.
+ --
+ -- This file is distributed under the terms in the attached LICENSE file.
+ -- If you do not find this file, copies can be found by writing to:
+--- ETH Zurich D-INFK, Haldeneggsteig 4, CH-8092 Zurich. Attn: Systems Group.
++-- ETH Zurich D-INFK, Universitaetstr. 6, CH-8092 Zurich. Attn: Systems Group.
+ --
+ -- Hakefile for /usr/bench/ump_bench
+ --
+@@ -13,15 +13,15 @@
+ [ build application { target = "ump_latency", cFiles = [ "main.c" , "latency.c" ],
+                       flounderDefs = [ "monitor" ],
+                       flounderBindings = [ "bench" ],
+-                      addLibraries = ["bench","tools"] },
++                      addLibraries = ["bench","tools","idc_numa","numa"] },
+ 
+   build application { target = "ump_send", cFiles = [ "main.c" , "send.c" ],
+                       flounderDefs = [ "monitor" ],
+                       flounderBindings = [ "bench" ],
+-                      addLibraries = ["bench","tools"] },
++                      addLibraries = ["bench","tools","idc_numa","numa"] },
+   
+   build application { target = "ump_receive", cFiles = [ "main.c" , "receive.c" ],
+                       flounderDefs = [ "monitor" ],
+                       flounderBindings = [ "bench" ],
+-                      addLibraries = ["bench","tools"] }
++                      addLibraries = ["bench","tools","idc_numa","numa"] }
+ ]
+diff --git a/usr/bench/ump_bench/main.c b/usr/bench/ump_bench/main.c
+--- a/usr/bench/ump_bench/main.c
++++ b/usr/bench/ump_bench/main.c
+@@ -15,14 +15,19 @@
+ #include "ump_bench.h"
+ #include <stdlib.h>
+ #include <string.h>
++#include <stdbool.h>
+ #include <barrelfish/nameservice_client.h>
+ #include <barrelfish/spawn_client.h>
+ #include <skb/skb.h>
+ #include <tools/tools.h>
++#include <numa.h>
+ 
+ static coreid_t num_cores;
+ static char my_name[100];
+ 
++static coreid_t sending_core;
++static bool exp_done = false;
++
+ static struct timestamps *timestamps;
+ 
+ struct bench_binding *array[MAX_CPUS] = {NULL};
+@@ -42,9 +47,9 @@
+             }
+         }
+ 
+-        printf("client done\n"); // Only once (the receiving core?)
+-        printf("%d terminating\n", my_core_id);
+-        exit(0); // Terminate the client
++        printf("client done\n");
++        exp_done = true;
++        count = 0;
+     }
+ }
+ 
+@@ -69,11 +74,12 @@
+     assert(timestamps != NULL);
+ 
+     int i = 0;
++    printf("bind_cb on core %d. Starting event handling loop\n", my_core_id);
+ 
+     /* Wait for and reply to msgs */
+     /* This is running on the client! */
+     printf("client: Running low-level event dispatching loop in bind_cb\n");
+-    while (1) {
++    while (!exp_done) {
+         volatile struct ump_message *msg;
+         struct ump_control ctrl;
+         do {
+@@ -87,7 +93,7 @@
+         if (i == MAX_COUNT) {
+ 
+             printf("received messages from all cores, terminating\n");
+-            exit(0);
++            exp_done = true;
+         }
+ 
+ #ifdef SERVERCOST
+@@ -115,8 +121,15 @@
+         abort();
+     }
+ 
++    assert(sending_core == my_core_id);
++
++    char buf[1000];
++    sprintf(buf, "ump_server%d", sending_core);
++
++    printf("export_cb: registering %s\n", buf);
++
+     // register this iref with the name service
+-    err = nameservice_register("ump_server", iref);
++    err = nameservice_register(buf, iref);
+     if (err_is_fail(err)) {
+         DEBUG_ERR(err, "nameservice_register failed");
+         abort();
+@@ -125,6 +138,8 @@
+ 
+ static errval_t connect_cb(void *st, struct bench_binding *b)
+ {
++    printf("connect_cb on core %d\n", my_core_id);
++
+     // copy my message receive handler vtable to the binding
+     b->rx_vtbl = rx_vtbl;
+ 
+@@ -162,6 +177,7 @@
+     if (err_is_fail(err)) {
+         USER_PANIC_ERR(err, "connection to SKB failed");
+     }
++    numa_init();
+ 
+     /* Set my core id */
+     my_core_id = disp_get_core_id();
+@@ -169,7 +185,7 @@
+ 
+     bench_init();
+ 
+-
++#if 0
+     if (argc == 2 && strcmp(argv[1], "master")==0) {
+ 
+         num_cores = get_num_cores();
+@@ -177,7 +193,9 @@
+         for (int i=0; i<num_cores; i++) {
+             
+             domainid_t domainid;
+-            uint8_t exitcode;
++            /* uint8_t exitcode; */
++
++            tsc_sleep(100000); // Wait a bit for monitor free up buffer space
+ 
+             // Start benchmark server on core 1
+             printf("MASTER: Spawning new benchmark server on core %d\n", i);
+@@ -191,20 +209,26 @@
+             assert(err_is_ok(err));
+ 
+             // Wait for termination
+-            printf("MASTER: Waiting for %d to terminate\n", domainid);
+-            err = spawn_wait_coreid(i, domainid, &exitcode, false);
+-            printf("MASTER: %d terminated with %d\n", domainid, exitcode);
++            /* printf("MASTER: Waiting for %d to terminate\n", domainid); */
++            /* err = spawn_wait_coreid(i, domainid, &exitcode, false); */
++            /* printf("MASTER: %d terminated with %d\n", domainid, exitcode); */
+             
+-            // Check?
+-            DEBUG_ERR(err, "waiting for child to terminate");
+-            assert(err_is_ok(err));
++            /* // Check? */
++            /* DEBUG_ERR(err, "waiting for child to terminate"); */
++            /* assert(err_is_ok(err)); */
+ 
++            barrier_wait(2);
++            
+             tsc_sleep(2000000); // 1 second?
+         }
+ 
+         printf("benchmark master terminated\n");
+     }
++#endif
+ 
++    num_cores = get_num_cores();
++    
++    // Start all other clients
+     if (argc == 1) { /* bsp core */
+ 
+         /* 1. set num_cores,
+@@ -213,7 +237,6 @@
+            4. wait for all clients to connect,
+            5. run experiments
+         */
+-        num_cores = get_num_cores();
+ 
+         // Spawn domains
+         char *xargv[] = {my_name, "dummy", NULL};
+@@ -221,30 +244,76 @@
+                                          SPAWN_FLAGS_DEFAULT, NULL);
+         DEBUG_ERR(err, "spawn program on all cores");
+         assert(err_is_ok(err));
++    }
+ 
+-        /* Setup a server */
+-        err = bench_export(NULL, export_cb, connect_cb, get_default_waitset(),
+-                           IDC_BIND_FLAGS_DEFAULT);
+-        assert(err_is_ok(err));
+-    } else {
+-        /* Connect to the server */
+-        iref_t iref;
++    barrier_wait(num_cores);
++    
++    for (sending_core=0; sending_core<num_cores; sending_core++) {
+ 
+-        err = nameservice_blocking_lookup("ump_server", &iref);
+-        if (err_is_fail(err)) {
+-            DEBUG_ERR(err, "nameservice_blocking_lookup failed");
+-            abort();
++        tsc_sleep(10000);
++
++        printf("Starting experiments for sender %d\n", sending_core);
++        exp_done = false;
++
++        if (sending_core == my_core_id) {
++
++            /* Setup a server */
++            err = bench_export(NULL, export_cb, connect_cb, 
++                               get_default_waitset(), IDC_BIND_FLAGS_DEFAULT);
++            assert(err_is_ok(err));
++
++
++        } else {
++
++            /* Connect to the server */
++            iref_t iref;
++
++            char buf[1000];
++            sprintf(buf, "ump_server%d", sending_core);
++
++            err = nameservice_blocking_lookup(buf, &iref);
++            if (err_is_fail(err)) {
++                DEBUG_ERR(err, "nameservice_blocking_lookup failed");
++                abort();
++            }
++            
++            printf("bind on core %d\n", my_core_id);
++            err = bench_bind(iref, bind_cb, NULL, get_default_waitset(), 
++                             IDC_BIND_FLAGS_DEFAULT | IDC_BIND_FLAG_NUMA_AWARE);
++            if (err_is_fail(err)) {
++                DEBUG_ERR(err, "bind failed");
++                abort();
++            }
++            printf("bind on core %d terminated\n", my_core_id);
++                
+         }
+ 
+-        err = bench_bind(iref, bind_cb, NULL,
+-                         get_default_waitset(), IDC_BIND_FLAGS_DEFAULT);
+-        if (err_is_fail(err)) {
+-            DEBUG_ERR(err, "bind failed");
+-            abort();
++        // Run event non-blocking dispatching loop until benchmark is complete
++        // Can't use blocking calls here due to the wiredness with barriers .. 
++        printf("Running event processing loops\n");
++        while (!exp_done) {
++            err = event_dispatch_non_block(get_default_waitset());
++            
++            if (err_is_fail(err)) {
++
++                if (err_no(err) == LIB_ERR_NO_EVENT) {
++                    // No message
++
++                } else {
++                    USER_PANIC_ERR(err, "error in event_dispatch");
++                }
++            }
++
+         }
+-                
++
++        printff("Experiments done, barrrier\n");
++        barrier_wait(num_cores);
++
+     }
+ 
+-    printf("messages_handler_loop on core %d\n", disp_get_core_id());
+-    messages_handler_loop();
++    printff("everything done, terminating\n");
++
++    if (my_core_id==0) {
++        printf("ump_bench done\n");
++    }
+ }
+diff --git a/usr/bench/ump_bench/ump_bench.h b/usr/bench/ump_bench/ump_bench.h
+--- a/usr/bench/ump_bench/ump_bench.h
++++ b/usr/bench/ump_bench/ump_bench.h
+@@ -26,7 +26,7 @@
+ #include <if/bench_defs.h>
+ 
+ #define NUM_MSGS 16
+-#define MAX_COUNT 1000
++#define MAX_COUNT 100
+ 
+ struct timestamps {
+     cycles_t time0;
