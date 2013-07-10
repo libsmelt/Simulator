@@ -13,8 +13,9 @@ import subprocess
 import logging
 import pdb
 import traceback
+import re
 import simulation
-from config import topologies, machines
+from config import topologies, machines, get_ab_machine_results
 
 from datetime import *
 
@@ -46,14 +47,16 @@ def output_quorum_configuration(model, graph, root, sched, topo):
     Output a C array representing overlay and scheduling
 
     """
+    d = core_index_dict(graph.nodes())
     
     dim = model.get_num_cores()
     mat = [[0 for x in xrange(dim)] for x in xrange(dim)]
 
     # Build the matrix
-    walk_graph(graph, root, fill_matrix, mat, sched)
+    walk_graph(graph, root, fill_matrix, mat, sched, d)
 
     # Determine longest path with most expensive node
+    # ? < why is there a ?
     sp = shortest_path(graph, root)[1].items()
     sp.sort(key=lambda tup: tup[1], reverse=True)
 
@@ -61,7 +64,7 @@ def output_quorum_configuration(model, graph, root, sched, topo):
     stream = open("model.h", "w")
     defstream = open("model_defs.h", "w")
     __c_header_model_defs(defstream, 
-                          model.evaluation.last_node, 
+                          d[model.evaluation.last_node], 
                           type(model), 
                           type(topo),
                           len(mat))
@@ -71,7 +74,7 @@ def output_quorum_configuration(model, graph, root, sched, topo):
     __c_footer(defstream)
 
 
-def walk_graph(g, root, func, mat, sched):
+def walk_graph(g, root, func, mat, sched, core_dict):
     """
     Function to walk the tree starting from root
 
@@ -80,6 +83,7 @@ def walk_graph(g, root, func, mat, sched):
 
     """
     assert isinstance(g, graph) or isinstance(g, digraph)
+
     active = Queue.Queue()
     done = []
 
@@ -99,28 +103,29 @@ def walk_graph(g, root, func, mat, sched):
                 nbs.append(nb)
 
         # call handler function
-        func(a, nbs, parent, mat, sched)
+        func(a, nbs, parent, mat, sched, core_dict)
         
 
-def fill_matrix(s, children, parent, mat, sched):
+def fill_matrix(s, children, parent, mat, sched, core_dict):
     """
     """
-    logging.info("%d -> %s" % (s, ','.join([ str(c) for c in children ])))
+    logging.info("%d -> %s" 
+                 % (core_dict[s], ','.join([ str(c) for c in children ])))
     i = 1
     for (cost, r) in sched.get_final_schedule(s):
-        logging.info("%d -> %d [%r]" % (s, r, r in children))
+        logging.info("%d -> %d [%r]" % 
+                     (core_dict[s], core_dict[r], r in children))
         if r in children:
-            mat[s][r] = i
+            mat[core_dict[s]][core_dict[r]] = i
             i += 1
     if not parent == None:
         assert len(children)<90
-        mat[s][parent] = 99
+        mat[core_dict[s]][core_dict[parent]] = 99
 
 
 def __matrix_to_c(stream, mat):
     """
-    Print given matrix as C code
-
+    Print given matrix as C 
     """
     dim = len(mat)
     stream.write("int model[MODEL_NUM_CORES][MODEL_NUM_CORES] = {\n")
@@ -534,8 +539,7 @@ def extract_machine_results(model, nosim=False):
     sim_results = []
     machine = model.get_name()
     for t in topologies:
-        f = ("%s/measurements/atomic_broadcast_new_model/%s_%s" % 
-             (os.getenv("HOME"), machine, t))
+        f = get_ab_machine_results(machine, t)
 
         # Real hardware
         if os.path.isfile(f):
@@ -561,3 +565,64 @@ def extract_machine_results(model, nosim=False):
             sim_results.append((t, sys.maxint))
 
     return (results, sim_results)
+
+def gen_gottardo(m):
+
+    graph = digraph()
+    graph.add_nodes([n for n in range(m.get_num_cores())])
+    
+    for n in range(1, m.get_num_cores()):
+        if n % m.get_cores_per_node() == 0:
+            print "Edge %d -> %d" % (0, n)
+            graph.add_edge((0, n))
+
+    dim = m.get_num_cores()
+    mat = [[0 for x in xrange(dim)] for x in xrange(dim)]
+    
+    import sort_longest
+    sched = sort_longest.SortLongest(graph)
+
+    # Build the matrix
+    walk_graph(graph, 0, fill_matrix, mat, sched)
+
+    stream = open("hybrid_model.h", "w")
+    defstream = open("hybrid_model_defs.h", "w")
+    __c_header_model_defs(defstream, 
+                          m.get_num_cores()-1,
+                          "",
+                          "",
+                          len(mat))
+    __c_header_model(stream)
+    __matrix_to_c(stream, mat)
+    __c_footer(stream)
+    __c_footer(defstream)
+
+
+# http://stackoverflow.com/questions/4836710/does-python-have-a-built-in-function-for-string-natural-sort
+def natural_sort(l):
+    convert = lambda text: int(text) if text.isdigit() else text.lower()
+    alphanum_key = lambda key: [ convert(c) for c in re.split('([0-9]+)', key) ]
+    return sorted(l, key = alphanum_key)
+
+
+# http://stackoverflow.com/questions/12217537/can-i-force-debugging-python-on-assertionerror
+def info(type, value, tb):
+   if hasattr(sys, 'ps1') or not sys.stderr.isatty() or type != AssertionError:
+      # we are in interactive mode or we don't have a tty-like
+      # device, so we call the default hook
+      sys.__excepthook__(type, value, tb)
+   else:
+      import traceback, pdb
+      # we are NOT in interactive mode, print the exception...
+      traceback.print_exception(type, value, tb)
+      print
+      # ...then start the debugger in post-mortem mode.
+      pdb.pm()
+
+def core_index_dict(n):
+    """
+    Return a dictionary with indices for cores
+
+    """
+    n = natural_sort(n)
+    return { node: idx for (idx, node) in zip(range(len(n)), n)}

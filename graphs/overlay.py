@@ -21,7 +21,15 @@ class Overlay(object):
         return None
 
     def get_root_node(self):
-        return 0
+        """
+        Return root node. If model does not have any constraints, just
+        start at 0
+
+        """
+        if self.mod.get_root_node():
+            return self.mod.get_root_node()
+        else:
+            return 0
 
     def get_name(self):
         return None

@@ -51,7 +51,7 @@ class SortLongest(scheduling.Scheduling):
                 indent = ''
                 for i in range(depth):
                     indent += ' '
-                logging.info("%sPath length from %d via %d is %d" % 
+                logging.info("%sPath length from %s via %s is %d" % 
                              (indent, node, n, ltmp))
                 l = max(l, ltmp)
         return l
@@ -67,6 +67,8 @@ class SortLongest(scheduling.Scheduling):
 
         assert not omit == None
         omit.append(src)
+
+        assert src in self.graph.nodes()
 
         for n in self.graph.neighbors(src):
             if not n in omit:

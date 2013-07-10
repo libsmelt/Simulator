@@ -38,14 +38,17 @@ class Mst(overlay.Overlay):
         """
         Run MST algorithm
         """
-        mst = graph()
-        mst.add_nodes(range(self.mod.get_num_cores()))
-
         gr = self.mod.get_graph()
+        
+        mst = graph()
+        mst.add_nodes(gr.nodes())
 
         mst_edges = minimal_spanning_tree(gr)
-        for i in range(len(mst_edges)):
-            if mst_edges[i] != None:
-                mst.add_edge((mst_edges[i], i), \
-                                 gr.edge_weight((mst_edges[i], i)))
+        print mst_edges
+
+        for (trg,src) in mst_edges.items():
+            if src != None:
+                print "Adding edge %s -> %s" % (src, trg)
+                mst.add_edge((src, trg)) #, gr.edge_weight((src, trg)))
+
         return mst

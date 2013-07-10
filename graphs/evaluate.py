@@ -48,7 +48,7 @@ class Evaluate():
         self.topology = {}
         # Some topologies require state (e.g. rings). We store this state
         # in a list of node states (sequence number for rings)
-        self.node_state = []
+        self.node_state = {}
         self.last_node = -1
         # Keep track of which nodes are active
         # Lists of nodes that: 
@@ -70,8 +70,6 @@ class Evaluate():
         self.schedule = sched
         self.model = m
         self.sim_round = 0
-
-        self.node_state = [NodeState()]*len(self.topology)
 
         # Construct visualization instance
         visu_name = ("visu/visu_%s_%s_send_events.tex" % 
@@ -127,7 +125,7 @@ class Evaluate():
         is the node where the message is received. Send will be called to
         trigger sending of messages to children.
         """
-        logging.info("{%d}: receiving message from {%d} in round %d" \
+        logging.info("{%s}: receiving message from {%s} in round %d" \
                          % (dest, src, self.sim_round))
         self.last_node = dest
         cost = self.model.get_receive_cost(src, dest)
@@ -135,9 +133,10 @@ class Evaluate():
 
         # For rings: sequence number
         # Abort in case the message was seen before
-        if isinstance(self.node_state[dest], NodeState) and \
+        if dest in self.node_state and \
+                isinstance(self.node_state[dest], NodeState) and \
                 self.node_state[dest].seq_no > 0:
-            print "Node %d Received message that was send before, aborting!" % dest
+            print "Node %s Received message that was send before, aborting!" % dest
             return
         self.node_state[dest] = NodeState()
         self.node_state[dest].seq_no = 1
@@ -152,7 +151,10 @@ class Evaluate():
 
         """
         send_time = self.sim_round
-        assert src<len(self.topology)
+        if not src in self.topology.nodes():
+            import pdb
+            pdb.set_trace()
+        assert src in self.topology.nodes()
         nb = []
 
         # Get a list of neighbors from the scheduler

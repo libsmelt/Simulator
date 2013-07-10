@@ -23,3 +23,9 @@ machines = [
 #    'gottardo',
     'appenzeller'
     ]
+
+import os
+
+def get_ab_machine_results(machine, overlay):
+    return ('%s/measurements/atomic_broadcast_new_model/%s_%s' %
+            (os.getenv('HOME'), machine, overlay))

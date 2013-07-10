@@ -136,3 +136,34 @@ def merge_graphs(g1, g2):
             logging.info("merge_graphs: adding edge %d %d" % (e[0], e[1]))
     return g
 
+
+def connect_graphs(g1, g2, connecting_edge, weight=1):
+    """
+    Build a new graph out of the two given graphs.
+
+    Every node e in g1 will be represented as 1_e in the new graph and
+    every node e' in g2 as 2_e'.
+
+    @param connecting_edge: An edge (e_src, e_dst), where e_src is in
+        g1 and e_dst is in g2. This edge will connect g1 with g2.
+    @param weight: Weight of the connecting edge.
+    """
+    g = digraph()
+
+    # Add nodes and edges
+    for (index, gr) in [(1, g1), (2, g2)]:
+        for n in gr.nodes():
+            g.add_node('%d_%d' % (index, n))
+        for (src, dst) in gr.edges():
+            g.add_edge(('%d_%d' % (index, src), 
+                        '%d_%d' % (index, dst)), 
+                        g.edge_weight((src, dst)))
+ 
+    # Connect subgraphs
+    conn_src, conn_dst = connecting_edge
+    g.add_edge(('%d_%d' % (1, conn_src), 
+                '%d_%d' % (2, conn_dst)))
+    g.add_edge(('%d_%d' % (2, conn_dst),
+                '%d_%d' % (1, conn_src)))
+
+    return g

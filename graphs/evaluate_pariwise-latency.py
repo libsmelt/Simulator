@@ -15,7 +15,7 @@ import argparse
 
 parser = argparse.ArgumentParser(
     description='Evaluation of UMP')
-parser.add_argument('machine')
+parser.add_argument('--machine', default='unknown')
 args = parser.parse_args()
 
 r = []

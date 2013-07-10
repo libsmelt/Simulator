@@ -161,3 +161,6 @@ class Model(object):
                     node1 = numa_node*self.get_cores_per_node() + i
                     node2 = numa_node*self.get_cores_per_node() + j
                     graph.add_edge((node1, node2), self.get_cost_within_numa())
+
+    def get_root_node(self):
+        return None

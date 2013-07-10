@@ -14,12 +14,18 @@ class Sbrinz(numa_model.NUMAModel):
         """
         Build the model and use it to initialize the Model superclass
         """
+
         g = super(Sbrinz, self)._build_graph()
         super(Sbrinz, self).__init__(g)
-        super(Sbrinz, self)._parse_receive_result_file(
-            open('measurements/receive_sbrinz'))
-        super(Sbrinz, self)._parse_send_result_file(
-            open('measurements/send_sbrinz'))
+
+        r = open('measurements/receive_sbrinz')
+        s = open('measurements/send_sbrinz')
+
+        numa_model.NUMAModel._parse_receive_result_file(self, r)
+        numa_model.NUMAModel._parse_send_result_file(self, s)
+
+        r.close()
+        s.close()
 
     # --------------------------------------------------
     # Characteritics of model

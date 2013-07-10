@@ -10,15 +10,18 @@ from pygraph.algorithms.minmax import shortest_path
 # --------------------------------------------------
 class NUMAModel(model.Model):
 
-    # Dictionary for receive costs
-    # key is (src, dest), value is the cost in cycles/10
-    recv_cost = {}
-    # Dictionary for send costs
-    # key is (src, dest), value is the cost in cycles/10
-    send_cost = {}
-
     def __init__(self, g):
+
         super(NUMAModel, self).__init__(g)
+
+        # Dictionary for receive costs
+        # key is (src, dest), value is the cost in cycles/10
+        self.recv_cost = {}
+
+        # Dictionary for send costs
+        # key is (src, dest), value is the cost in cycles/10
+        self.send_cost = {}
+
 
     # --------------------------------------------------
 
@@ -106,6 +109,8 @@ class NUMAModel(model.Model):
         @param f: Handle to results.dat file of UMP receive benchmark
 
         """
+        print self.recv_cost
+        assert not self.recv_cost
         for l in f.readlines():
             l = l.rstrip()
             m = re.match('(\d+)\s+(\d+)\s+([0-9.]+)\s+([0-9.]+)', l)
@@ -126,6 +131,7 @@ class NUMAModel(model.Model):
         @param f: Handle to results.dat file of UMP send benchmark
 
         """
+        assert not self.send_cost
         for l in f.readlines():
             l = l.rstrip()
             m = re.match('(\d+)\s+(\d+)\s+([0-9.]+)\s+([0-9.]+)', l)

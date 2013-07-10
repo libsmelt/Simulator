@@ -51,7 +51,7 @@ import ziger
 import sbrinz
 import gottardo
 import appenzeller
-
+import rack
 
 def arg_machine(machine_name):
     """
@@ -71,6 +71,8 @@ def arg_machine(machine_name):
         return gottardo.Gottardo()
     elif string == 'appenzeller':
         return appenzeller.Appenzeller()
+    elif string == 'rack':
+        return rack.Rack(sbrinz.Sbrinz)
     else:
         return None
 
@@ -118,7 +120,7 @@ def build_and_simulate():
         (topo, ev, root, sched, topology) = \
             simulation._simulation_wrapper(args.overlay, m, gr)
         final_graph = topo.get_broadcast_tree()
-        print "Cost for tree is: %d, last node is %d" % (ev.time, ev.last_node)
+        print "Cost for tree is: %d, last node is %s" % (ev.time, ev.last_node)
         # Output c configuration for quorum program
         helpers.output_quorum_configuration(
             m, final_graph, root, sched, topology)
@@ -131,8 +133,7 @@ def build_and_simulate():
         print "Evaluating model"
         helpers.parse_and_plot_measurement(
             range(m.get_num_cores()), args.machine, args.overlay, 
-            ("%s/measurements/atomic_broadcast/%s_%s" % 
-             (os.getenv("HOME"), args.machine, args.overlay)))
+            config.get_ab_machine_results(args.machine, args.overlay))
         return 0
     elif args.action == "evaluate-machine":
         print "Evaluate all measurements for given machine"
@@ -195,6 +196,7 @@ def build_and_simulate():
         helpers.run_pdflatex(fname)
 
 if __name__ == "__main__":
+    sys.excepthook = helpers.info
     try:
         build_and_simulate()
     except:
