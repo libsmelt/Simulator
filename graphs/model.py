@@ -3,6 +3,7 @@
 import pdb
 import logging
 import evaluate
+import topology_parser
 
 from pygraph.algorithms.minmax import shortest_path
 from pygraph.classes.graph import graph
@@ -18,6 +19,11 @@ class Model(object):
         We initialize models with the graph
         """
         self.graph = graph
+        try:
+            self.machine_topology = topology_parser.parse_coresenum(
+                open('../measurements/coresenum_print_%s' % self.get_name()))
+        except:
+            pass
 
     # --------------------------------------------------
     # Characteritics of model
