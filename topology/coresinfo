@@ -1,0 +1,59 @@
+#!/bin/zsh
+# -kkourt
+
+# Assumptions:
+#  - symmetric topology
+# Todo:
+#  - SMT threads
+
+
+# expand list
+#   1,3,5-10 -> 1 3 5 6 7 8 9 10
+function myxpandl {
+	foo=$(echo $1 | sed -e 's/,/ /g; s/\([[:digit:]]\+\)-\([[:digit:]]\+\)/{\1..\2}/g')
+	eval "echo $foo"
+}
+
+# Cache levels
+function clevels {
+	echo $(ls -d /sys/devices/system/cpu/cpu0/cache/index*  | sed -n -e 's/^.*index\([[:digit:]]\+\).*$/\1/p' | sort -n | tac)
+}
+
+echo "NUMA Nodes"
+echo "----------"
+for numanode in $(myxpandl $(cat /sys/devices/system/node/possible))
+do
+	echo "NODE: $numanode  Cores: $(cat /sys/devices/system/node/node${numanode}/cpulist)"
+done
+echo
+
+echo "Physical Packages"
+echo "-----------------"
+for siblist in $(cat /sys/devices/system/cpu/cpu*/topology/core_siblings_list | sort -u)
+do
+	cores=$(myxpandl $siblist)
+	first=$(echo $cores | cut -f1 -d' ')
+	echo -n "CPU: $(cat /sys/devices/system/cpu/cpu${first}/topology/physical_package_id)"
+	echo "   Cores: $siblist"
+done
+echo
+
+echo "Caches"
+echo "-----------------"
+for clevel in $(clevels) 
+do
+	cdir="/sys/devices/system/cpu/cpu0/cache/index$clevel"
+	clvl=$(cat "$cdir/level")
+	ctype=$(cat "$cdir/type")
+	csize=$(cat "$cdir/size")
+	ccpus=$(cat /sys/devices/system/cpu/cpu*/cache/index${clevel}/shared_cpu_list | sort -un)
+	cnr=$(echo $ccpus | wc -l)
+	printf "L%-2d %-15s size:%7s x %-3s\n" $clvl "($ctype)" $csize $cnr
+	if [ "$(cat /sys/devices/system/cpu/cpu0/cache/index${clevel}/shared_cpu_list)" = "0" ]; then
+		echo "Per-core cache"
+	else
+		echo "Cores:"
+		echo $ccpus | sed -e 's/^/\t/'
+	fi
+	echo
+done

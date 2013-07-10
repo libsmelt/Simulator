@@ -1,0 +1,248 @@
+#!/usr/bin/env python
+# Enumerate cores
+
+import os
+import socket
+from functools import partial
+
+def cat(fname):
+	f = open(fname)
+	ret = f.read()
+	f.close()
+	return ret.rstrip(' \t\x00\n')
+
+# expand list
+#   1,3,5-10 -> 1 3 5 6 7 8 9 10
+def xpandl(xstr):
+	return reduce(
+		lambda x,y: x + y,
+		[ range(int(x[0]), int(x[1]) + 1) if len(x) == 2 else [int(x[0])]
+		  for x in map(lambda x: x.split('-'), xstr.split(','))
+		], [])
+
+def fxpandl(fname):
+		return xpandl(cat(fname))
+
+## Some Memoize helpers
+#    Included is a metaclass memoize helper for calling static methods, note
+#    that static methods when called from the instance are memoized there
+##
+
+class MemoizeClass(type):
+	def __init__(cls, name, bases, dct):
+		cls.memoize_dict__ = {}
+
+	def __getattr__(cls, key):
+
+		if key in cls.memoize_dict__:
+			return cls.memoize_dict__[key]
+
+		fn = key + "__get"
+		try:
+			ret = cls.__getattribute__(cls, fn).__func__()
+		except:
+			raise
+		cls.memoize_dict__[key] = ret
+		return ret
+
+
+class MemoizeObj(object):
+	__metaclass__ = MemoizeClass
+	# add simple memoization
+	#  if .attr is requested try calling get__attr()
+	def __getattr__(self, key):
+		fn = key + "__get"
+		try:
+			ret = self.__getattribute__(fn)()
+		except:
+			raise
+		self.__dict__[key] = ret
+		return ret
+
+class Node(MemoizeObj):
+	def __init__(self, name, desc=None):
+		self.name     = name
+		self.children = []
+
+	## Need to be  implemented
+	def build_children(self):
+		raise NotImplementedError
+
+	@staticmethod
+	def cpuids__get():
+		raise NotImplementedError
+
+	def do_str(self, lvl, only_child=False):
+		ret = (" "*(lvl*2) if not only_child else "") + self.name
+		if len(self.children) == 1:
+			ret += " -> " + self.children[0].do_str(lvl, True)
+		else:
+			ret += " [%d CPUs]\n" % len(self.cpuids) if len(self.cpuids) > 1 else " [CPU: %d]\n" % self.cpuids[0]
+			for c in self.children:
+				ret += c.do_str(lvl+1)
+		return ret
+
+	def do_print(self):
+		print self.do_str(0)
+
+	def enum_span(self, count=None):
+		if count is None:
+			count = len(self.cpuids)
+		nodesidx  = {} # node seen -> next child
+
+		for i in xrange(count):
+			node = self
+			# traverse nodes until reaching a leaf
+			while len(node.children) > 0:
+				# ignore nodes with a single child
+				if len(node.children) == 1:
+					node = node.children[0]
+				else:
+					idx = nodesidx.get(node, 0) % len(node.children)
+					#print nodesidx, node, len(node.children), '====>idx', idx
+					nodesidx[node] = idx + 1
+					node = node.children[idx]
+
+			# got leaf
+			assert(len(node.cpuids) == 1)
+			yield node.cpuids[0]
+
+
+class Machine(Node):
+	def __init__(self):
+		Node.__init__(self, socket.gethostname())
+
+	@staticmethod
+	def numa_nodes__get():
+		return fxpandl('/sys/devices/system/node/possible')
+
+	@staticmethod
+	def cpuids__get():
+		return fxpandl('/sys/devices/system/cpu/present')
+
+	@staticmethod
+	def cache_levels__get():
+		def getlvl(xstr):
+			assert xstr[:5] == "index"
+			return int(xstr[5:])
+		## Assume a uniform cache level for all cpus, just check cpu0
+		return sorted(map(getlvl, os.listdir('/sys/devices/system/cpu/cpu0/cache/')))
+
+	def build_children(self):
+		for nid in self.numa_nodes:
+			#print "NUMA id", nid
+			node = NumaNode(nid)
+			node.build_children()
+			self.children.append(node)
+
+class NumaNode(Node):
+	def __init__(self, nodeid):
+		Node.__init__(self, "NUMA %d" % nodeid)
+		self.nodeid = nodeid
+		self.sysdir = "/sys/devices/system/node/node%d/" % nodeid
+
+	def cpuids__get(self):
+		return xpandl(cat(self.sysdir + "cpulist"))
+
+	def physids__get(self):
+		s = set()
+		for c in self.cpuids:
+			s.add(int(cat("/sys/devices/system/cpu/cpu%d/topology/physical_package_id" % c)))
+		return sorted(list(s))
+
+	def build_children(self):
+		for package_id in self.physids:
+			#print "Package id", package_id
+			package = Package(package_id)
+			package.build_children()
+			self.children.append(package)
+
+class Package(Node):
+	def __init__(self, package_id):
+		Node.__init__(self, "Package %d" % package_id)
+		self.package_id = package_id
+
+	def cpuids__get(self):
+		ret = set()
+		for core_id in  Machine.cpuids:
+			package_id = int(cat("/sys/devices/system/cpu/cpu%d/topology/physical_package_id" % core_id))
+			if package_id == self.package_id:
+				ret.add(core_id)
+		return sorted(ret)
+
+	def build_children(self):
+		cpuids = set(self.cpuids)
+		max_cache_lvl = Machine.cache_levels[-1]
+		while cpuids:
+			cid = cpuids.pop()
+			cids = fxpandl("/sys/devices/system/cpu/cpu%d/cache/index%d/shared_cpu_list" % (cid, max_cache_lvl))
+			cpuids = cpuids - set(cids)
+			cache = Cache(max_cache_lvl, cids)
+			#print cache.name
+			cache.build_children()
+			self.children.append(cache)
+
+
+class Cache(Node):
+	def __init__(self, lvl, cpuids):
+		self.sysdir = "/sys/devices/system/cpu/cpu%d/cache/index%d/" %  (cpuids[0], lvl)
+		self.lvl    = lvl
+		self.cpuids = cpuids
+		Node.__init__(self, "Cache level %d [%s size:%s ways:%s]" % (lvl, self.type, self.size, self.ways))
+
+	def size__get(self):
+		return cat(self.sysdir + 'size')
+
+	def type__get(self):
+		return cat(self.sysdir + 'type')
+
+	def ways__get(self):
+		return cat(self.sysdir + 'ways_of_associativity')
+
+	def build_children(self):
+		myidx = Machine.cache_levels.index(self.lvl)
+		if myidx == 0:
+			# Assuming that e get one core at the first cache level
+			self.children.append(Core(self.cpuids))
+			return
+
+		cpuids = set(self.cpuids)
+		next_lvl = Machine.cache_levels[myidx - 1]
+		while cpuids:
+			cid = cpuids.pop()
+			cids = fxpandl("/sys/devices/system/cpu/cpu%d/cache/index%d/shared_cpu_list" % (cid, next_lvl))
+			cpuids = cpuids - set(cids)
+			cache = Cache(next_lvl, cids)
+			#print cache.name
+			cache.build_children()
+			self.children.append(cache)
+
+class Core(Node):
+	def __init__(self, cpuids):
+		Node.__init__(self, "Core")
+		self.cpuids = cpuids
+
+	def build_children(self):
+		# TODO: SMT
+		return
+
+if __name__ == '__main__':
+	from sys import argv, exit
+	m = Machine()
+	m.build_children()
+
+	def phelp():
+		print "Commands: print | enum_span [nr]"
+
+	if len(argv) == 1:
+		phelp()
+		exit(0)
+
+	if argv[1] == "print":
+		m.do_print()
+	elif argv[1] == "enum_span":
+		count = int(argv[2]) if len(argv) > 2 else None
+		print ','.join(map(str, m.enum_span(count)))
+	else:
+		help()
+		exit(1)
