@@ -624,5 +624,9 @@ def core_index_dict(n):
     Return a dictionary with indices for cores
 
     """
+    
+    if isinstance(n[0], int):
+        return {i: i for i in n}
+
     n = natural_sort(n)
     return { node: idx for (idx, node) in zip(range(len(n)), n)}
