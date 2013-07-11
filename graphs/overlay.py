@@ -5,6 +5,59 @@ import scheduling
 import sort_longest
 import sched_adaptive
 
+def get_overlay_class(overlay_name):
+    """
+
+
+    """
+
+    import mst
+    import cluster
+    import ring 
+    import binarytree
+    import sequential
+    import badtree
+    import adaptive
+
+    if overlay_name == "mst":
+        r = mst.Mst
+
+    elif overlay_name == "cluster":
+        # XXX Rename to hierarchical 
+        r = cluster.Cluster
+
+    elif overlay_name == "ring":
+        r = ring.Ring
+
+    elif overlay_name == "bintree":
+        r = binarytree.BinaryTree
+
+    elif overlay_name == "sequential":
+        r = sequential.Sequential
+
+    elif overlay_name == "badtree":
+        r = badtree.BadTree
+
+    elif overlay_name == "adaptivetree":
+        r = adaptive.AdapativeTree
+
+    else:
+        raise Exception('Unknown topology')
+
+    return r
+
+def get_overlay(overlay_name, topo):
+    import hybrid
+
+    if overlay_name.startswith('hybrid_'):
+        e = overlay_name.split('_')
+        r_mp_class = get_overlay_class(e[1])
+        r = hybrid.Hybrid(topo, r_mp_class)
+    else:
+        o = get_overlay_class(overlay_name)
+        r = o(topo)
+    return r
+
 class Overlay(object):
     """
     Base class for finding the right overlay topology for a model
@@ -67,5 +120,4 @@ class Overlay(object):
 
         """
         return sort_longest.SortLongest(final_graph)
-
 

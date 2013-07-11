@@ -23,6 +23,7 @@ class Model(object):
             self.machine_topology = topology_parser.parse_coresenum(
                 open('../measurements/coresenum_print_%s' % self.get_name()))
         except:
+            self.machine_topology = None
             pass
 
     # --------------------------------------------------

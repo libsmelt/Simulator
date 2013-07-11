@@ -1,34 +1,43 @@
 from string import lstrip
 import re
 
+resources = [ 'Cache level 0',
+              'Cache level 1',
+              'Cache level 2',
+              'Cache level 3',
+              'Package',
+              'NUMA' ]
+
 class Resource(object):
 
     def __init__(self, name):
         self.name = name
-        self.a = []
-        self.b = []
+        self.cluster = []
+        self.all = []
 
     def parse(self, element):
         if element.startswith(self.name):
-            if self.a:
-                self.b.append(self.a)
-            self.a = []
+            if self.cluster:
+                self.all.append(self.cluster)
+            self.cluster = []
+
+    def finalize(self):
+        if self.cluster:
+            self.all.append(self.cluster)
+        self.cluster = []
 
     def add_core(self, core):
-        self.a.append(core)
+        self.cluster.append(core)
 
     def pr(self):
-        print '%s: %s' % (self.name, str(self.b))
+        print '%s: %s' % (self.name, str(self.all))
+
+    def get(self):
+        return self.all
 
 def parse_coresenum(stream):
 
-    res = { s: Resource(s) for s in [ 
-            'NUMA', 
-            'Package',
-            'Cache level 3',
-            'Cache level 2',
-            'Cache level 1', 
-            'Cache level 0'] }
+    res = { s: Resource(s) for s in resources }
 
     for l in stream.readlines():
         l = l.rstrip()
@@ -45,6 +54,7 @@ def parse_coresenum(stream):
                     r.parse(e)
 
     for r in res.values():
+        r.finalize()
         r.pr()
 
     return res

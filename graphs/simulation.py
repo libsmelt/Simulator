@@ -11,36 +11,17 @@ import adaptive
 
 import helpers
 import evaluate
+import overlay
 
-def _simulation_wrapper(overlay, m, gr):
+def _simulation_wrapper(ol, m, gr):
     """
     Wrapper for simulationg machines
 
     """
     print 'Simulating machine [%s] with topology [%s]' % \
-        (m.get_name(), overlay)
+        (m.get_name(), ol)
 
-    if overlay == "mst":
-        r = mst.Mst(m)
-
-    elif overlay == "cluster":
-        # XXX Rename to hierarchical 
-        r = cluster.Cluster(m)
-
-    elif overlay == "ring":
-        r = ring.Ring(m)
-
-    elif overlay == "bintree":
-        r = binarytree.BinaryTree(m)
-
-    elif overlay == "sequential":
-        r = sequential.Sequential(m)
-
-    elif overlay == "badtree":
-        r = badtree.BadTree(m)
-
-    elif overlay == "adaptivetree":
-        r = adaptive.AdapativeTree(m)
+    r = overlay.get_overlay(ol, m)
 
     root = r.get_root_node()
     final_graph = r.get_broadcast_tree()
@@ -49,7 +30,7 @@ def _simulation_wrapper(overlay, m, gr):
     # Output graphs
     helpers.output_graph(gr, '%s_full_mesh' % m.get_name())
     if final_graph is not None:
-        helpers.output_graph(final_graph, '%s_%s' % (m.get_name(), overlay))
+        helpers.output_graph(final_graph, '%s_%s' % (m.get_name(), ol))
 
     # --------------------------------------------------
     sched = r.get_scheduler(final_graph)

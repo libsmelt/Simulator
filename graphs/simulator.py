@@ -22,6 +22,7 @@ import helpers
 import simulation
 
 # Overlays
+import overlay
 import cluster
 import ring
 import binarytree
@@ -29,6 +30,7 @@ import sequential
 import badtree
 import mst
 import adaptive
+import hybrid
 
 import scheduling
 import ump
@@ -53,28 +55,39 @@ import gottardo
 import appenzeller
 import rack
 
-def arg_machine(machine_name):
+def arg_machine_class(string):
     """
     Remove digits from machine name!
 
     """
-    string = ''.join([i for i in machine_name if not i.isdigit()])
     if string == "gruyere":
-        return gruyere.Gruyere()
+        return gruyere.Gruyere
     elif string == "nos":
-        return nos6.Nos()
+        return nos6.Nos
     elif string == 'ziger':
-        return ziger.Ziger()
+        return ziger.Ziger
     elif string == 'sbrinz':
-        return sbrinz.Sbrinz()
+        return sbrinz.Sbrinz
     elif string == 'gottardo':
-        return gottardo.Gottardo()
+        return gottardo.Gottardo
     elif string == 'appenzeller':
-        return appenzeller.Appenzeller()
-    elif string == 'rack':
-        return rack.Rack(sbrinz.Sbrinz)
+        return appenzeller.Appenzeller
     else:
-        return None
+        raise Exception('Unknown machine')
+    
+
+def arg_machine(machine_name):
+    """
+    Return instance of the machine given as argument
+
+    """
+    string = ''.join([i for i in machine_name if not i.isdigit()])
+
+    if string == 'rack':
+        return rack.Rack(sbrinz.Sbrinz)
+
+    else:
+        return arg_machine_class(machine_name)
 
 
 # --------------------------------------------------
@@ -102,14 +115,15 @@ def build_and_simulate():
                         help="Dump machine model instead of simulating")
     parser.add_argument('machine',
                         help="Machine to simulate")
-    parser.add_argument('overlay', choices=topologies,
+    parser.add_argument('overlay', 
                         help="Overlay to use for atomic broadcast")
     parser.add_argument('--debug', action='store_const', default=False, const=True)
     args = parser.parse_args()
 
     print "machine: %s, topology: %s" % (args.machine, args.overlay)
 
-    m = arg_machine(args.machine)
+    m_class = arg_machine(args.machine)
+    m = m_class()
     assert m != None
     gr = m.get_graph()
     

@@ -126,7 +126,7 @@ class Evaluate():
         trigger sending of messages to children.
         """
         logging.info("{%s}: receiving message from {%s} in round %d" \
-                         % (dest, src, self.sim_round))
+                         % (str(dest), str(src), self.sim_round))
         self.last_node = dest
         cost = self.model.get_receive_cost(src, dest)
         self.visu.receive(dest, src, self.sim_round, cost)
