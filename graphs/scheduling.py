@@ -12,6 +12,7 @@ class Scheduling(object):
         """
         Initializes Scheduling with a graph model
         """
+        print "Initializing scheduler with %s" % str(graph)
         self.graph = graph
 
     def find_schedule(self, sending_node, active_nodes):

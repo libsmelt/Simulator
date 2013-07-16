@@ -13,6 +13,9 @@ import helpers
 import evaluate
 import overlay
 
+from pygraph.classes.graph import graph
+from pygraph.classes.digraph import digraph
+
 def _simulation_wrapper(ol, m, gr):
     """
     Wrapper for simulationg machines
@@ -29,16 +32,23 @@ def _simulation_wrapper(ol, m, gr):
     # --------------------------------------------------
     # Output graphs
     helpers.output_graph(gr, '%s_full_mesh' % m.get_name())
-    if final_graph is not None:
-        helpers.output_graph(final_graph, '%s_%s' % (m.get_name(), ol))
 
     # --------------------------------------------------
     sched = r.get_scheduler(final_graph)
 
-    # --------------------------------------------------
-    # Evaluate
-    evaluation = evaluate.Evaluate()
-    ev = evaluation.evaluate(r, root, m, sched) 
-    
-    # Return result
-    return (r, ev, root, sched, r)
+    # DEPRECATED: Old way of dealing with output graphs
+    if isinstance(final_graph, graph) or isinstance(final_graph, digraph):
+        helpers.output_graph(final_graph, '%s_%s' % (m.get_name(), ol))
+
+        # --------------------------------------------------
+        # Evaluate
+        evaluation = evaluate.Evaluate()
+        ev = evaluation.evaluate(r, root, m, sched) 
+
+        # Return result
+        return (r, ev, root, sched, r)
+
+    else:
+        ev = evaluate.Result(0, 0, 'n.a.')
+        m.set_evaluation_result(ev)
+        return (r, ev, root, sched, r)

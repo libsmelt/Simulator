@@ -133,11 +133,12 @@ def build_and_simulate():
     if args.action == "simulate":
         (topo, ev, root, sched, topology) = \
             simulation._simulation_wrapper(args.overlay, m, gr)
-        final_graph = topo.get_broadcast_tree()
+        hierarchies = topo.get_broadcast_tree()
         print "Cost for tree is: %d, last node is %s" % (ev.time, ev.last_node)
         # Output c configuration for quorum program
         helpers.output_quorum_configuration(
-            m, final_graph, root, sched, topology)
+            m, hierarchies, root, sched, topology)
+        return 0
 
     elif args.action == 'ump-breakdown':
         ump.execute_ump_breakdown()
@@ -187,7 +188,6 @@ def build_and_simulate():
     # --------------------------------------------------
     # Output graphs
     helpers.output_graph(gr, '%s_full_mesh' % m.get_name())
-    helpers.output_graph(final_graph, '%s_%s' % (m.get_name(), args.overlay))
 
     # --------------------------------------------------
     sched = topo.get_scheduler(final_graph)

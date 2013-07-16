@@ -25,7 +25,7 @@ for line in sys.stdin.readlines():
     if not re.match('^[0-9]', line):
         continue
     ls = line.split()
-    if not len(ls)>3:
+    if not len(ls)>=3:
         continue
     (x, y, z) = map(float, (ls[0], ls[1], ls[2]))
     r.append((x,y,z))

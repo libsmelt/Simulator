@@ -3,6 +3,8 @@ from pygraph.classes.digraph import digraph
 import overlay
 import simplemachine
 import helpers
+from shm import ShmSpmc
+import hybrid_model
 
 class Hybrid(overlay.Overlay):
     """
@@ -19,6 +21,7 @@ class Hybrid(overlay.Overlay):
 
         """
         super(Hybrid, self).__init__(mod)
+        self.shm = []
         self.mp_topology = mp_topology
 
         if self.mod.machine_topology:
@@ -32,11 +35,7 @@ class Hybrid(overlay.Overlay):
             for cluster in clusters.get():
 
                 # First core in cluster acts as coordinator
-                coords.append(cluster.pop(0))
-
-                # Communication in clusters as shared memory
-                #                shm_spmc(sender, cluster)
-                    
+                coords.append(cluster[0])
 
             print str(coords)
             coords = map(int, coords)
@@ -51,6 +50,14 @@ class Hybrid(overlay.Overlay):
 
             self.mp_tree = self.mp_topology(simplemachine.SimpleMachine(g))
             self.mp_tree_topo = self.mp_tree._get_broadcast_tree()
+
+            for (cluster, coord) in zip(clusters.get(), coords):
+                
+                # Communication in clusters as shared memory
+                # XXX Assume sequential send for cross-numa communication
+                self.shm.append(ShmSpmc(coord, cluster, 
+                                        self.mp_tree.get_root_node()))
+
 
             helpers.output_graph(self.mp_tree_topo, "hybrid_mp")
 
@@ -68,7 +75,14 @@ class Hybrid(overlay.Overlay):
 
         """
         
-        return self.mp_tree_topo
+        return self.shm + [ hybrid_model.MPTree(self.mp_tree_topo) ]
         
     def get_root_node(self):
         return self.mp_tree.get_root_node()
+
+    def get_scheduler(self, graph):
+        """
+        XXX Graph is ignored!!
+        """
+        print "get_scheduler for hybrid tree using %s" % str(self.mp_tree)
+        return self.mp_tree.get_scheduler(self.mp_tree._get_broadcast_tree())

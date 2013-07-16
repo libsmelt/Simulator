@@ -15,6 +15,8 @@ import pdb
 import traceback
 import re
 import simulation
+import shm
+import hybrid_model
 from config import topologies, machines, get_ab_machine_results
 
 from datetime import *
@@ -42,23 +44,30 @@ def output_graph(graph, name, algorithm='neato'):
     gv.render(gvv, 'png', ('%s.png' % name))
 
 
-def output_quorum_configuration(model, graph, root, sched, topo):
+def output_quorum_configuration(model, hierarchies, root, sched, topo):
     """
     Output a C array representing overlay and scheduling
+    @param hierarchies: List of HybridModules, each of which is responsible for 
+          sending messages for a group/cluster of cores
 
     """
-    d = core_index_dict(graph.nodes())
+    d = core_index_dict(model.graph.nodes())
+    print d
     
     dim = model.get_num_cores()
     mat = [[0 for x in xrange(dim)] for x in xrange(dim)]
 
     # Build the matrix
-    walk_graph(graph, root, fill_matrix, mat, sched, d)
-
-    # Determine longest path with most expensive node
-    # ? < why is there a ?
-    sp = shortest_path(graph, root)[1].items()
-    sp.sort(key=lambda tup: tup[1], reverse=True)
+    for h in hierarchies:
+        assert isinstance(h, hybrid_model.HybridModule)
+        if isinstance(h, hybrid_model.MPTree):
+            assert sched is not None
+            walk_graph(h.graph, root, fill_matrix, mat, sched, d)
+        elif isinstance(h, shm.ShmSpmc):
+            send_shm(h, mat, d)
+        else:
+            import pdb; pdb.set_trace()
+            raise Error('Unsupported Hybrid Module')
 
     # Generate c code
     stream = open("model.h", "w")
@@ -73,6 +82,20 @@ def output_quorum_configuration(model, graph, root, sched, topo):
     __c_footer(stream)
     __c_footer(defstream)
 
+SEND_SHM_IDX=50
+SEND_SHM_IDX_OFFSET_SEND=20
+def send_shm(module, mat, core_dict):
+    global SEND_SHM_IDX
+    assert isinstance(module, shm.ShmSpmc)
+    assert module.sender in module.receivers
+    d = { (module.sender,x): SEND_SHM_IDX for x in module.receivers}
+    d[(module.sender, module.sender)] += SEND_SHM_IDX_OFFSET_SEND
+    fill_matrix(module.sender, 
+                module.receivers, 
+                None, mat, None,
+                core_dict, d)
+    SEND_SHM_IDX += 1
+    
 
 def walk_graph(g, root, func, mat, sched, core_dict):
     """
@@ -106,17 +129,38 @@ def walk_graph(g, root, func, mat, sched, core_dict):
         func(a, nbs, parent, mat, sched, core_dict)
         
 
-def fill_matrix(s, children, parent, mat, sched, core_dict):
+def fill_matrix(s, children, parent, mat, sched, core_dict, cost_dict=None):
     """
+    @param s: Sending core
+    @param children: Children of sending core
+    @param parent: Parent node of sending core
+    @param mat: Matrix to write at
+    @param sched: Scheduler to use or None (in which case messages will be 
+          send to all nodes in children list in given order). If None,
+          weights will be read from cost_dict
+    @param core_dict: Dictionary for core name mapping      
+    @param cost_dict: Dictionary for the integer values to write into matrix 
+          rather than an integer reflecting the order given by Scheduler. Key of
+          the dictionary is (sender, receiver).
+
     """
     logging.info("%d -> %s" 
                  % (core_dict[s], ','.join([ str(c) for c in children ])))
     i = 1
-    for (cost, r) in sched.get_final_schedule(s):
+
+    # Build list of nodes to send the message to
+    if sched is not None:
+        target_nodes = sched.get_final_schedule(s)
+    else:
+        assert cost_dict is not None
+        target_nodes = [ (cost_dict[(s,x)], x) for x in children ]
+
+    # Send message
+    for (cost, r) in target_nodes:
         logging.info("%d -> %d [%r]" % 
                      (core_dict[s], core_dict[r], r in children))
         if r in children:
-            mat[core_dict[s]][core_dict[r]] = i
+            mat[core_dict[s]][core_dict[r]] = i if cost_dict is None else cost_dict[(s,r)]
             i += 1
     if not parent == None:
         assert len(children)<90

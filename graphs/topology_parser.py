@@ -18,12 +18,12 @@ class Resource(object):
     def parse(self, element):
         if element.startswith(self.name):
             if self.cluster:
-                self.all.append(self.cluster)
+                self.all.append(map(int, self.cluster))
             self.cluster = []
 
     def finalize(self):
         if self.cluster:
-            self.all.append(self.cluster)
+            self.all.append(map(int, self.cluster))
         self.cluster = []
 
     def add_core(self, core):

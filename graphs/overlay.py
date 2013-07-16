@@ -4,6 +4,10 @@ import model
 import scheduling
 import sort_longest
 import sched_adaptive
+import hybrid_model
+
+from pygraph.classes.graph import graph
+from pygraph.classes.digraph import digraph
 
 def get_overlay_class(overlay_name):
     """
@@ -95,7 +99,15 @@ class Overlay(object):
         tree in broadcast_tree
         """
         if self.broadcast_tree is None:
-            self.broadcast_tree = self._get_broadcast_tree()
+            tmp = self._get_broadcast_tree()
+            if isinstance(tmp, graph) or isinstance(tmp, digraph):
+                self.broadcast_tree = [ hybrid_model.MPTree(tmp) ]
+            elif isinstance(tmp, list):
+                self.broadcast_tree = tmp
+            else:
+                import pdb; pdb.set_trace()
+                raise Exception('Result of _get_broadcast_tree is of unsupported data type')
+
         assert not self.broadcast_tree is None
         return self.broadcast_tree
 
@@ -119,5 +131,6 @@ class Overlay(object):
         XXX Currently only one scheduler per model
 
         """
+        print "Initializing scheduler in overlay: %s" % str(final_graph)
         return sort_longest.SortLongest(final_graph)
 
