@@ -1,0 +1,19 @@
+\begin{table}[htb]
+  \centering
+  \begin{tabular}{lrrrrr}
+  \toprule
+  & \multicolumn{3}{c}{Real hardware} & \multicolumn{2}{c}{Simulation} \\
+  topology & time [cycles] & factor & stderr & time [units] & factor \\
+  \midrule
+  ring & 0.00 & 0.000 & 0.00 & -1 & -1.000 \\
+  cluster & 5667.08 & \colorbox{gray}{1.000} & 545.76 & 341 & 1.172 \\
+  mst & 5667.08 & \colorbox{gray}{1.000} & 545.76 & 296 & 1.017 \\
+  bintree & 6069.18 & 1.071 & 649.31 & 382 & 1.313 \\
+  sequential & 8046.20 & 1.420 & 680.75 & 1201 & 4.127 \\
+  badtree & 6061.81 & 1.070 & 549.18 & 445 & 1.529 \\
+  adaptivetree & 6863.84 & 1.211 & 872.76 & 291 & \colorbox{gray}{1.000} \\
+  \midrule
+  \end{tabular}
+  \caption{Evaluation of different topologies for appenzeller}
+  \label{tab:appenzeller}
+\end{table}

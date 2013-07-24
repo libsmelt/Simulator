@@ -1,0 +1,18 @@
+\begin{table}[htb]
+  \centering
+  \begin{tabular}{lrrrrr}
+  \toprule
+  & \multicolumn{3}{c}{Real hardware} & \multicolumn{2}{c}{Simulation} \\
+  topology & time [cycles] & factor & stderr & time [units] & factor \\
+  \midrule
+  cluster & 3217.13 & 1.347 & 35.03 & 174 & 1.831 \\
+  mst & 3229.34 & 1.352 & 39.44 & 156 & 1.641 \\
+  bintree & 7381.95 & 3.090 & 1003.40 & 200 & 2.110 \\
+  sequential & 9561.22 & 4.002 & 540.49 & 95 & \colorbox{gray}{1.000} \\
+  badtree & 9046.37 & 3.787 & 510.93 & 585 & 6.161 \\
+  adaptivetree & 2388.95 & \colorbox{gray}{1.000} & 37.74 & 106 & 1.119 \\
+  \midrule
+  \end{tabular}
+  \caption{Evaluation of different topologies for gottardo}
+  \label{tab:gottardo}
+\end{table}

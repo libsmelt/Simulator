@@ -1,0 +1,18 @@
+\begin{table}[htb]
+  \centering
+  \begin{tabular}{lrrrrr}
+  \toprule
+  & \multicolumn{3}{c}{Real hardware} & \multicolumn{2}{c}{Simulation} \\
+  topology & time [cycles] & factor & stderr & time [units] & factor \\
+  \midrule
+  cluster & 2634.91 & 1.017 & 48.11 & 334 & 1.100 \\
+  mst & 3178.59 & 1.227 & 43.28 & 343 & 1.129 \\
+  bintree & 3380.46 & 1.305 & 42.70 & 377 & 1.242 \\
+  sequential & 3841.91 & 1.483 & 239.48 & 672 & 2.214 \\
+  badtree & 5711.52 & 2.204 & 30.49 & 714 & 2.354 \\
+  adaptivetree & 2591.14 & \colorbox{gray}{1.000} & 45.12 & 303 & \colorbox{gray}{1.000} \\
+  \midrule
+  \end{tabular}
+  \caption{Evaluation of different topologies for ziger}
+  \label{tab:ziger}
+\end{table}
