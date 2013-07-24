@@ -4,6 +4,7 @@
 SCHEDULING_SORT=True
 SCHEDULING_SORT_ID=False
 SCHEDULING_SORT_LONGEST_PATH=False
+USE_UMP_NUMA=True
 
 topologies = [
 #    "ring", 
@@ -27,5 +28,6 @@ machines = [
 import os
 
 def get_ab_machine_results(machine, overlay):
+    machine = ''.join([i for i in machine if not i.isdigit()])
     return ('%s/measurements/atomic_broadcast_new_model/%s_%s' %
             (os.getenv('HOME'), machine, overlay))

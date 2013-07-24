@@ -1,19 +1,17 @@
-Plot~\ref{pgfplot:20130603} shows ...
+Figure~\ref{pgfplot:20130724} shows ...
+\pgfplotsset{width=\linewidth}
 \begin{figure}
   \caption{Atomic broadcast on ziger1 with badtree topology}
-  \label{pgfplot:20130603}
-  \begin{tikzpicture}
-    \begin{axis}[
-        xlabel={coreid},
-        ylabel={cost [cycles]}
-        ]
+  \label{pgfplot:20130724}
+  \begin{tikzpicture}[scale=.75]
+    \begin{axis}[xlabel={coreid},ylabel={cost [cycles]}]
     \addplot[
         color=red,
         mark=x,
         error bars/y dir=both,
         error bars/y explicit
         ] coordinates {
-      (23,5679.000000) +- (73.705721,73.705721)
+      (13,5711.524444) +- (30.491829,30.491829)
     };
     \end{axis}
   \end{tikzpicture}

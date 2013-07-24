@@ -15,7 +15,10 @@ import argparse
 
 parser = argparse.ArgumentParser(
     description='Evaluation of UMP')
-parser.add_argument('--machine', default='unknown')
+parser.add_argument('--machine', default='unknown machine')
+parser.add_argument('--test', default='unknown test')
+parser.add_argument('--notView', dest='view', action='store_const', const=False, default=True)
+parser.add_argument('--output', default='/tmp/plot3')
 args = parser.parse_args()
 
 r = []
@@ -33,7 +36,7 @@ for line in sys.stdin.readlines():
 r = sorted(r, key = lambda x : (x[1], x[0]))
 last = -1
 
-fname_res = '/tmp/res.dat'
+fname_res = args.output + '.dat'
 f_res = open(fname_res, 'w+')
 
 for (x,y,z) in r:
@@ -44,15 +47,18 @@ for (x,y,z) in r:
 
 f_res.close()
 
-fname = '/tmp/plot3.tex'
+fname = args.output + '.tex'
 f = open(fname, 'w+')
 
-helpers._latex_header(f)
+helpers._latex_header(f, ['\\pgfplotsset{width=.9\linewidth}',
+                          '\\usepgfplotslibrary{external}',
+                          '\\tikzexternalize'])
 helpers.do_pgf_3d_plot(f, fname_res, 
-                       'pair-wise latency for %s' % args.machine, 
+                       '%s for %s' % (args.test, args.machine),
                        'sending core', 'receiving core', 'cost [cycles]')
+
 helpers._latex_footer(f)
 
 f.close()
 
-helpers.run_pdflatex(fname)
+helpers.run_pdflatex(fname, args.view)

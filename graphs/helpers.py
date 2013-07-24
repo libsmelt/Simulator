@@ -17,6 +17,7 @@ import re
 import simulation
 import shm
 import hybrid_model
+import general
 from config import topologies, machines, get_ab_machine_results
 
 from datetime import *
@@ -27,6 +28,9 @@ from pygraph.classes.digraph import digraph
 from pygraph.readwrite.dot import write
 from pygraph.algorithms.minmax import shortest_path
 
+SHM_REGIONS_OFFSET=20
+SHM_SLAVE_START=50
+
 def output_graph(graph, name, algorithm='neato'):
     """
     Output the graph as png image and also as text file
@@ -36,7 +40,7 @@ def output_graph(graph, name, algorithm='neato'):
     gvv = gv.readstring(dot)
 
     name = 'graphs/%s' % name
-    
+
     with open('%s.dot'%name, 'w') as f:
         f.write(dot)
 
@@ -47,13 +51,13 @@ def output_graph(graph, name, algorithm='neato'):
 def output_quorum_configuration(model, hierarchies, root, sched, topo):
     """
     Output a C array representing overlay and scheduling
-    @param hierarchies: List of HybridModules, each of which is responsible for 
+    @param hierarchies: List of HybridModules, each of which is responsible for
           sending messages for a group/cluster of cores
 
     """
     d = core_index_dict(model.graph.nodes())
     print d
-    
+
     dim = model.get_num_cores()
     mat = [[0 for x in xrange(dim)] for x in xrange(dim)]
 
@@ -72,9 +76,9 @@ def output_quorum_configuration(model, hierarchies, root, sched, topo):
     # Generate c code
     stream = open("model.h", "w")
     defstream = open("model_defs.h", "w")
-    __c_header_model_defs(defstream, 
-                          d[model.evaluation.last_node], 
-                          type(model), 
+    __c_header_model_defs(defstream,
+                          d[model.evaluation.last_node],
+                          type(model),
                           type(topo),
                           len(mat))
     __c_header_model(stream)
@@ -82,20 +86,21 @@ def output_quorum_configuration(model, hierarchies, root, sched, topo):
     __c_footer(stream)
     __c_footer(defstream)
 
-SEND_SHM_IDX=50
-SEND_SHM_IDX_OFFSET_SEND=20
+SEND_SHM_IDX=SHM_SLAVE_START
 def send_shm(module, mat, core_dict):
     global SEND_SHM_IDX
     assert isinstance(module, shm.ShmSpmc)
     assert module.sender in module.receivers
-    d = { (module.sender,x): SEND_SHM_IDX for x in module.receivers}
-    d[(module.sender, module.sender)] += SEND_SHM_IDX_OFFSET_SEND
-    fill_matrix(module.sender, 
-                module.receivers, 
-                None, mat, None,
-                core_dict, d)
+    d = { (recv, module.sender): SEND_SHM_IDX for recv in module.receivers}
+    d[(module.sender, module.sender)] += SHM_REGIONS_OFFSET
+    # Sender
+    for r in module.receivers:
+        mat[module.sender][r] = SEND_SHM_IDX + SHM_REGIONS_OFFSET
+        if r != module.sender:
+            mat[r][module.sender] = SEND_SHM_IDX
     SEND_SHM_IDX += 1
-    
+    assert SEND_SHM_IDX<(SHM_SLAVE_START+SHM_REGIONS_OFFSET)
+
 
 def walk_graph(g, root, func, mat, sched, core_dict):
     """
@@ -111,7 +116,7 @@ def walk_graph(g, root, func, mat, sched, core_dict):
     done = []
 
     active.put((root, None))
-    
+
     while not active.empty():
         # get next
         (a, parent) = active.get()
@@ -127,7 +132,7 @@ def walk_graph(g, root, func, mat, sched, core_dict):
 
         # call handler function
         func(a, nbs, parent, mat, sched, core_dict)
-        
+
 
 def fill_matrix(s, children, parent, mat, sched, core_dict, cost_dict=None):
     """
@@ -135,32 +140,28 @@ def fill_matrix(s, children, parent, mat, sched, core_dict, cost_dict=None):
     @param children: Children of sending core
     @param parent: Parent node of sending core
     @param mat: Matrix to write at
-    @param sched: Scheduler to use or None (in which case messages will be 
+    @param sched: Scheduler to use or None (in which case messages will be
           send to all nodes in children list in given order). If None,
           weights will be read from cost_dict
-    @param core_dict: Dictionary for core name mapping      
-    @param cost_dict: Dictionary for the integer values to write into matrix 
+    @param core_dict: Dictionary for core name mapping
+    @param cost_dict: Dictionary for the integer values to write into matrix
           rather than an integer reflecting the order given by Scheduler. Key of
           the dictionary is (sender, receiver).
 
     """
-    logging.info("%d -> %s" 
+    logging.info("%d -> %s"
                  % (core_dict[s], ','.join([ str(c) for c in children ])))
     i = 1
 
     # Build list of nodes to send the message to
-    if sched is not None:
-        target_nodes = sched.get_final_schedule(s)
-    else:
-        assert cost_dict is not None
-        target_nodes = [ (cost_dict[(s,x)], x) for x in children ]
+    target_nodes = sched.get_final_schedule(s)
 
     # Send message
     for (cost, r) in target_nodes:
-        logging.info("%d -> %d [%r]" % 
+        logging.info("%d -> %d [%r]" %
                      (core_dict[s], core_dict[r], r in children))
         if r in children:
-            mat[core_dict[s]][core_dict[r]] = i if cost_dict is None else cost_dict[(s,r)]
+            mat[core_dict[s]][core_dict[r]] = i
             i += 1
     if not parent == None:
         assert len(children)<90
@@ -169,7 +170,7 @@ def fill_matrix(s, children, parent, mat, sched, core_dict, cost_dict=None):
 
 def __matrix_to_c(stream, mat):
     """
-    Print given matrix as C 
+    Print given matrix as C
     """
     dim = len(mat)
     stream.write("int model[MODEL_NUM_CORES][MODEL_NUM_CORES] = {\n")
@@ -193,14 +194,22 @@ def __c_header(stream, name):
     stream.write('#define %s 1\n\n' % name)
 
 def __c_header_model_defs(stream, last_node, machine, topology, dim):
-    __c_header(stream, 'MULTICORE_MODEL_DEFS')                               
+    __c_header(stream, 'MULTICORE_MODEL_DEFS')
     stream.write('#define MACHINE "%s"\n' % machine)
     stream.write('#define TOPOLOGY "%s"\n' % topology)
     stream.write('#define LAST_NODE %d\n' % last_node)
     stream.write("#define MODEL_NUM_CORES %d\n\n" % dim)
 
+    stream.write('#define SHM_SLAVE_START %d\n' % SHM_SLAVE_START)
+    stream.write('#define SHM_SLAVE_MAX %d\n' % 
+                 (SHM_SLAVE_START + SHM_REGIONS_OFFSET - 1))
+    stream.write('#define SHM_MASTER_START %d\n' % 
+                 (SHM_SLAVE_START + SHM_REGIONS_OFFSET));
+    stream.write('#define SHM_MASTER_MAX %d\n' %
+                 (SHM_SLAVE_START + SHM_REGIONS_OFFSET + SHM_REGIONS_OFFSET - 1));
+
 def __c_header_model(stream):
-    __c_header(stream, 'MULTICORE_MODEL')                               
+    __c_header(stream, 'MULTICORE_MODEL')
     stream.write('#include "model_defs.h"\n\n')
 
 def __c_footer(stream):
@@ -276,7 +285,7 @@ def _pgf_header(f, caption='TODO', label='TODO'):
     s = (("\\begin{figure}\n"
           "  \\caption{%s}\n"
           "  \\label{%s}\n"
-          "  \\begin{tikzpicture}[scale=.75]\n") 
+          "  \\begin{tikzpicture}[scale=.75]\n")
          % (caption, label))
     f.write(s)
 
@@ -305,7 +314,7 @@ def _pgf_footer(f):
          "\\end{figure}\n")
     f.write(s)
 
-    
+
 def do_pgf_plot(f, data, caption='', xlabel='', ylabel=''):
     """
     Generate PGF plot code for the given data
@@ -353,7 +362,7 @@ def do_pgf_multi_plot(f, multidata, caption='FIXME', xlabel='FIXME', ylabel='FIX
     """
     now = datetime.today()
     plotname = "%02d%02d%02d" % (now.year, now.month, now.day)
-    _pgf_plot_header(f, plotname, caption, xlabel, ylabel, 
+    _pgf_plot_header(f, plotname, caption, xlabel, ylabel,
                      attr=['ybar interval=.3'])
 
     machines = []
@@ -367,7 +376,7 @@ def do_pgf_multi_plot(f, multidata, caption='FIXME', xlabel='FIXME', ylabel='FIX
         for d in rawdata:
             topos.append(d[0])
             idata.append(d[1])
- 
+
         data.append(idata)
 
         machines.append(legentry)
@@ -390,10 +399,10 @@ def do_pgf_multi_plot(f, multidata, caption='FIXME', xlabel='FIXME', ylabel='FIX
     f.write("\legend{%s}\n" % ','.join(topos))
 
     _pgf_plot_footer(f)
-    
 
 
-def _latex_header(f):
+
+def _latex_header(f, args=[]):
     header = (
         "\\documentclass[a4wide]{article}\n"
         "\\usepackage{url,color,xspace,verbatim,subfig,ctable,multirow,listings}\n"
@@ -417,9 +426,10 @@ def _latex_header(f):
         "\\usepackage{pgfplots}\n"
         "\\usetikzlibrary{shapes,positioning,calc,snakes,arrows,shapes,fit,backgrounds}\n"
         "\n"
+        "%s\n"
         "\\begin{document}\n"
         "\n"
-        )
+        ) % '\n'.join(args)
     f.write(header)
 
 def _latex_footer(f):
@@ -437,8 +447,8 @@ def do_pgf_stacked_plot(f, tuple_data, caption='', xlabel='', ylabel='', desc='.
     """
     now = datetime.today()
     plotname = "%02d%02d%02d%02d%02d" % (now.year, now.month, now.day, now.hour, now.minute)
-    _pgf_plot_header(f, plotname, caption, xlabel, ylabel, 
-                     [ 'ybar stacked', 'ymin=0', 
+    _pgf_plot_header(f, plotname, caption, xlabel, ylabel,
+                     [ 'ybar stacked', 'ymin=0',
                        ('legend style={'
                         ' at={(0.5,-0.20)},'
                         ' anchor=north,'
@@ -498,7 +508,7 @@ def parse_measurement(f, coreids=None):
 def parse_and_plot_measurement(coreids, machine, topo, f):
     stat = parse_measurement(f, coreids)
     do_pgf_plot(open("../measurements/%s_%s.tex" % (machine, topo), "w+"), stat,
-                "Atomic broadcast on %s with %s topology" % (machine, topo), 
+                "Atomic broadcast on %s with %s topology" % (machine, topo),
                 "coreid", "cost [cycles]")
 
 
@@ -537,6 +547,33 @@ def _output_table_row(f, item, min_evaluation, min_simulation):
     f.write("  %s & %.2f & %s & %.2f & %.0f & %s \\\\\n" %
             (item[0], item[1], f1, item[2], t_sim, f2))
 
+def _wiki_output_table_header(f):
+    f.write(("|| ||<-3 :> '''Real hardware''' ||<-3 :> '''Simulation''' ||\n"
+             "|| '''topology''' || '''time [cycles]''' || '''factor''' || '''stderr''' || '''time [units]''' || '''factor''' ||\n"
+             ))
+
+
+def _wiki_output_table_footer(f, label, caption):
+    f.write("||<-7 : style=\"border:none;\"> Figure: %s||\n" % caption)
+
+
+def _wiki_output_table_row(f, item, min_evaluation, min_simulation):
+    assert len(item)==4
+    fac1 = -1 if float(min_evaluation) == 0 else item[1]/float(min_evaluation)
+    fac2 = -1 if float(min_simulation) == 0 else item[3]/float(min_simulation)
+    t_sim = item[3]
+
+    if t_sim == sys.maxint:
+        t_sim = -1
+        fac2 = -1
+
+    f1 = "<#99CCFF )>%.3f" % fac1 if fac1 == 1.0 else "<)>%.3f" % fac1
+    f2 = "<#99CCFF )>%.3f" % fac2 if fac2 == 1.0 else "<)>%.3f" % fac2
+
+    f.write("|| '''%s''' ||<)> %.2f ||%s ||<)> %.2f ||<)> %.0f ||%s ||\n" %
+            (item[0], item[1], f1, item[2], t_sim, f2))
+
+
 def output_machine_results(machine, res_measurement, res_simulator):
     """
     Generates a LaTeX table for the given result list.
@@ -548,36 +585,52 @@ def output_machine_results(machine, res_measurement, res_simulator):
     if len(res_measurement)<1 or len(res_simulator)<1:
         return
 
-    f = open('../measurements/%s_topologies.tex' % machine, 'w+')
+    fname = '../measurements/%s_topologies' % machine
+
+    f = open(fname + '.tex', 'w+')
+    fwiki = open(fname + '_wiki.txt', 'w+')
+
     cap = "Evaluation of different topologies for %s" % machine
 
     _output_table_header(f)
+    _wiki_output_table_header(fwiki)
 
     ev_times = [time for (topo, time, err) in res_measurement if time != 0]
     assert len(ev_times)>0
     min_evaluation = min(ev_times)
     min_simulation = min(time for (topo, time) in res_simulator)
+
     # Otherwise, the simulation didn't work
-    assert min_evaluation>0 
-    assert min_simulation>0 
+    assert min_evaluation>0
+    assert min_simulation>0
 
     for e in zip(res_measurement, res_simulator):
         assert(e[0][0] == e[1][0])
-        _output_table_row(f, (e[0][0], e[0][1], e[0][2], e[1][1]), 
+        _output_table_row(f, (e[0][0], e[0][1], e[0][2], e[1][1]),
                           min_evaluation, min_simulation)
-    _output_table_footer(f, machine, cap)
+        _wiki_output_table_row(fwiki, (e[0][0], e[0][1], e[0][2], e[1][1]),
+                          min_evaluation, min_simulation)
 
-def run_pdflatex(fname):
-    if subprocess.call(['pdflatex', 
-                     '-output-directory', '/tmp/', 
-                     '-interaction', 'nonstopmode',
-                        fname], cwd='/tmp') == 0:
-        subprocess.call(['okular', fname.replace('.tex', '.pdf')])
+    _output_table_footer(f, machine, cap)
+    _wiki_output_table_footer(fwiki, machine, cap)
+
+    f.close()
+    fwiki.close()
+
+def run_pdflatex(fname, openFile=True):
+    d = os.path.dirname(fname)
+    print 'run_pdflatex in %s' % d
+    if subprocess.call(['pdflatex',
+                     '-output-directory', d,
+                     '-interaction', 'nonstopmode', '-shell-escape',
+                        fname], cwd=d) == 0:
+        if openFile:
+            subprocess.call(['okular', fname.replace('.tex', '.pdf')])
 
 def extract_machine_results(model, nosim=False):
     """
     Extract result for simulation and real-hardware from log files
-    
+
     """
     results = []
     sim_results = []
@@ -590,7 +643,7 @@ def extract_machine_results(model, nosim=False):
             stat = parse_measurement(f, range(model.get_num_cores()))
             assert len(stat) == 1 # Only measurements for one core
             results.append((t, stat[0][1], stat[0][2]))
-        else: 
+        else:
             results.append((t, 0, 0))
 
         # Simulation
@@ -614,7 +667,7 @@ def gen_gottardo(m):
 
     graph = digraph()
     graph.add_nodes([n for n in range(m.get_num_cores())])
-    
+
     for n in range(1, m.get_num_cores()):
         if n % m.get_cores_per_node() == 0:
             print "Edge %d -> %d" % (0, n)
@@ -622,7 +675,7 @@ def gen_gottardo(m):
 
     dim = m.get_num_cores()
     mat = [[0 for x in xrange(dim)] for x in xrange(dim)]
-    
+
     import sort_longest
     sched = sort_longest.SortLongest(graph)
 
@@ -631,7 +684,7 @@ def gen_gottardo(m):
 
     stream = open("hybrid_model.h", "w")
     defstream = open("hybrid_model_defs.h", "w")
-    __c_header_model_defs(defstream, 
+    __c_header_model_defs(defstream,
                           m.get_num_cores()-1,
                           "",
                           "",
@@ -668,7 +721,7 @@ def core_index_dict(n):
     Return a dictionary with indices for cores
 
     """
-    
+
     if isinstance(n[0], int):
         return {i: i for i in n}
 

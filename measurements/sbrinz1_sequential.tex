@@ -1,19 +1,17 @@
-Plot~\ref{pgfplot:20130531} shows ...
+Figure~\ref{pgfplot:20130724} shows ...
+\pgfplotsset{width=\linewidth}
 \begin{figure}
   \caption{Atomic broadcast on sbrinz1 with sequential topology}
-  \label{pgfplot:20130531}
-  \begin{tikzpicture}
-    \begin{axis}[
-        xlabel={coreid},
-        ylabel={cost [cycles]}
-        ]
+  \label{pgfplot:20130724}
+  \begin{tikzpicture}[scale=.75]
+    \begin{axis}[xlabel={coreid},ylabel={cost [cycles]}]
     \addplot[
         color=red,
         mark=x,
         error bars/y dir=both,
         error bars/y explicit
         ] coordinates {
-      (1,3057.911111) +- (667.682986,667.682986)
+      (1,3643.333333) +- (1151.721483,1151.721483)
     };
     \end{axis}
   \end{tikzpicture}

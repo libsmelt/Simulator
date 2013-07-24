@@ -9,6 +9,9 @@ DEPS=$(wildcard plots/*/*.pdf) $(wildcard figs/*.pdf) $(wildcard graphs/*.tex)
 DOT=$(patsubst %.dot,%.tex,$(wildcard graphs/final_*.dot))
 
 DEP_PNG=$(patsubst %.pdf,%.png,$(wildcard $(PAPER)-figure*.pdf))
+FIG_CACHE_PDF=$(wildcard $(PAPER)-figure*.pdf)
+FIG_CACHE_PNG=$(wildcard $(PAPER)-figure*.png)
+FIG_CACHE=$(FIG_CACHE_PNG) $(FIG_CACHE_PDF)
 
 LATEXOPTS=-interaction=nonstopmode -shell-escape
 
@@ -36,6 +39,13 @@ visu.pdf: $(wildcard *.tex) $(wildcard *.bib) $(DEPS) $(DOT)
 	if egrep Rerun visu.log ; then pdflatex $(LATEXOPTS) visu ; fi
 	$(RM) *.aux *.bbl *.blg *.toc
 
+pitch.pdf: $(wildcard *.tex) $(wildcard *.bib) $(DEPS) $(DOT)
+	pdflatex $(LATEXOPTS) pitch
+	if egrep Rerun pitch.log ; then pdflatex $(LATEXOPTS) pitch ; fi
+	if egrep Rerun pitch.log ; then pdflatex $(LATEXOPTS) pitch ; fi
+	if egrep Rerun pitch.log ; then pdflatex $(LATEXOPTS) pitch ; fi
+	$(RM) *.aux *.bbl *.blg *.toc
+
 sync: $(PAPER).pdf
 	rsync -av ~/Documents/library.bib mendeley.bib
 
@@ -50,7 +60,7 @@ sync: $(PAPER).pdf
 dot: $(DOT)
 
 clean:
-	$(RM) *.aux *.log *.bbl *.blg *~ \#*\# *.toc *.idx
+	$(RM) *.aux *.log *.bbl *.blg *~ \#*\# *.toc *.idx $(FIG_CACHE)
 	$(RM) $(patsubst %.tex, %.ps, $(wildcard *.tex))
 	$(RM) $(patsubst %.tex, %.dvi, $(wildcard *.tex))
 	$(RM) $(patsubst %.tex, %.pdf, $(wildcard *.tex))

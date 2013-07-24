@@ -3,8 +3,15 @@
 MODEL=model.h
 QDIR=$HOME/bf/quorum/usr/quorum/
 TMP=`mktemp`
-RESULTDIR=~/measurements/atomic_broadcast_new_model/
 PATTERN="Quorum.*everything done.*exiting"
+
+function get_result_file()
+{
+	python <<EOF
+import config
+print config.get_ab_machine_results('$1', '$2')
+EOF
+}
 
 # check the output
 # --------------------------------------------------
@@ -31,9 +38,9 @@ function wait_result() {
 
 # main
 # --------------------------------------------------
-for m in sbrinz2
+for m in gruyere ziger1
 do
-    for t in badtree cluster mst bintree sequential adaptivetree
+    for t in mst cluster adaptivetree bintree sequential badtree
     do
 	# Cleanup 
 	rm -f $MODEL
@@ -72,7 +79,9 @@ do
 	echo "Benchmark terminating"
 
 	# Copy result
-	cp -b $TMP $RESULTDIR/${m}_${t}
+	touch $TMP
+	RESULT=$(get_result_file $m $t)
+	cp -b $TMP $RESULT
 	rm $TMP
 	
 	./simulator.py --evaluate-model $m $t

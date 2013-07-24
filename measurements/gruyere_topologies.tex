@@ -5,13 +5,12 @@
   & \multicolumn{3}{c}{Real hardware} & \multicolumn{2}{c}{Simulation} \\
   topology & time [cycles] & factor & stderr & time [units] & factor \\
   \midrule
-  ring & 0.00 & 0.000 & 0.00 & 341 & 1.236 \\
-  cluster & 4062.86 & 1.000 & 199.39 & 316 & 1.145 \\
-  mst & 4131.61 & 1.017 & 137.15 & 331 & 1.199 \\
-  bintree & 4416.53 & 1.087 & 245.34 & 331 & 1.199 \\
-  sequential & 6860.67 & 1.689 & 811.51 & 801 & 2.902 \\
-  badtree & 4729.43 & 1.164 & 250.85 & 475 & 1.721 \\
-  adaptivetree & 0.00 & 0.000 & 0.00 & 276 & 1.000 \\
+  cluster & 3613.32 & 1.024 & 62.39 & 415 & 1.152 \\
+  mst & 3527.07 & \colorbox{gray}{1.000} & 64.77 & 384 & 1.067 \\
+  bintree & 4013.45 & 1.138 & 84.72 & 450 & 1.250 \\
+  sequential & 6956.06 & 1.972 & 494.43 & 1119 & 3.108 \\
+  badtree & 4511.57 & 1.279 & 100.63 & 593 & 1.645 \\
+  adaptivetree & 3980.55 & 1.129 & 50.79 & 360 & \colorbox{gray}{1.000} \\
   \midrule
   \end{tabular}
   \caption{Evaluation of different topologies for gruyere}

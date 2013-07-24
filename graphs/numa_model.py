@@ -3,6 +3,7 @@
 import model
 import helpers
 import re
+import config
 
 from pygraph.classes.graph import graph
 from pygraph.algorithms.minmax import shortest_path
@@ -100,7 +101,7 @@ class NUMAModel(model.Model):
 
         return g_numa
 
-    def _parse_receive_result_file(self, f):
+    def _parse_receive_result_file(self, fname):
         """
         Parse pairwise receive cost results measure with the UMP receive
         benchmark in the Barrelfish tree.
@@ -109,7 +110,8 @@ class NUMAModel(model.Model):
         @param f: Handle to results.dat file of UMP receive benchmark
 
         """
-        print self.recv_cost
+        fname = fname + '_NUMA' if config.USE_UMP_NUMA else '_noNUMA'
+        f = open(fname)
         assert not self.recv_cost
         for l in f.readlines():
             l = l.rstrip()
@@ -122,7 +124,7 @@ class NUMAModel(model.Model):
                 assert (src, dest) not in self.recv_cost
                 self.recv_cost[(src, dest)] = cost/10
 
-    def _parse_send_result_file(self, f):
+    def _parse_send_result_file(self, fname):
         """
         Parse pairwise send cost results measure with the UMP send
         benchmark in the Barrelfish tree.
@@ -131,6 +133,8 @@ class NUMAModel(model.Model):
         @param f: Handle to results.dat file of UMP send benchmark
 
         """
+        fname = fname + '_NUMA' if config.USE_UMP_NUMA else '_noNUMA'
+        f = open(fname)
         assert not self.send_cost
         for l in f.readlines():
             l = l.rstrip()

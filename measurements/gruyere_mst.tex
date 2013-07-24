@@ -1,19 +1,17 @@
-Plot~\ref{pgfplot:20130531} shows ...
+Figure~\ref{pgfplot:20130724} shows ...
+\pgfplotsset{width=\linewidth}
 \begin{figure}
   \caption{Atomic broadcast on gruyere with mst topology}
-  \label{pgfplot:20130531}
-  \begin{tikzpicture}
-    \begin{axis}[
-        xlabel={coreid},
-        ylabel={cost [cycles]}
-        ]
+  \label{pgfplot:20130724}
+  \begin{tikzpicture}[scale=.75]
+    \begin{axis}[xlabel={coreid},ylabel={cost [cycles]}]
     \addplot[
         color=red,
         mark=x,
         error bars/y dir=both,
         error bars/y explicit
         ] coordinates {
-      (13,4131.611111) +- (137.145154,137.145154)
+      (13,3527.066667) +- (64.773794,64.773794)
     };
     \end{axis}
   \end{tikzpicture}

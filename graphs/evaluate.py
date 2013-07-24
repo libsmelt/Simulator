@@ -5,6 +5,7 @@ import config
 import pdb
 import logging
 import sched_adaptive
+import hybrid_model
 
 # Evaluation is event based. We realize this using a priority heap
 # with the time at which the event is happening as priority and pop
@@ -66,7 +67,11 @@ class Evaluate():
         @param sched: Scheduler for sending messages
 
         """
-        self.topology = topo.get_broadcast_tree()
+
+        for l in topo.get_broadcast_tree():
+            if isinstance(l, hybrid_model.MPTree):
+                self.topology = l.graph
+
         self.schedule = sched
         self.model = m
         self.sim_round = 0

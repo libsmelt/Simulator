@@ -53,11 +53,11 @@ import ziger
 import sbrinz
 import gottardo
 import appenzeller
+import tomme
 import rack
 
 def arg_machine_class(string):
     """
-    Remove digits from machine name!
 
     """
     if string == "gruyere":
@@ -72,6 +72,8 @@ def arg_machine_class(string):
         return gottardo.Gottardo
     elif string == 'appenzeller':
         return appenzeller.Appenzeller
+    elif string == 'tomme':
+        return tomme.Tomme
     else:
         raise Exception('Unknown machine')
     
@@ -81,9 +83,9 @@ def arg_machine(machine_name):
     Return instance of the machine given as argument
 
     """
-    string = ''.join([i for i in machine_name if not i.isdigit()])
+    machine_name = ''.join([i for i in machine_name if not i.isdigit()])
 
-    if string == 'rack':
+    if machine_name == 'rack':
         return rack.Rack(sbrinz.Sbrinz)
 
     else:

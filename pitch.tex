@@ -75,13 +75,13 @@
 \newcommand{\ska}{$\rightarrow$\xspace}
 
 \paragraph{What do you want to enable?} 
-Atomic broadcast for multicores. \stefan{Maybe even more high-level:
+Efficient atomic broadcast for multicores. \stefan{Maybe even more high-level:
   Performance of distributed algorithms like replication that are
   built on top of AB}
 
 \paragraph{What problem are you solving, and why is it hard?} 
 Tuning of AB to machine characteristics. This is hard because
-multicores are complex hierarchical system. Furthermore, there is a
+multicores are complex hierarchical systems. Furthermore, there is a
 huge variety of such machines with different characteristics
 influencing performance.
 
@@ -90,13 +90,14 @@ Machine model for automatic tuning as well as use of hybrid
 implementations and composition to deal with hierarchies.
 
 \paragraph{How will you go about it?}
-Online measurements to augment Model \ska evaluation of different
+Online measurements to parametrize Model \ska evaluation of different
 implementations for machine (also combination of message-passing and
 shared-memory) \ska pick best fit \ska auto-tune implementation
 
 \paragraph{How will you know and show it works?}
 Compare different AB implementations. Show that performance depends on
-machine. Show that our evaluation picks the best one. Verify
+machine. Show that our evaluation picks the best one (significantly
+better than base-line, which is naive or simple tree). Verify
 performance benefit for high-level application.
 
 \paragraph{What's the related work?}
@@ -107,7 +108,7 @@ parallel programs, databases according to workload, network stacks)
 but not for distributed algorithms on multicores?! \stefan{Guerraoui}
 
 \paragraph{What is your hypothesis?}
-We can do better with hybrid models. Automatic tuning achieves good
+Topology matters. We can do better with hybrid models. Automatic tuning achieves good
 performance, without programmers having to deal with complex hardware details.
 
 \end{document}

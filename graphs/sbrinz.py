@@ -18,28 +18,25 @@ class Sbrinz(numa_model.NUMAModel):
         g = super(Sbrinz, self)._build_graph()
         super(Sbrinz, self).__init__(g)
 
-        r = open('measurements/receive_sbrinz')
-        s = open('measurements/send_sbrinz')
+        r = 'measurements/receive_sbrinz'
+        s = 'measurements/send_sbrinz'
 
         numa_model.NUMAModel._parse_receive_result_file(self, r)
         numa_model.NUMAModel._parse_send_result_file(self, s)
-
-        r.close()
-        s.close()
 
     # --------------------------------------------------
     # Characteritics of model
     def get_name(self):
         return "sbrinz"
 
-    def get_send_cost(self, src, dest):
-        return super(Sbrinz, self)._get_send_cost(src, dest)
-
     def get_num_numa_nodes(self):
         return 4
 
     def get_num_cores(self):
         return 16
+
+    def get_send_cost(self, src, dest):
+        return super(Sbrinz, self)._get_send_cost(src, dest)
 
     def get_receive_cost(self, src, dest):
         return super(Sbrinz, self)._get_receive_cost(src, dest)

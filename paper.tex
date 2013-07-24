@@ -11,7 +11,7 @@
 \usepackage{times}
 \usepackage{amssymb}
 \usepackage[colorlinks=true]{hyperref}
-\usepackage[ruled,vlined]{algorithm2e}
+\usepackage[ruled]{algorithm2e}
 \usepackage[toc,page]{appendix}
 \usepackage{fancyhdr}
 % ==================================================
@@ -165,13 +165,16 @@ algorithms and implement them for a multicore machine:
 messaging protocol that is reliable in the sense that if a message is
 received by one of the participating nodes, it is also received by all
 other nodes. Furthermore, the order of messages as seen by all
-participants is the same. Atomic broadcasts are frequently used to
-implement higher-level distributed algorithms on top of it: examples
-are replication such as state machine replication. As a first step, we
-evaluate the performance of sending one message as a broadcast to all
+participants is the same. Messages are immutable, i.e.\ all receivers
+read exactly the same message.
+
+Atomic broadcasts are frequently used to implement higher-level
+distributed algorithms on top of it: examples are replication such as
+state machine replication. As a first step, we evaluate the
+performance of sending one message as a broadcast to all
 nodes. Broadcasts are one of the most important communication
-operations for parallel applications~\cite{Bruck1992}. \stefan{Database
-  joins}.
+operations for parallel applications~\cite{Bruck1992}.%
+\stefan{Also: Database joins}.
 
 \paragraph{Barriers} \stefan{Explain}
 
@@ -530,28 +533,66 @@ Figure~\ref{fig:gruyere_hierarchy}.
 %-------------------------------------------------
 \subsubsection{Clustering}
 
-\stefan{Have not implemented this, but it might be interesting to try
-  out later}
-
 We discussed earlier in Section~\ref{sec:model} that
-multicore machines are hierarchical.%
+multicore machines are hierarchical. We discuss here a more
+methodical approach for communication withing hybrid networks.
 
-We divide the space into clusters. In every round, we further split up
-all cluster into smaller clusters and connect them with the minimal
-link. 
+The idea is to find clusters of cores for whom shared memory
+algorithms are more efficient then their message passing-based
+counter-parts.
 
-We find this link by searching for links that have start and
-end node in different regions of the most recent split. Out of these
-links, we pick the cheapest ones. We ignore links whose start or end
-node have a too high degree in the spanning tree already.
+In a shared memory implementation, the cost of enqueueing a message to
+a shared memory queue is $t_{write}$. The reads ideally (i.e.\ not
+considering contention) happen in parallel, which means $t_{read}$
+independent of how many clients read the data, but cause $n$-fault
+traffic on the interconnect.
 
-Assuming that the choice of node IDs represents the topology to some
-extend, splitting them up into distinct clusters avoids contention, as
-two separate sub-trees are processed in different areas of the
-interconnect network.
+We now assume that the receiving cores shared a cache. Each message is
+then available locally for further read operations by other cores
+after the first core was issuing a read. This first read forces the
+cache-coherency protocol to update (or pull) the message that was
+invalidated by the sender write operation.
 
-Another idea is to employ clustering on NUMA domains such that every
-NUMA domain corresponds to one cluster. 
+A shared memory implementation is more efficient for a group of cores
+$c_1 \ldots c_n \in C$ if $t_{write} + t_{rem-read} +
+(n-1)*t_{local-read}$ is smaller then the cost of sending a message
+along the most efficient message-passing topology for this set of
+cores.
+
+\begin{algorithm}[htb]
+  %%%%% 
+  \SetCommentSty{textc}
+  \SetKwFunction{sort}{sort} %
+  \SetKwFunction{cost}{cost} %
+  \SetKwFunction{pop}{pop} %
+  \SetKwFunction{shortestmp}{shortest\_mp} %
+  \SetKwFunction{costshm}{cost\_shm} %
+  \SetKwFunction{cluster}{get\_cluster} %
+  \SetKwFunction{icsend}{send} %
+  %%%%
+  \KwData{Edges E from model}
+  %%%%%
+  
+  \While{True}{
+    links $\leftarrow$ \sort{E}\;
+    \Repeat{stderr small enough}{
+      (start, end) = \pop{links}\;
+      clusters += start, end\;
+    }
+    clusters $\leftarrow $ \cluster{}\;
+    \eIf{\cost{\shortestmp{cores}} $<$ \costshm{cores}}{
+      cores $\leftarrow$ cluster\;
+    }{
+      break \;
+    }
+  }
+  \If{cores}{
+    Compose algorithm
+  }
+  %%%%%
+  \caption{Algorithm to find shared memory clusters}
+  \label{algo:clustering}
+\end{algorithm}
 
 %--------------------------------------------------
 \subsubsection{Adaptive Tree}
@@ -614,19 +655,6 @@ does so in random order (here: in increasing node ID order). This is
 inefficient, as the latency of the broadcast is dominated by cores 12,
 24 and 28 rather than cores 9, 10 and 11.
 
-\begin{figure}[htb]
-  \centering
-  \begin{tikzpicture}[scale=.35,transform shape]
-    % Insert visualization
-    \input{visu_only_mst}
-  \end{tikzpicture}
-  \caption{Visualization of operations for sending a message along the
-    tree. Red boxes represent send operations, blue boxes represent
-    receive operations and arrows messages sent between cores. The
-    tree has been acquired using an MST algorithm.}
-  \label{fig:mst_gruyere_operations}
-\end{figure}
-
 In Figure~\ref{fig:mst_gruyere_operations_sorted} we schedule sending
 of messages based on link cost. We sort the outgoing edges by their
 weights and send on the most expensive links first. See
@@ -654,20 +682,6 @@ Algorithm~\ref{algo:scheduling_link_weight}
   \caption{Scheduling in order of outgoing link weight}
   \label{algo:scheduling_link_weight}
 \end{algorithm}
-
-\begin{figure}[htb]
-  \centering
-  \begin{tikzpicture}[scale=.35,transform shape]
-    % Insert visualization
-    \input{visu_mst_sort}
-  \end{tikzpicture}
-  \caption{Visualization of operations for sending a message along the
-    tree. Red boxes represent send operations, blue boxes represent
-    receive operations and arrows messages sent between cores. After
-    running the MST algorithm, we optimize scheduling in every node to
-    send messages in decreasing order of their latency.}
-  \label{fig:mst_gruyere_operations_sorted}
-\end{figure}
 
 A better schedule for sending messages to the children of core 8 would
 be to start with the child from which the longest path emerges.
@@ -837,10 +851,8 @@ fictional time unit at this point.
     MST & longest path first        & 151 & 0.63 & 
         \stefan{? AFAIK, same as
         \ref{fig:mst_gruyere_operations_sorted} } \\
-    hierarchical & highest link weight first & 151 & 0.63 &
-        \ref{fig:visu_hierarchy} \\
-    ring & highest link weight first & 181 & 0.75 &
-        \ref{fig:visu_ring} \\
+    hierarchical & highest link weight first & 151 & 0.63 & \\
+    ring & highest link weight first & 181 & 0.75 & \\
     \bottomrule
   \end{tabular}
   \caption{Simulation results for simplified machine model}
@@ -852,37 +864,6 @@ the current MST, but will be better in many cases. \stefan{We need to
   find a model where this is actually true. But we also need to
   evaluate if the increase in complexity is worth it}
 
-\begin{figure}[htb]
-  \centering
-  \begin{tikzpicture}[scale=.35,transform shape]
-    % Insert visualization
-    \input{visu_hierarchy}
-  \end{tikzpicture}
-  \caption{Visualization of hierarchical tree broadcast. A binary tree
-    spans across NUMA nodes followed by sequential send operations
-    within the NUMA node. %
-    Red boxes represent send operations, blue boxes represent receive
-    operations and arrows messages sent between cores.  }
-  \label{fig:visu_hierarchy}
-\end{figure}
-
-\begin{figure}[htb]
-  \centering
-  \begin{tikzpicture}[scale=.35,transform shape]
-    % Insert visualization
-    \input{visu_ring}
-  \end{tikzpicture}
-  \caption{Visualization of ring based broadcast. Two rings
-    spans across NUMA nodes followed by sequential send operations
-    within the NUMA node. %
-    Red boxes represent send operations, blue boxes represent receive
-    operations and arrows messages sent between
-    cores. \stefan{Scheduling is broken. If we want acks, we can only
-      forward a message along the ring when all the local nodes
-      acknowledge a message}}
-  \label{fig:visu_ring}
-\end{figure}
-
 %-------------------------------------------------
 \subsubsection{Real hardware}
 
@@ -892,140 +873,6 @@ the current MST, but will be better in many cases. \stefan{We need to
 \item Management process on core 2 (i.e.\ not core 0)
 \item Uses atomic broadcast as described in Section~\ref{sec:implementation}
 \end{itemize}
-
-\paragraph{Binary tree on sbrinz2}
-
-Plot~\ref{pgfplot:201305101058} shows the time in cycles until a
-message send from core $n$ is received back via the broadcast tree
-show in Figure~\ref{fig:binary_tree_sbrinz2}. We were expecting
-increasing cost with the depth of the tree. If a message is sent from
-one of the leave nodes, it takes longer to receive this message back
-on the tree.
-
-The result is quite unexpected. We would expect nodes far down in the
-tree to experience a longer waiting time for receiving own messages
-back on the tree (due to more hops). This observation does not seem to
-be true. 
-
-Lukas Humbel, who was also working on sbrinz1 was observing that the
-Barrelfish core IDs might not properly correspond to physical core
-IDs. This could explain the numbers we observe in our measurement.
-
-\begin{figure}[htb]
-  \centering
-  \includegraphics[width=\linewidth]{binary_tree_sbrinz2}
-  \caption{Binary tree for sbrinz2}
-  \label{fig:binary_tree_sbrinz2}
-\end{figure}
-
-\begin{figure}
-  \caption{Cost for receiving a message back on the tree. This is the
-    time for which the send call needs to be blocked to retain atomic
-    broadcast properties.}
-  \label{pgfplot:201305101058}
-  \begin{tikzpicture}
-    \begin{axis}[%
-        xlabel=sender core ID,%
-        ylabel={Cost [cycles]}%
-        ]
-    \addplot[%
-        color=red,%
-        mark=x,%  
-        error bars/y dir=both,%
-        error bars/y explicit%
-        ] coordinates {
-      (1,276.1) +- (291.3,291.3)
-      (2,876.1) +- (56.6,56.6)
-      (3,863.0) +- (108.3,108.3)
-      (4,899.7) +- (102.3,102.3)
-      (5,893.5) +- (44.5,44.5)
-      (6,880.5) +- (39.4,39.4)
-      (7,520.9) +- (41.7,41.7)
-      (8,171.9) +- (91.5,91.5)
-      (9,155.7) +- (51.4,51.4)
-      (10,174.6) +- (99.9,99.9)
-      (11,175.1) +- (99.3,99.3)
-      (12,154.5) +- (50.5,50.5)
-      (13,176.8) +- (109.7,109.7)
-      (14,173.1) +- (99.4,99.4)
-      (15,150.4) +- (43.3,43.3)
-    };
-    \end{axis}
-  \end{tikzpicture}
-\end{figure}
-
-\paragraph{Older numbers}
-
-Plot~\ref{pgfplot:201303141819} shows the cost of flooding a sub-tree
-(with the 50\% worst measurements dropped). The group communication is
-based on a binary tree. Core 0 is the root, cores 1 and 2 are its
-children etc.
-
-The average cost is really high (probably a scheduling issue). But the
-minimal numbers show what is possible. The numbers achieved are easily
-explainable. The cost is increasing logarithmic with the number of
-nodes reached by the broadcast (as expected). Every level in the tree
-adds an additional 2500 to 3000 cycles to the tree. Node 0 takes
-significantly longer. I don't know yet why that is.
-
-\begin{figure}
-  \caption{Execution time for a broadcast with ACK on gruyere. The
-    cost is for execution for the sub-graph starting at the given
-    node. Refer to Figure~\ref{fig:qrm_tree_gruyere} for a
-    visualization of the broadcast tree used. }
-  \label{pgfplot:201303141819}
-  \begin{tikzpicture}
-    \begin{axis}[
-      xlabel=core id,
-      scaled y ticks = false, % prevent 10^x stuff
-      y tick label style={/pgf/number format/fixed},
-      ylabel={cost for subtree [cycles]}]
-    \addplot[
-      color=red,
-      very thin,
-      mark=*,
-      mark options={%
-        scale=.4
-      },
-      error bars/y dir=both,
-      error bars/y explicit] coordinates {
-      (0,9932.3) +- (564.4,564.4)
-      (1,8240.1) +- (298.5,298.5)
-      (2,8259.6) +- (549.4,549.4)
-      (3,6206.3) +- (225.1,225.1)
-      (4,5914.9) +- (399.2,399.2)
-      (5,6033.5) +- (462.2,462.2)
-      (6,6070.4) +- (434.3,434.3)
-      (7,4530.4) +- (188.6,188.6)
-      (8,3163.4) +- (246.1,246.1)
-      (9,3403.0) +- (285.3,285.3)
-      (10,3650.7) +- (336.5,336.5)
-      (11,3559.0) +- (318.8,318.8)
-      (12,3558.1) +- (284.8,284.8)
-      (13,3567.5) +- (304.5,304.5)
-      (14,3476.3) +- (290.2,290.2)
-      (15,2711.7) +- (151.9,151.9)
-      (16,614.0) +- (17.5,17.5)
-      (17,606.2) +- (17.3,17.3)
-      (18,636.2) +- (72.5,72.5)
-      (19,641.3) +- (46.3,46.3)
-      (20,583.8) +- (46.7,46.7)
-      (21,577.8) +- (38.3,38.3)
-      (22,561.8) +- (18.1,18.1)
-      (23,603.5) +- (56.6,56.6)
-      (24,589.0) +- (33.4,33.4)
-      (25,582.9) +- (33.2,33.2)
-      (26,571.7) +- (16.3,16.3)
-      (27,581.6) +- (36.6,36.6)
-      (28,564.0) +- (16.4,16.4)
-      (29,564.0) +- (20.8,20.8)
-      (30,551.6) +- (13.0,13.0)
-      (31,596.2) +- (51.4,51.4)
-    };
-    \end{axis}
-  \end{tikzpicture}
-
-\end{figure}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1208,247 +1055,33 @@ something entirely message-passing based like MPI versions.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\begin{appendices}
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{UMP performance}
+\section{Results}
 
-\input{graphs/ziger_ump_breakdown}
-
-\subsection{Pairwise performance}
-
-Figure~\ref{pgfplot:20130627} shows the UMP RTT time for each pair of
-cores. The benchmark seems to be broken, since sending messages to
-core 40 and higher is really expensive. On the other hand. Sending
-messages from these cores back to cores with low IDs (which are on the
-other end of the machine) seems unreasonably cheap. 
-
-What we would expect is a symmetric plot. Sending a message from core
-$n$ to $m$ should be about equally expensive than sending a message
-from $m$ to $n$. 
-
-\pgfplotsset{width=\linewidth}
-\begin{figure}
-  \caption{pair-wise latency for appenzeller}
-  \label{pgfplot:20130627}
-  \begin{tikzpicture}
-    \begin{axis}[
-      zlabel={cost [cycles]},
-      xlabel={sending core},
-      ylabel={receiving core},
-      scaled z ticks = false,
-      z tick label style={/pgf/number format/fixed}
-      ]
-    \addplot3[surf] file {measurements/appenzeller_pairwise_ump.dat};
-    \end{axis}
-  \end{tikzpicture}
-\end{figure}
-
-\pgfplotsset{width=\linewidth}
-\begin{figure}
-  \caption{pair-wise latency for gottardo}
-  \label{pgfplot:20130627}
-  \begin{tikzpicture}[scale=.75]
-    \begin{axis}[scaled z ticks=false,z tick label style={/pgf/number format/fixed},zlabel={cost [cycles]},xlabel={sending core},ylabel={receiving core}]
-    \addplot3[surf] file {measurements/gottardo_pairwise_ump.dat};
-    \end{axis}
-  \end{tikzpicture}
-\end{figure}
-
-\section{Shared memory performance}
-
-Plot~\ref{pgfplot:201306191213} shows some measurements for using a
-shared memory FIFO queue for communication. Core 0 sends message by
-enqueuing them to the FIFO, while all other cores poll on the queue
-for new messages.
-
-The measurement assumes the tsc clocks to be synchronized. The queues
-are also infinite. Messages are never garbage-collected. 
-
-\begin{figure}
-  \caption{Shared memory FIFO performance on brie}
-  \label{pgfplot:201306191213}
-  \begin{tikzpicture}
-    \begin{axis}[
-      ybar,
-      error bars/y dir=both,%
-      error bars/y explicit,%
-      xlabel=core,
-      xtick={1,2,3},
-      ylabel={cost [cycles]}]
-
-    \addplot coordinates {
-      (1,488.6) +- (32.1,32.1)
-      (2,761.7) +- (124.1,124.1)
-      (3,862.5) +- (118.3,118.3)
-    };
-    \end{axis}
-  \end{tikzpicture}
-\end{figure}
-
-Plot~\ref{pgfplot:201306191238} shows the same experiment for tomme.
-
-\begin{figure}
-  \caption{Shared memory FIFO performance on tomme}
-  \label{pgfplot:201306191238}
-  \begin{tikzpicture}
-    \begin{axis}[
-      ybar,
-      error bars/y dir=both,
-      error bars/y explicit,
-      xlabel=core,
-      ylabel={Cost [cycles]}]
-    \addplot coordinates {
-      (1,417.6) +- (71.0,71.0)
-      (2,776.2) +- (110.4,110.4)
-      (3,774.6) +- (111.9,111.9)
-      (4,648.0) +- (175.9,175.9)
-      (5,551.2) +- (257.5,257.5)
-      (6,652.6) +- (179.2,179.2)
-      (7,688.6) +- (116.3,116.3)
-      (8,691.2) +- (133.0,133.0)
-      (9,721.6) +- (55.8,55.8)
-      (10,633.8) +- (135.0,135.0)
-      (11,673.8) +- (86.4,86.4)
-      (12,705.0) +- (81.8,81.8)
-      (13,612.6) +- (199.1,199.1)
-      (14,699.2) +- (90.3,90.3)
-      (15,691.6) +- (93.0,93.0)
-    };
-    \end{axis}
-  \end{tikzpicture}
-\end{figure}
-
-Plot~\ref{pgfplot:201306191603} shows it for gruyere. These do not
-make sense. The numbers are far too high, especially since gruyere is
-supposed to be synchronized.
-
-This suggest that my implementation is broken .. 
-
-\begin{figure}
-  \caption{Plot}
-  \label{pgfplot:201306191603}
-  \begin{tikzpicture}
-    \begin{axis}[
-      ybar,
-      error bars/y dir=both,
-      error bars/y explicit,
-      xlabel=FIXME,
-      ylabel={Cost [cycles]}]
-    \addplot coordinates {
-      (1,2399.4) +- (3585.1,3585.1)
-      (2,8924.9) +- (11981.8,11981.8)
-      (3,4922.3) +- (4685.1,4685.1)
-      (4,6638.2) +- (3521.0,3521.0)
-      (5,5608.7) +- (4185.6,4185.6)
-      (6,5337.5) +- (3846.6,3846.6)
-      (7,5844.6) +- (2836.9,2836.9)
-      (8,5089.0) +- (3135.3,3135.3)
-      (9,5264.0) +- (3919.9,3919.9)
-      (10,5711.7) +- (3793.0,3793.0)
-      (11,5266.9) +- (3712.1,3712.1)
-      (12,8197.6) +- (3819.3,3819.3)
-      (13,8668.6) +- (3645.8,3645.8)
-      (14,8923.8) +- (2964.8,2964.8)
-      (15,7195.3) +- (2407.2,2407.2)
-      (16,8176.2) +- (3185.2,3185.2)
-      (17,8770.7) +- (3001.8,3001.8)
-      (18,4171.5) +- (2011.4,2011.4)
-      (19,8453.5) +- (3280.2,3280.2)
-      (20,13695.1) +- (3137.6,3137.6)
-      (21,13806.8) +- (2914.0,2914.0)
-      (22,13692.4) +- (2730.3,2730.3)
-      (23,14435.9) +- (2983.7,2983.7)
-      (24,9797.6) +- (3821.4,3821.4)
-      (25,8955.7) +- (4364.6,4364.6)
-      (26,7929.3) +- (3493.3,3493.3)
-      (27,11541.9) +- (3076.2,3076.2)
-      (28,10851.3) +- (4241.4,4241.4)
-      (29,8736.3) +- (3280.4,3280.4)
-      (30,11648.2) +- (2969.7,2969.7)
-      (31,7821.5) +- (2477.0,2477.0)
-    };
-    \end{axis}
-  \end{tikzpicture}
-\end{figure}
-
-Plot~\ref{pgfplot:201306191624} shows the same with more
-iterations. The result is not more stable than the one before,
-though.
-
-\begin{figure}
-  \caption{Plot}
-  \label{pgfplot:201306191624}
-  \begin{tikzpicture}
-    \begin{axis}[
-      ybar,
-      error bars/y dir=both,
-      error bars/y explicit,
-      xlabel=FIXME,
-      ylabel={Cost [cycles]}]
-    \addplot coordinates {
-      (1,11197.7) +- (8150.8,8150.8)
-      (2,10971.4) +- (6418.6,6418.6)
-      (3,10364.3) +- (7409.8,7409.8)
-      (4,9460.5) +- (6846.3,6846.3)
-      (5,11629.7) +- (7938.9,7938.9)
-      (6,12266.8) +- (8895.5,8895.5)
-      (7,12313.0) +- (8030.9,8030.9)
-      (8,13079.3) +- (7031.2,7031.2)
-      (9,10919.1) +- (6272.3,6272.3)
-      (10,4758.1) +- (3364.5,3364.5)
-      (11,4093.8) +- (2121.7,2121.7)
-      (12,10077.3) +- (1152.3,1152.3)
-      (13,8632.7) +- (1601.4,1601.4)
-      (14,6381.6) +- (1607.5,1607.5)
-      (15,8215.2) +- (1799.2,1799.2)
-      (16,6973.4) +- (1713.0,1713.0)
-      (17,8631.0) +- (1750.3,1750.3)
-      (18,13615.4) +- (2873.1,2873.1)
-      (19,11311.9) +- (1996.6,1996.6)
-      (20,17855.8) +- (2420.9,2420.9)
-      (21,15193.0) +- (1923.7,1923.7)
-      (22,18920.0) +- (2393.1,2393.1)
-      (23,19870.6) +- (2618.8,2618.8)
-      (24,17947.8) +- (4379.8,4379.8)
-      (25,21783.5) +- (4202.5,4202.5)
-      (26,24329.6) +- (3695.0,3695.0)
-      (27,22965.0) +- (3667.8,3667.8)
-      (28,20440.8) +- (4380.6,4380.6)
-      (29,17405.7) +- (4385.3,4385.3)
-      (30,19202.7) +- (4509.1,4509.1)
-      (31,21855.2) +- (3850.9,3850.9)
-    };
-    \end{axis}
-  \end{tikzpicture}
-\end{figure}
-
-
-\newpage
 \input{measurements/gruyere_topologies}
 
-Table~\ref{tab:ziger1} shows an overview of topologies for atomic
-broadcast on \ziger. We compare these numbers to cost-estimations from
-our simulator that incorporates detailed UMP breakdown measurements
-done on the same machine. Our estimations are close to what we observe
-when running on real hardware. In particular, the order of efficiency
-of the topologies matches reality. 
+Table~\ref{tab:gottardo} shows results for various atomic broadcasts
+trees on real hardware as well as our simulator.
 
-The only exception is sequential execution. Our simulator predicts
-much worse performance than actually given by hardware. We believe the
-cause for this could be hardware extensions (e.g.\ hardware broadcast
-units or snooping). 
+The simulator is not very accurate in this case due to the send time
+measured being essentially zero on Intel machines. This measurement
+does not consider the constant overhead in software for sending a
+message that was not part of the original send benchmark.
 
-What is particularly interesting is that a badly chosen tree with lots
-of communication across NUMA nodes is actually worse than sequentially
-sending messages.
+We either need to send and receive benchmarks with the exact same
+framework or measure the constant overhead and add it to the send
+cost.
 
-\input{measurements/ziger1_topologies}
+Sequentially sending messages is still expensive even though the send
+itself is cheap on Intel machines. This is somewhat unexpected, as the
+sender has very low overhead in sending all messages
+itself. Sequentially sending all messages however induces several
+expensive message transfers across NUMA nodes.
+
+\input{measurements/gottardo_topologies}
+
 \input{measurements/sbrinz_topologies}
-\input{measurements/appenzeller_topologies}
-
-%\input{graphs/visall}
-
-\end{appendices}
+\input{measurements/tomme_topologies}
+\input{measurements/ziger_topologies}
 
 \end{document}
