@@ -17,6 +17,10 @@ class Appenzeller(numa_model.NUMAModel):
         """
         g = super(Appenzeller, self)._build_graph()
         super(Appenzeller, self).__init__(g)
+        super(Appenzeller, self)._parse_receive_result_file(
+            'measurements/receive_%s' % self.get_name())
+        super(Appenzeller, self)._parse_send_result_file(
+            'measurements/send_%s' % self.get_name())
 
     # --------------------------------------------------
     # Characteritics of model
@@ -56,3 +60,9 @@ class Appenzeller(numa_model.NUMAModel):
         helpers.output_graph(g_numa, 'appenzeller_numa');
 
         return g_numa
+
+    def get_send_cost(self, src, dest):
+        return super(Appenzeller, self)._get_send_cost(src, dest)
+
+    def get_receive_cost(self, src, dest):
+        return super(Appenzeller, self)._get_receive_cost(src, dest)

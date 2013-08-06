@@ -2,8 +2,8 @@
   \centering
   \begin{tabular}{lrrrrr}
   \toprule
-  & \multicolumn{3}{c}{Real hardware} & \multicolumn{2}{c}{Simulation} \\
-  topology & time [cycles] & factor & stderr & time [units] & factor \\
+  & \multicolumn{3}{c}{Real hardware [cycles]} & \multicolumn{2}{c}{Simulation [units]} \\
+  topology & time & factor & stderr & time & factor \\
   \midrule
   cluster & 3613.32 & 1.024 & 62.39 & 415 & 1.152 \\
   mst & 3527.07 & \colorbox{gray}{1.000} & 64.77 & 384 & 1.067 \\
@@ -13,6 +13,6 @@
   adaptivetree & 3980.55 & 1.129 & 50.79 & 360 & \colorbox{gray}{1.000} \\
   \midrule
   \end{tabular}
-  \caption{Evaluation of different topologies for gruyere}
+  \caption{Topology evaluation for \gruyere}
   \label{tab:gruyere}
 \end{table}

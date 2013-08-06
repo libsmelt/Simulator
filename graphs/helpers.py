@@ -517,8 +517,8 @@ def _output_table_header(f):
              "  \\centering\n"
              "  \\begin{tabular}{lrrrrr}\n"
              "  \\toprule\n"
-             "  & \\multicolumn{3}{c}{Real hardware} & \\multicolumn{2}{c}{Simulation} \\\\\n"
-             "  topology & time [cycles] & factor & stderr & time [units] & factor \\\\\n"
+             "  & \\multicolumn{3}{c}{Real hardware [cycles]} & \\multicolumn{2}{c}{Simulation [units]} \\\\\n"
+             "  topology & time & factor & stderr & time & factor \\\\\n"
              "  \\midrule\n"
              ))
 
@@ -590,7 +590,7 @@ def output_machine_results(machine, res_measurement, res_simulator):
     f = open(fname + '.tex', 'w+')
     fwiki = open(fname + '_wiki.txt', 'w+')
 
-    cap = "Evaluation of different topologies for %s" % machine
+    cap = "Topology evaluation for \\%s" % machine
 
     _output_table_header(f)
     _wiki_output_table_header(fwiki)
@@ -604,7 +604,13 @@ def output_machine_results(machine, res_measurement, res_simulator):
     assert min_evaluation>0
     assert min_simulation>0
 
+    aliases = dict()
+    aliases['adaptivetree'] = 'adaptive'
+
     for e in zip(res_measurement, res_simulator):
+
+        label = aliases.get(e[0][0], e[0][0])
+
         assert(e[0][0] == e[1][0])
         _output_table_row(f, (e[0][0], e[0][1], e[0][2], e[1][1]),
                           min_evaluation, min_simulation)

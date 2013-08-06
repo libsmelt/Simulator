@@ -38,7 +38,7 @@ function wait_result() {
 
 # main
 # --------------------------------------------------
-for m in gruyere ziger1
+for m in appenzeller
 do
     for t in mst cluster adaptivetree bintree sequential badtree
     do
