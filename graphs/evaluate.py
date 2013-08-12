@@ -5,7 +5,6 @@ import config
 import pdb
 import logging
 import sched_adaptive
-import hybrid_model
 
 # Evaluation is event based. We realize this using a priority heap
 # with the time at which the event is happening as priority and pop
@@ -67,7 +66,7 @@ class Evaluate():
         @param sched: Scheduler for sending messages
 
         """
-
+        import hybrid_model
         for l in topo.get_broadcast_tree():
             if isinstance(l, hybrid_model.MPTree):
                 self.topology = l.graph
@@ -81,11 +80,23 @@ class Evaluate():
                      (m.get_name(), topo.get_name()))
         self.visu = draw.Output(visu_name, m, topo)
 
+        # Evaluate cost starting at _root_
         self.nodes_active.append(root)
         heapq.heappush(self.event_queue, (self.sim_round, events.Send(root, None)))
 
         while not self.terminate():
             self.consume_event()
+
+        # Add cost for communication last_node -> root, since we will
+        # evaluate the cost of the protocol in real hardware starting
+        # at the last node
+        # * Send cost
+        self.sim_round += self.model.get_send_cost(self.last_node, root);
+        # * Propagation
+        self.sim_round += self.topology.edge_weight((self.last_node, root))
+        # * Receive cost
+        self.sim_round += self.model.get_receive_cost(self.last_node, root);
+        
 
         # XXX Check if this includes the receive cost on the last node (it should)
         r = Result(self.sim_round, self.last_node, visu_name)
