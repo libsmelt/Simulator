@@ -38,24 +38,47 @@ class Fibonacci(overlay.Overlay):
     def get_name(self):
         return "fibonacci"
 
-    def fibonacci(self, depth):
-        g = digraph()
-        if depth==1:
-            g.add_node(1)
-        elif depth==2:
-            g.add_node(1)
-            g.add_node(2)
-            g.add_edge((1,2))
-        else:
-            g_r = self.fibonacci(depth-1)
-            g_l = self.fibonacci(depth-2)
-            g.add_node(depth)
-            g = algorithms.merge_graphs(g_r, g_l)
-    
-
         
     def _get_broadcast_tree(self):
         """
         Return the broadcast tree as a graph
         """
+
+        num_cores = self.mod.get_num_cores()
+
+        # Find fibonacci number such that the tree is big enough 
+        # See http://xlinux.nist.gov/dads/HTML/fibonacciTree.html 
+        # Number of nodes in a Fibonacci tree of size i (without "0"-nodes)
+        # is F(i+2)-1
+        fibno = 0
+        while algorithms.F(fibno+2)-1<num_cores:
+            fibno += 1
+
+        print 'Fibonacci number for this machine is %d' % fibno
+
+        # Build tree
+        nodes = []
+        edges = []
+        algorithms.fibonacci(fibno, nodes, edges)
+
+        assert len(nodes)>=num_cores
+        
+        # Sort nodes such that nodes further up in the tree come first
+        nodes = sorted(nodes, cmp=lambda x, y: cmp(len(x),len(y)))
+
+        # Build dictionary with node translations
+        d = {}
+        for (idx, n) in enumerate(nodes):
+            if idx<num_cores:
+                d[n] = idx
+            else:
+                break
+
+        # Build tree
+        g = digraph()
+        map(g.add_node, [ d[key] for key in nodes if key in d ])
+        map(g.add_edge, [ (d[s],d[e]) for (s,e) in edges if s in d and e in d ])
+
+        return g
+
 
