@@ -25,14 +25,13 @@ class AdapativeTree(overlay.Overlay):
     def get_scheduler(self, final_graph):
         return sched_adaptive.SchedAdaptive(final_graph, self.mod)
 
-    def _get_broadcast_tree(self):
+    def _build_tree(self, g):
         """
         Will return a empty broadcast tree that has to be build later
         on. The tree being returned will have add one node per core,
         but no edges.
 
         """
-        g = graph()
-        for c in range(self.mod.get_num_cores()):
-            g.add_node(c)
-        return g
+        gout = graph()
+        map(gout.add_node, [ n for n in g.nodes() ])
+        return gout

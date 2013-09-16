@@ -100,25 +100,3 @@ class Cluster(overlay.Overlay):
 
         helpers.output_graph(g_outer, 'cluster_outer_bin', 'neato')
         return g_outer
-
-        
-    def _get_broadcast_tree(self):
-        """
-        Return the broadcast tree as a graph
-
-        :returns graph: Broadcast tree as graph
-
-        """
-        return self._build_tree(self.mod.get_graph())
-
-
-    def _get_multicast_tree(self, g):
-        """
-        Return the multicast tree for the given subtree of the original model
-
-        :param graph g: Input graph as subset of model to build the MC for
-        :returns graph: Multicast tree as graph 
-
-        """
-        return self._build_tree(g)
-

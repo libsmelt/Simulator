@@ -45,10 +45,6 @@ import os
 # --------------------------------------------------
 MULTICAST_RATIO=.5 # Probability for each node to be used for the multicast.
 
-# WARNING!!! These will be changed at runtime
-# --------------------------------------------------
-DO_MULTICAST=False
-
 def get_ab_machine_results(machine, overlay, flounder=False, umpq=False):
     machine = ''.join([i for i in machine if not i.isdigit()])
 

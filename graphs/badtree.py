@@ -39,29 +39,28 @@ class BadTree(overlay.Overlay):
     def get_name(self):
         return "badtree"
 
-    def _get_broadcast_tree(self):
+    def _build_tree(self, g):
         """
-        Return the broadcast tree as a graph
-        """
+        We build a bad tree by inverting all edge weights and running 
+        an MST algorithm on the resulting graph.
 
-        # Invert weights
-        g_inv = algorithms.invert_weights(self.mod.get_graph())
+        """
+        # Build graph with inverted edges
+        g_inv = algorithms.invert_weights(g)
 
         # Run binary tree algorithm
         mst_inv = minimal_spanning_tree(g_inv)
 
         # Build a new graph
         badtree = digraph()
-        for n in self.mod.get_graph().nodes():
+        
+        # Add nodes
+        for n in g.nodes():
             badtree.add_node(n)
-        print mst_inv.items()
+
+        # Add edges, copy weights from non-inverted graph
         for (e,s) in mst_inv.items():
             if s != None:
-                print "%s %s" % (s,e)
-                badtree.add_edge((s, e), # weights from original (non-inverted) graph
-                                 self.mod.get_graph().edge_weight((s, e)))
-
-        # Print graph
-        helpers.output_graph(badtree, 'badtree', 'dot')
+                badtree.add_edge((s, e), g.edge_weight((s, e)))
 
         return badtree

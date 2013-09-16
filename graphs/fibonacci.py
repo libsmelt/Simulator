@@ -39,12 +39,12 @@ class Fibonacci(overlay.Overlay):
         return "fibonacci"
 
         
-    def _get_broadcast_tree(self):
+    def _build_tree(self, g):
         """
         Return the broadcast tree as a graph
         """
 
-        num_cores = self.mod.get_num_cores()
+        num_cores = len(g.nodes())
 
         # Find fibonacci number such that the tree is big enough 
         # See http://xlinux.nist.gov/dads/HTML/fibonacciTree.html 
@@ -66,7 +66,7 @@ class Fibonacci(overlay.Overlay):
         # Sort nodes such that nodes further up in the tree come first
         nodes = sorted(nodes, cmp=lambda x, y: cmp(len(x),len(y)))
 
-        # Build dictionary with node translations
+        # Build dictionary with node name translations
         d = {}
         for (idx, n) in enumerate(nodes):
             if idx<num_cores:
@@ -77,7 +77,8 @@ class Fibonacci(overlay.Overlay):
         # Build tree
         g = digraph()
         map(g.add_node, [ d[key] for key in nodes if key in d ])
-        map(g.add_edge, [ (d[s],d[e]) for (s,e) in edges if s in d and e in d ])
+        map(g.add_edge, [ (d[s],d[e])
+                          for (s,e) in edges if s in d and e in d ])
 
         return g
 

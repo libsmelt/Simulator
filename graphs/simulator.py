@@ -136,11 +136,9 @@ def build_and_simulate():
     m = m_class()
     assert m != None
     gr = m.get_graph()
-    
 
     if args.multicast:
         print "Building a multicast"
-        config.DO_MULTICAST=True
 
     # --------------------------------------------------
     # Switch main action

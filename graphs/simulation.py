@@ -25,7 +25,7 @@ def _simulation_wrapper(ol, m, gr, multicast=False):
     print 'Simulating machine [%s] with topology [%s]' % \
         (m.get_name(), ol)
 
-    r = overlay.get_overlay(ol, m)
+    r = overlay.Overlay.get_overlay(ol, m)
 
     root = r.get_root_node()
 

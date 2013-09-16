@@ -28,27 +28,31 @@ class Mst(overlay.Overlay):
     def __init__(self, mod):
         """
         Initialize the clustering algorithm
+
         """
         super(Mst, self).__init__(mod)
         
+
     def get_name(self):
         return "mst"
 
-    def _get_broadcast_tree(self):
-        """
-        Run MST algorithm
-        """
-        gr = self.mod.get_graph()
-        
-        mst = graph()
-        mst.add_nodes(gr.nodes())
 
-        mst_edges = minimal_spanning_tree(gr)
+    def _build_tree(self, g):
+        """
+        Iteratively run minimum spanning tree algorithm on graph
+        
+        """
+        # Init graph and add nodes
+        mst = graph()
+        mst.add_nodes(g.nodes())
+
+        mst_edges = minimal_spanning_tree(g)
         print mst_edges
 
+        # Add edges from mst
         for (trg,src) in mst_edges.items():
             if src != None:
-                print "Adding edge %s -> %s" % (src, trg)
-                mst.add_edge((src, trg)) #, gr.edge_weight((src, trg)))
+                logging.info("Adding edge %s -> %s" % (src, trg))
+                mst.add_edge((src, trg))
 
         return mst

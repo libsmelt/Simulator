@@ -11,70 +11,15 @@ import random
 from pygraph.classes.graph import graph
 from pygraph.classes.digraph import digraph
 
-def get_overlay_class(overlay_name):
-    """
-    Return subclass of overlay that matches the given name
-
-    """
-
-    import mst
-    import cluster
-    import ring 
-    import binarytree
-    import sequential
-    import badtree
-    import adaptive
-    import fibonacci
-
-    if overlay_name == "mst":
-        r = mst.Mst
-
-    elif overlay_name == "cluster":
-        # XXX Rename to hierarchical 
-        r = cluster.Cluster
-
-    elif overlay_name == "ring":
-        r = ring.Ring
-
-    elif overlay_name == "bintree":
-        r = binarytree.BinaryTree
-
-    elif overlay_name == "sequential":
-        r = sequential.Sequential
-
-    elif overlay_name == "badtree":
-        r = badtree.BadTree
-
-    elif overlay_name == "adaptivetree":
-        r = adaptive.AdapativeTree
-
-    elif overlay_name == "fibonacci":
-        r = fibonacci.Fibonacci
-
-    else:
-        raise Exception('Unknown topology')
-
-    return r
-
-def get_overlay(overlay_name, topo):
-    import hybrid
-
-    if overlay_name.startswith('hybrid_'):
-        e = overlay_name.split('_')
-        r_mp_class = get_overlay_class(e[1])
-        r = hybrid.Hybrid(topo, r_mp_class)
-    else:
-        o = get_overlay_class(overlay_name)
-        r = o(topo)
-    return r
-
 class Overlay(object):
     """
     Base class for finding the right overlay topology for a model
+
     """
     def __init__(self, mod):
         """
         Initialize the clustering algorithm
+
         """
         import model
         assert isinstance(mod, model.Model)
@@ -82,12 +27,40 @@ class Overlay(object):
         self.tree = None
 
     def _get_broadcast_tree(self):
-        return None
+        """
+        Return the broadcast tree as a graph
+
+        :returns graph: Broadcast tree as graph
+
+        """
+        return self._build_tree(self.mod.get_graph())
+
+    def _get_multicast_tree(self, g):
+        """
+        Return the multicast tree for the given subtree of the original model
+
+        :param graph g: Input graph as subset of model to build the MC for
+        :returns graph: Multicast tree as graph 
+
+        """
+        return self._build_tree(g)
+
+    def _build_tree(self, g):
+        """
+        Actual implementation of getting a {multi,broad}cast-tree.
+
+        This includes the edge weight, which is the propagation time. 
+        :TODO: Make sure _build_tree returns a bigraph, also, make sure it has weights!
+
+        :param graph g: A graph with group members as nodes and weighted edges expressing the cost of sending a message
+
+        """
+        raise Exception("Subclasses need to provide algorithm to build a tree")
 
     def get_root_node(self):
         """
         Return root node. If model does not have any constraints, just
-        start at 0
+        start at 0.
 
         """
         if self.mod.get_root_node():
@@ -117,14 +90,15 @@ class Overlay(object):
         Will call _get_broadcast_tree on first execution and store
         tree in broadcast_tree
         """
-        assert not config.DO_MULTICAST
-
         if self.tree is None:
+            
+            # Get tree
             tmp = self._get_broadcast_tree()
-            helpers.output_graph(
-                tmp,
-                '%s_%s' % (self.mod.get_name(), self.get_name()),
-                'dot')
+
+            # Debug output of tree
+            fname = '%s_%s' % (self.mod.get_name(), self.get_name())
+            helpers.output_graph(tmp, fname, 'dot')
+
             if isinstance(tmp, graph) or isinstance(tmp, digraph):
                 import hybrid_model
                 self.tree = [ hybrid_model.MPTree(tmp) ]
@@ -136,7 +110,6 @@ class Overlay(object):
 
         assert not self.tree is None
         return self.tree
-
 
     def get_random_multicast_tree(self):
         """
@@ -153,7 +126,6 @@ class Overlay(object):
         import hybrid_model
         self.tree = self.get_multicast_tree(nodes)
         return self.tree
-
 
     def get_multicast_tree(self, nodes):
         """
@@ -177,7 +149,6 @@ class Overlay(object):
         self.tree = [ hybrid_model.MPTree(self._get_multicast_tree(mctree)) ]
         return self.tree
 
-
     def get_coordinators(self):
         """
         Selects one coordinator per node for given model. 
@@ -200,4 +171,63 @@ class Overlay(object):
         """
         print "Initializing scheduler in overlay: %s" % str(final_graph)
         return sort_longest.SortLongest(final_graph)
+
+    @staticmethod
+    def get_overlay_class(overlay_name):
+        """
+        Return subclass of overlay that matches the given name
+
+        """
+
+        import mst
+        import cluster
+        import ring 
+        import binarytree
+        import sequential
+        import badtree
+        import adaptive
+        import fibonacci
+
+        if overlay_name == "mst":
+            r = mst.Mst
+
+        elif overlay_name == "cluster":
+            # XXX Rename to hierarchical 
+            r = cluster.Cluster
+
+        elif overlay_name == "ring":
+            r = ring.Ring
+
+        elif overlay_name == "bintree":
+            r = binarytree.BinaryTree
+
+        elif overlay_name == "sequential":
+            r = sequential.Sequential
+
+        elif overlay_name == "badtree":
+            r = badtree.BadTree
+
+        elif overlay_name == "adaptivetree":
+            r = adaptive.AdapativeTree
+
+        elif overlay_name == "fibonacci":
+            r = fibonacci.Fibonacci
+
+        else:
+            raise Exception('Unknown topology')
+
+        return r
+        
+    @staticmethod
+    def get_overlay(overlay_name, topo):
+        import hybrid
+
+        if overlay_name.startswith('hybrid_'):
+            e = overlay_name.split('_')
+            r_mp_class = Overlay.get_overlay_class(e[1])
+            r = hybrid.Hybrid(topo, r_mp_class)
+        else:
+            o = Overlay.get_overlay_class(overlay_name)
+            r = o(topo)
+        return r
 

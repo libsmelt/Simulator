@@ -54,7 +54,7 @@ class SchedAdaptive(scheduling.Scheduling):
         # * The filter makes sure that we do _not_ send unnecessary messages 
         #     across NUMA domains
         # * Send expensive messages first
-        cores = self.mod.get_cores()
+        cores = self.graph.nodes()
         inactive_nodes = [
             # build (cost, core) tuple
             (self.mod.get_num_numa_hops_for_cores(sending_node, c), c) \
