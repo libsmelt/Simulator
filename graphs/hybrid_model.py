@@ -1,5 +1,4 @@
 import helpers
-import gottardo
 
 from pygraph.classes.digraph import digraph
 

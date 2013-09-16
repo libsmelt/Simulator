@@ -46,6 +46,7 @@ class NUMAModel(model.Model):
     def _build_numa_graph(self):
         return None
 
+
     def _build_graph(self):
         """
         Build a graph model for a NUMA machine
@@ -61,6 +62,7 @@ class NUMAModel(model.Model):
 
         return gr
 
+
     def _auto_generate_numa_information(self):
         res = []
         l = []
@@ -74,8 +76,10 @@ class NUMAModel(model.Model):
         res.append(l)
         return res
 
+
     def get_numa_information(self):
         return self._auto_generate_numa_information()
+
 
     def _build_numa_graph(self):
         """
@@ -101,6 +105,7 @@ class NUMAModel(model.Model):
 
         return g_numa
 
+
     def _parse_receive_result_file(self, fname):
         """
         Parse pairwise receive cost results measure with the UMP receive
@@ -110,7 +115,7 @@ class NUMAModel(model.Model):
         @param f: Handle to results.dat file of UMP receive benchmark
 
         """
-        fname = fname + '_NUMA' if config.USE_UMP_NUMA else '_noNUMA'
+        fname = fname + config.result_suffix()
         f = open(fname)
         assert not self.recv_cost
         for l in f.readlines():
@@ -122,7 +127,7 @@ class NUMAModel(model.Model):
                                              float(m.group(3)),
                                              float(m.group(4)))
                 assert (src, dest) not in self.recv_cost
-                self.recv_cost[(src, dest)] = cost/10
+                self.recv_cost[(src, dest)] = cost
 
     def _parse_send_result_file(self, fname):
         """
@@ -133,7 +138,7 @@ class NUMAModel(model.Model):
         @param f: Handle to results.dat file of UMP send benchmark
 
         """
-        fname = fname + '_NUMA' if config.USE_UMP_NUMA else '_noNUMA'
+        fname = fname + config.result_suffix()
         f = open(fname)
         assert not self.send_cost
         for l in f.readlines():
@@ -145,20 +150,26 @@ class NUMAModel(model.Model):
                                              float(m.group(3)),
                                              float(m.group(4)))
                 assert (src, dest) not in self.send_cost
-                self.send_cost[(src, dest)] = cost/10
+                self.send_cost[(src, dest)] = cost
+
 
     def _get_receive_cost(self, src, dest):
         """
         Return the receive cost for a pair (src, dest) of cores
         
         """
+        if (src==dest):
+            return 0
         assert (src, dest) in self.recv_cost
         return self.recv_cost[(src, dest)]
+
 
     def _get_send_cost(self, src, dest):
         """
         Return the send cost for a pair (src, dest) of cores
         
         """
+        if (src==dest):
+            return 0
         assert (src, dest) in self.send_cost
         return self.send_cost[(src, dest)]

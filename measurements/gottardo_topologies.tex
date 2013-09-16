@@ -1,18 +1,23 @@
-\begin{table}[htb]
-  \centering
-  \begin{tabular}{lrrrrr}
-  \toprule
-  & \multicolumn{3}{c}{Real hardware [cycles]} & \multicolumn{2}{c}{Simulation [units]} \\
-  topology & time & factor & stderr & time & factor \\
-  \midrule
-  cluster & 3217.13 & 1.347 & 35.03 & 174 & 1.831 \\
-  mst & 3229.34 & 1.352 & 39.44 & 156 & 1.641 \\
-  bintree & 7381.95 & 3.090 & 1003.40 & 200 & 2.110 \\
-  sequential & 9561.22 & 4.002 & 540.49 & 95 & \colorbox{gray}{1.000} \\
-  badtree & 9046.37 & 3.787 & 510.93 & 585 & 6.161 \\
-  adaptivetree & 2388.95 & \colorbox{gray}{1.000} & 37.74 & 106 & 1.119 \\
-  \midrule
-  \end{tabular}
-  \caption{Topology evaluation for \gottardo}
-  \label{tab:gottardo}
-\end{table}
+\begin{figure}
+  \caption{topology results for \gottardo}
+  \label{pgfplot:20130905}
+  \begin{tikzpicture}[scale=1]
+    \begin{axis}[ybar,ymin=0,symbolic x coords={cluster,mst,bintree,badtree,adaptivetree},xtick=data,error bars/y dir=both,error bars/y explicit,legend style={ at={(0.5,1.03)}, anchor=south },legend columns=2,xlabel={topology},ylabel={cost [cycles]}]
+      \addplot coordinates {
+        (cluster,     4757.069778) +- (295.052921,295.052921)
+        (mst,         4782.338222) +- (334.200860,334.200860)
+        (bintree,     5311.554222) +- (672.510361,672.510361)
+        (badtree,     6527.362667) +- (240.869460,240.869460)
+        (adaptivetree,2947.144889) +- (386.628248,386.628248)
+      };
+      \addplot coordinates {
+        (cluster,     4136.839016)
+        (mst,         3843.087380)
+        (bintree,     4564.574037)
+        (badtree,     10779.869076)
+        (adaptivetree,2947.144889)
+      };
+      \legend{real hardware, simulation};
+    \end{axis}
+  \end{tikzpicture}
+\end{figure}

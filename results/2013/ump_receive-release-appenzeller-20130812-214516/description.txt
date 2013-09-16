@@ -1,0 +1,6 @@
+test: ump_receive
+revision: (mercurial module not available)
+build: release
+machine: appenzeller
+start time: 2013-08-12 21:45:16.917755
+user: skaestle

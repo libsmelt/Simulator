@@ -2,7 +2,6 @@
 
 import pdb
 import logging
-import evaluate
 import topology_parser
 
 from pygraph.algorithms.minmax import shortest_path

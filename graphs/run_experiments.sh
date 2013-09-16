@@ -19,6 +19,7 @@ function wait_result() {
 
 	m=$1
 	i=0
+	j=0
 
 	# one iteration = 2 seconds
 	# This should terminate after 5 minutes = 300 seconds = 150 iterations
@@ -27,18 +28,24 @@ function wait_result() {
 		sleep 2
 		i=$(($i+1))
 
-		if [[ i -ge 300 ]]
+		if [[ $i -ge 300 ]]
 		then
 			echo "Timeout, restarting machine"
 			rackpower -r $m
 			i=0
+			j=$(($j+1))
+			if [[ $j -ge 10 ]]
+			then
+				echo "Aborting machine restarts after 10 tries"
+				exit 1
+			fi
 		fi
     done
 }
 
 # main
 # --------------------------------------------------
-for m in appenzeller
+for m in $@
 do
     for t in mst cluster adaptivetree bintree sequential badtree
     do
@@ -81,10 +88,10 @@ do
 	# Copy result
 	touch $TMP
 	RESULT=$(get_result_file $m $t)
-	cp -b $TMP $RESULT
+	cp -b $TMP ${RESULT}_flounder
 	rm $TMP
 	
-	./simulator.py --evaluate-model $m $t
+#	./simulator.py --evaluate-model $m $t
     done
 done
 

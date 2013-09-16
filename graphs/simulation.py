@@ -17,7 +17,7 @@ import overlay
 from pygraph.classes.graph import graph
 from pygraph.classes.digraph import digraph
 
-def _simulation_wrapper(ol, m, gr):
+def _simulation_wrapper(ol, m, gr, multicast=False):
     """
     Wrapper for simulationg machines
 
@@ -28,7 +28,15 @@ def _simulation_wrapper(ol, m, gr):
     r = overlay.get_overlay(ol, m)
 
     root = r.get_root_node()
-    hybmod_list = r.get_broadcast_tree()
+
+    if multicast:
+        # Build multicast tree for the first half 
+        n = r.mod.get_graph().nodes()
+        l = len(n)/2
+
+        hybmod_list = r.get_multicast_tree(n[:l])
+    else:
+        hybmod_list = r.get_broadcast_tree()
 
     # --------------------------------------------------
     # Output graphs

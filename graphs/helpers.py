@@ -6,6 +6,7 @@ import os
 sys.path.append('..')
 sys.path.append('/usr/lib/graphviz/python/')
 sys.path.append('/usr/lib64/graphviz/python/')
+sys.path.append('/home/skaestle/bin/')
 import gv
 import Queue
 import numpy
@@ -14,13 +15,13 @@ import logging
 import pdb
 import traceback
 import re
-import simulation
-import shm
 import hybrid_model
 import general
-from config import topologies, machines, get_ab_machine_results
+
+from config import topologies, machines, get_ab_machine_results, get_machine_result_suffix
 
 from datetime import *
+from tools import statistics, statistics_cropped
 
 from pygraph.classes.graph import graph
 from pygraph.classes.digraph import digraph
@@ -55,6 +56,8 @@ def output_quorum_configuration(model, hierarchies, root, sched, topo):
           sending messages for a group/cluster of cores
 
     """
+    import shm
+
     d = core_index_dict(model.graph.nodes())
     print d
 
@@ -88,6 +91,8 @@ def output_quorum_configuration(model, hierarchies, root, sched, topo):
 
 SEND_SHM_IDX=SHM_SLAVE_START
 def send_shm(module, mat, core_dict):
+    import shm
+
     global SEND_SHM_IDX
     assert isinstance(module, shm.ShmSpmc)
     assert module.sender in module.receivers
@@ -242,44 +247,6 @@ def unpack_line(line):
     el = str.split(line)
     assert len(el) == 5
     return _unpack_line_header(el[0]) + (int(el[2]), int(el[4]))
-
-
-def statistics_cropped(l, r=.1):
-    """
-    Print statistics for the given list of integers
-    @param r Crop ratio. .1 corresponds to dropping the 10% highest values
-    @return A tuple (mean, stderr, min, max)
-    """
-    if not isinstance(l, list) or len(l)<1:
-        return None
-
-    crop = int(len(l)*r)
-    m = 0
-    for i in range(crop):
-        m = 0
-        for e in l:
-            m = max(m, e)
-        l.remove(m)
-
-    return statistics(l)
-
-
-def statistics(l):
-    """
-    Print statistics for the given list of integers
-    @return A tuple (mean, stderr, median, min, max)
-    """
-    if not isinstance(l, list) or len(l)<1:
-        return None
-
-    nums = numpy.array(l)
-
-    m = nums.mean(axis=0)
-    median = numpy.median(nums, axis=0)
-    d = nums.std(axis=0)
-
-    return (m, d, median, nums.min(), nums.max())
-
 
 def _pgf_header(f, caption='TODO', label='TODO'):
     s = (("\\begin{figure}\n"
@@ -574,7 +541,7 @@ def _wiki_output_table_row(f, item, min_evaluation, min_simulation):
             (item[0], item[1], f1, item[2], t_sim, f2))
 
 
-def output_machine_results(machine, res_measurement, res_simulator):
+def output_machine_results(machine, res_measurement, res_simulator, flounder=False, umpq=False):
     """
     Generates a LaTeX table for the given result list.
 
@@ -585,7 +552,8 @@ def output_machine_results(machine, res_measurement, res_simulator):
     if len(res_measurement)<1 or len(res_simulator)<1:
         return
 
-    fname = '../measurements/%s_topologies' % machine
+    suffix = get_machine_result_suffix(flounder, umpq)
+    fname = '../measurements/%s_topologies%s' % (machine, suffix)
 
     f = open(fname + '.tex', 'w+')
     fwiki = open(fname + '_wiki.txt', 'w+')
@@ -624,7 +592,14 @@ def output_machine_results(machine, res_measurement, res_simulator):
     fwiki.close()
 
 def run_pdflatex(fname, openFile=True):
+    """
+    Don't forget to flush the file you wrote or close it before calling this
+
+    """
     d = os.path.dirname(fname)
+    print d
+    if d=='/tmp':
+        subprocess.call('rm -rf /tmp/*figure*.pdf', shell=True)
     print 'run_pdflatex in %s' % d
     if subprocess.call(['pdflatex',
                      '-output-directory', d,
@@ -633,7 +608,7 @@ def run_pdflatex(fname, openFile=True):
         if openFile:
             subprocess.call(['okular', fname.replace('.tex', '.pdf')])
 
-def extract_machine_results(model, nosim=False):
+def extract_machine_results(model, nosim=False, flounder=False, umpq=False):
     """
     Extract result for simulation and real-hardware from log files
 
@@ -642,7 +617,7 @@ def extract_machine_results(model, nosim=False):
     sim_results = []
     machine = model.get_name()
     for t in topologies:
-        f = get_ab_machine_results(machine, t)
+        f = get_ab_machine_results(machine, t, flounder, umpq)
 
         # Real hardware
         if os.path.isfile(f):
@@ -655,6 +630,7 @@ def extract_machine_results(model, nosim=False):
         # Simulation
         if not nosim:
             try:
+                import simulation
                 (topo, ev, root, sched, topo) = \
                     simulation._simulation_wrapper(t, model, model.get_graph())
                 final_graph = topo.get_broadcast_tree()
@@ -733,3 +709,53 @@ def core_index_dict(n):
 
     n = natural_sort(n)
     return { node: idx for (idx, node) in zip(range(len(n)), n)}
+
+
+def plot_machine_results(machine, res_measurement, res_sim):
+    """
+    Generate PGF plot code for the given data
+    @param f File to write the code to
+    @param data Data points to print as list of tuples (x, y, err)
+    """
+
+    fname = '/tmp/bar.tex'
+    f = open(fname, "w+")
+
+    _latex_header(f, args=['\\usepgfplotslibrary{external}',
+                           '\\tikzexternalize'])
+
+    now = datetime.today()
+
+    xlabels = ','.join([ l for (l, v) in res_sim ])
+    args = [ 'ybar', 'ymin=0', 'symbolic x coords={%s}' % xlabels, 'xtick=data',
+             'error bars/y dir=both', 'error bars/y explicit',
+             'legend style={ at={(0.5,1.03)}, anchor=south }', 
+             'legend columns=2' ]
+
+    plotname = "%02d%02d%02d" % (now.year, now.month, now.day)
+    _pgf_plot_header(f, plotname, 'topology results for %s' % machine, 
+                     'topology', 'cost [cycles]', args)
+
+    minhw = min([x for (_, x, _) in res_measurement])
+    minsim = min([x for (_, x) in res_sim])
+
+    sim = [(t, v/minsim*minhw) for (t,v) in res_sim]
+
+    f.write(("    \\addplot coordinates {\n"))
+    for (t,v,e) in res_measurement:
+        f.write("(%s,%f) +- (%f,%f)\n" % (t,v,e,e))
+    f.write(("    };\n"))
+
+    f.write(("    \\addplot coordinates {\n"))
+    for (t,v) in sim:
+        f.write("(%s,%f)\n" % (t,v))
+    f.write(("    };\n"))
+
+    f.write(' \\legend{real hardware, simulation};\n');
+
+    _pgf_plot_footer(f)
+    _latex_footer(f)
+
+    f.close() # should flush ..
+
+    run_pdflatex(fname)

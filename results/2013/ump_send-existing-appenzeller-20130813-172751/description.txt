@@ -1,0 +1,6 @@
+test: ump_send
+revision: 1fbb3d451cd0 with local changes
+build: existing
+machine: appenzeller
+start time: 2013-08-13 17:27:59.151434
+user: skaestle

@@ -83,7 +83,7 @@ def arg_machine(machine_name):
     Return instance of the machine given as argument
 
     """
-    machine_name = ''.join([i for i in machine_name if not i.isdigit()])
+    machine_name = config.translate_machine_name(machine_name)
 
     if machine_name == 'rack':
         return rack.Rack(sbrinz.Sbrinz)
@@ -105,8 +105,14 @@ def build_and_simulate():
     parser.add_argument('--evaluate-model', dest="action", action="store_const",
                         const="evaluate", default="simulate", 
                         help="Dump machine model instead of simulating")
-    parser.add_argument('--evaluate-machine', dest="action", action="store_const",
-                        const="evaluate-machine", default="simulate", 
+    parser.add_argument('--evaluate-flounder', dest="action", action="store_const",
+                        const="evaluate-flounder", default="simulate", 
+                        help="?")
+    parser.add_argument('--evaluate-ump', dest="action", action="store_const",
+                        const="evaluate-ump", default="simulate", 
+                        help="?")
+    parser.add_argument('--evaluate-umpq', dest="action", action="store_const",
+                        const="evaluate-umpq", default="simulate", 
                         help="?")
     parser.add_argument('--evaluate-all-machines', dest="action", 
                         action="store_const",
@@ -115,6 +121,8 @@ def build_and_simulate():
     parser.add_argument('--ump-breakdown', dest="action", action="store_const",
                         const="ump-breakdown", default="simulate", 
                         help="Dump machine model instead of simulating")
+    parser.add_argument('--multicast', action='store_const', default=False, 
+                        const=True, help='Perfom multicast rather than broadcast')
     parser.add_argument('machine',
                         help="Machine to simulate")
     parser.add_argument('overlay', 
@@ -129,13 +137,18 @@ def build_and_simulate():
     assert m != None
     gr = m.get_graph()
     
+
+    if args.multicast:
+        print "Building a multicast"
+        config.DO_MULTICAST=True
+
     # --------------------------------------------------
     # Switch main action
     # XXX Cleanup required
     if args.action == "simulate":
         (topo, ev, root, sched, topology) = \
-            simulation._simulation_wrapper(args.overlay, m, gr)
-        hierarchies = topo.get_broadcast_tree()
+            simulation._simulation_wrapper(args.overlay, m, gr, args.multicast)
+        hierarchies = topo.get_tree()
         print "Cost for tree is: %d, last node is %s" % (ev.time, ev.last_node)
         # Output c configuration for quorum program
         helpers.output_quorum_configuration(
@@ -152,8 +165,9 @@ def build_and_simulate():
             range(m.get_num_cores()), args.machine, args.overlay, 
             config.get_ab_machine_results(args.machine, args.overlay))
         return 0
-    elif args.action == "evaluate-machine":
-        print "Evaluate all measurements for given machine"
+
+    elif args.action == "evaluate-ump":
+        print "Evaluate UMP measurements for given machine"
 
         assert args.machine.startswith(m.get_name()) # E.g. ziger1 will be ziger, generally: machineNNN, where NNN is a number
         (results, sim_results) = helpers.extract_machine_results(m)
@@ -162,8 +176,49 @@ def build_and_simulate():
         for ((t, v, e), (t_sim, v_sim)) in zip(results, sim_results):
             print '%50s %7d %5d' % (t, v, v_sim)
             
-        helpers.output_machine_results(args.machine, results, sim_results)
+        helpers.output_machine_results(
+            config.translate_machine_name(args.machine), results, sim_results)
+
         return 0
+
+    elif args.action == "evaluate-flounder":
+        print "Evaluate FLOUNDER measurements for given machine"
+
+        assert args.machine.startswith(m.get_name()) # E.g. ziger1 will be ziger, generally: machineNNN, where NNN is a number
+        (results, sim_results) = helpers.extract_machine_results(m, nosim=True, flounder=True)
+
+        # debug output
+        for ((t, v, e), (t_sim, v_sim)) in zip(results, sim_results):
+            print '%50s %7d %5d' % (t, v, v_sim)
+            
+        helpers.output_machine_results(
+            config.translate_machine_name(args.machine), 
+            results, sim_results, flounder=True)
+
+        return 0
+
+    elif args.action == "evaluate-umpq":
+        print "Evaluate FLOUNDER measurements for given machine"
+
+        assert args.machine.startswith(m.get_name()) # E.g. ziger1 will be ziger, generally: machineNNN, where NNN is a number
+        (results, sim_results) = helpers.extract_machine_results(m, umpq=True)
+
+        # debug output
+        for ((t, v, e), (t_sim, v_sim)) in zip(results, sim_results):
+            print '%50s %7d %5d' % (t, v, v_sim)
+            
+        # Tables
+        helpers.output_machine_results(
+            config.translate_machine_name(args.machine), 
+            results, sim_results, umpq=True)
+
+        # Plot
+        helpers.plot_machine_results(
+            config.translate_machine_name(args.machine),
+            results, sim_results)
+        
+        return 0
+
     elif args.action == "evaluate-all-machines":
         print "Evaluate all machines"
 

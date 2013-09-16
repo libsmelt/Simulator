@@ -1,0 +1,6 @@
+test: ump_receive
+revision: 1fbb3d451cd0 with local changes
+build: release
+machine: appenzeller
+start time: 2013-08-13 10:55:24.500296
+user: skaestle

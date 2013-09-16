@@ -57,8 +57,6 @@ class Appenzeller(numa_model.NUMAModel):
                     
         assert errors == 16
 
-        helpers.output_graph(g_numa, 'appenzeller_numa');
-
         return g_numa
 
     def get_send_cost(self, src, dest):

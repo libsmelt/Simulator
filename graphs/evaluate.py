@@ -67,7 +67,9 @@ class Evaluate():
 
         """
         import hybrid_model
-        for l in topo.get_broadcast_tree():
+
+        assert len(topo.get_tree())==1 # Don't support evaluation for Hybrid models yet
+        for l in topo.get_tree():
             if isinstance(l, hybrid_model.MPTree):
                 self.topology = l.graph
 
