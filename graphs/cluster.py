@@ -26,6 +26,7 @@ import overlay
 class Cluster(overlay.Overlay):
     """
     Build a cluster topology for a model
+
     """
     
     def __init__(self, mod):
@@ -38,14 +39,20 @@ class Cluster(overlay.Overlay):
     def get_name(self):
         return "cluster"
 
-    def _get_broadcast_tree(self):
+    def _build_tree(self, g):
         """
-        Return the broadcast tree as a graph
+        Algorithm to build the cluster tree.
+        This algorithm uses the list of coordinators for :py:func:`overlay.get_coordinators`
+
+        :param graph g: Graph for which to build the cluster tree.
+
         """
+
+        coords = [ c for c in self.coordinators if c in g.nodes() ]
 
         # Build NUMA node graph with weights first
         g_numa = graph()
-        for c in self.coordinators:
+        for c in coords:
             g_numa.add_node(c)
             for co in self.coordinators:
                 if co<c:
@@ -85,12 +92,33 @@ class Cluster(overlay.Overlay):
         g_outer = algorithms.binary_tree(g_numa)
         
         for c in self.coordinators:
-            numa_node = self.mod.get_numa_node(c)
+            numa_node = [ n for n in self.mod.get_numa_node(c) if n in g.nodes() ]
             g_outer = algorithms.merge_graphs(\
                 algorithms.simple_tree(self.mod.get_graph(), numa_node, c),\
                 g_outer)
             print "%s" % str(numa_node)
 
         helpers.output_graph(g_outer, 'cluster_outer_bin', 'neato')
-
         return g_outer
+
+        
+    def _get_broadcast_tree(self):
+        """
+        Return the broadcast tree as a graph
+
+        :returns graph: Broadcast tree as graph
+
+        """
+        return self._build_tree(self.mod.get_graph())
+
+
+    def _get_multicast_tree(self, g):
+        """
+        Return the multicast tree for the given subtree of the original model
+
+        :param graph g: Input graph as subset of model to build the MC for
+        :returns graph: Multicast tree as graph 
+
+        """
+        return self._build_tree(g)
+

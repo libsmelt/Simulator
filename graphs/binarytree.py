@@ -19,18 +19,18 @@ from pygraph.algorithms.minmax import minimal_spanning_tree
 # Import own code
 import evaluate
 import model
-import helpers
 import algorithms
 import overlay
 
 class BinaryTree(overlay.Overlay):
     """
     Build a cluster topology for a model
+
     """
-    
     def __init__(self, mod):
         """
         Initialize the clustering algorithm
+
         """
         super(BinaryTree, self).__init__(mod)
         
@@ -40,12 +40,23 @@ class BinaryTree(overlay.Overlay):
     def _get_broadcast_tree(self):
         """
         Return the broadcast tree as a graph
+
         """
+        return self.get_bintree(self.mod.get_graph())
 
-        # Run binary tree algorithm
-        bintree = algorithms.binary_tree(self.mod.get_graph())
+    def _get_multicast_tree(self, graph):
+        """
+        Run on given multicast tree
 
-        # Print graph
-        helpers.output_graph(bintree, 'binarytree', 'dot')
+        """
+        return self.get_bintree(graph)
+
+
+    def get_bintree(self, graph):
+        """
+        Generate a binary tree for the given graph.
+
+        """
+        bintree = algorithms.binary_tree(graph)
 
         return bintree
