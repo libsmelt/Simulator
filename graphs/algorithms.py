@@ -5,6 +5,8 @@ from pygraph.classes.digraph import digraph
 import Queue
 import logging
 
+import tools
+
 def binary_tree(m, nodes=[], out_degree=2):
     """
     Construct a binary tree for the given g
@@ -167,3 +169,148 @@ def connect_graphs(g1, g2, connecting_edge, weight=1):
                 '%d_%d' % (1, conn_src)))
 
     return g
+
+def clustering():
+    """
+    """
+
+    # Calculate average
+    avg = 0.0
+    num = 0
+
+    # Get machine
+    # import gottardo
+    # g = gottardo.Gottardo()
+    import ziger
+    g = ziger.Ziger()
+
+    # State
+    clusters = []
+    for x in range(g.get_num_cores()):
+        clusters.append([x])
+
+    num_clusters_last = g.get_num_cores()
+
+    # Find and store link costs
+    import Queue
+    links = Queue.PriorityQueue()
+    for x in range(g.get_num_cores()):
+        for y in range(x):
+            if x != y:
+                print "%d -> %d has cost %f" % (x, y, g.get_receive_cost(x,y))
+                cost = (g.get_receive_cost(x,y) + g.get_receive_cost(y,x))/2
+                links.put((cost, (x,y)))
+
+    # Cluster nodes
+    while True:
+
+        # Get from list
+        try:
+            (prio, (src, dest)) = links.get(block=False)
+        except:
+            print "no more links"
+            break
+
+        print "%d -> %d at %f" % (src, dest, prio)
+
+        # Terminate once the link cost is higher than 1.4 of the average
+        # if num>0 and prio>avg/num*1.1:
+        #     break
+                
+        _put_same_cluster(clusters, src, dest)
+        avg += prio
+        num += 1
+
+        if len(clusters)<num_clusters_last:
+            # Calcualte the stderr on all clusters .. and pick min
+            import tools
+            cmax = max(map(lambda x: _evaluate_cluster_goodness(x, g.get_receive_cost), clusters))
+            print "%d (maxstderr=%f) ----> %s" % (len(clusters), cmax, str(clusters))
+            num_clusters_last = len(clusters)
+
+    # Sort clusters
+    for c in clusters:
+        c = c.sort()
+
+    print num
+    print clusters
+
+
+def _evaluate_cluster_goodness(x, f):
+
+    # Build list of all pairwise links in the cluster
+    c = []
+    for s in x:
+        for r in x:
+            if s != r:
+                c.append(f(s,r))
+
+    if len(c)<1:
+        return -1
+
+    print "Statistics for %s is %s" % (str(x), str(tools.statistics(c)))
+    return tools.statistics_cropped(c)[1]
+
+def _put_same_cluster(cluster, src, dest):
+
+    destcluster = None
+
+    # Find dest's cluster
+    for c in cluster:
+        if dest in c:
+            destcluster = c
+            break
+
+    assert destcluster
+
+    # Don't do anything if nodes are _already_ in same cluster
+    if src in destcluster:
+        return
+    cluster.remove(destcluster)
+
+    # Find src's cluster .. 
+    for c in cluster:
+        if src in c:
+            # .. and add nodes fro dest's cluster
+            for d in destcluster:
+                c.append(d)
+            break
+
+
+def F(n):
+    if n == 0: return 0
+    elif n == 1: return 1
+    else: return F(n-1)+F(n-2)
+            
+        
+def fibonacci(depth, nodes=[], edges=[], s='', side=None):
+    thisname = '%s%d' % (s, depth)
+
+    num = 0
+
+    # Append a node 0 only as right-hand child
+    if depth<=0:
+        return 0
+
+    # End recursion and add one node
+    elif depth==1:
+        num += 1
+        nodes.append(thisname)
+
+    # Add node and recurse ..
+    else:
+        num += 1
+        nodes.append(thisname)
+
+        i = fibonacci(depth-1, nodes, edges, thisname, 'l')
+        if i>0:
+            edges.append((thisname, '%s%d' % (thisname, depth-1)))
+            num += i
+
+        i = fibonacci(depth-2, nodes, edges, thisname, 'r')
+        if i>0:
+            edges.append((thisname, '%s%d' % (thisname, depth-2)))
+            num += 1
+
+    return num
+    
