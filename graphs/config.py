@@ -41,6 +41,9 @@ def _result_suffix(numa, umpq):
 
 import os
 
+# Arguments as given when invoking the simulator
+args = None
+
 # Set these manually
 # --------------------------------------------------
 MULTICAST_RATIO=.5 # Probability for each node to be used for the multicast.
@@ -65,3 +68,49 @@ def get_machine_result_suffix(flounder, umpq):
 
 def translate_machine_name(n):
     return ''.join([i for i in n if not i.isdigit()])
+
+
+def arg_machine_class(string):
+    """
+
+    """
+    # Machines
+    import gruyere
+    import nos6
+    import ziger
+    import sbrinz
+    import gottardo
+    import appenzeller
+    import tomme
+
+    if string == "gruyere":
+        return gruyere.Gruyere
+    elif string == "nos":
+        return nos6.Nos
+    elif string == 'ziger':
+        return ziger.Ziger
+    elif string == 'sbrinz':
+        return sbrinz.Sbrinz
+    elif string == 'gottardo':
+        return gottardo.Gottardo
+    elif string == 'appenzeller':
+        return appenzeller.Appenzeller
+    elif string == 'tomme':
+        return tomme.Tomme
+    else:
+        raise Exception('Unknown machine')
+    
+
+def arg_machine(machine_name):
+    """
+    Return instance of the machine given as argument
+
+    """
+    import rack
+    machine_name = translate_machine_name(machine_name)
+
+    if machine_name == 'rack':
+        return rack.Rack(sbrinz.Sbrinz)
+
+    else:
+        return arg_machine_class(machine_name)

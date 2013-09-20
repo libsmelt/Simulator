@@ -56,7 +56,10 @@ class Ring(overlay.Overlay):
         g = self._get_outer_rings()
         for i in [0, 4, 8, 12, 16, 20, 24, 28]:
             numa_node = self.mod.get_numa_node(i)
-            g = algorithms.merge_graphs(algorithms.simple_tree(\
+            # -- UNTESTED ---------------
+            # g = algorithms.merge_graphs(algorithms.simple_tree(\
+            #         self.mod.get_graph(), numa_node, i), g)
+            g = algorithms.merge_graphs(algorithms.sequential(\
                     self.mod.get_graph(), numa_node, i), g)
 
         helpers.output_graph(g, 'ring', 'neato')

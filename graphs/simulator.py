@@ -127,47 +127,50 @@ def build_and_simulate():
                         help="Machine to simulate")
     parser.add_argument('overlay', 
                         help="Overlay to use for atomic broadcast")
+    parser.add_argument('--group', default=None,
+                        help=("Coma separated list of node IDs that should be "
+                              "part of the multicast group"))
     parser.add_argument('--debug', action='store_const', default=False, const=True)
-    args = parser.parse_args()
+    config.args = parser.parse_args()
 
-    print "machine: %s, topology: %s" % (args.machine, args.overlay)
+    print "machine: %s, topology: %s" % (config.args.machine, config.args.overlay)
 
-    m_class = arg_machine(args.machine)
+    m_class = arg_machine(config.args.machine)
     m = m_class()
     assert m != None
     gr = m.get_graph()
 
-    if args.multicast:
+    if config.args.multicast:
         print "Building a multicast"
 
     # --------------------------------------------------
     # Switch main action
     # XXX Cleanup required
-    if args.action == "simulate":
+    if config.args.action == "simulate":
         (topo, ev, root, sched, topology) = \
-            simulation._simulation_wrapper(args.overlay, m, gr, args.multicast)
+            simulation._simulation_wrapper(config.args.overlay, m, gr, config.args.multicast)
         hierarchies = topo.get_tree()
-        print "Cost for tree is: %d, last node is %s" % (ev.time, ev.last_node)
+        print "Cost for tree is: %d (%d), last node is %s" % (ev.time, ev.time_no_ab, ev.last_node)
         # Output c configuration for quorum program
         helpers.output_quorum_configuration(
             m, hierarchies, root, sched, topology)
         return 0
 
-    elif args.action == 'ump-breakdown':
+    elif config.args.action == 'ump-breakdown':
         ump.execute_ump_breakdown()
         return 0
 
-    elif args.action == "evaluate":
+    elif config.args.action == "evaluate":
         print "Evaluating model"
         helpers.parse_and_plot_measurement(
-            range(m.get_num_cores()), args.machine, args.overlay, 
-            config.get_ab_machine_results(args.machine, args.overlay))
+            range(m.get_num_cores()), config.args.machine, config.args.overlay, 
+            config.get_ab_machine_results(config.args.machine, config.args.overlay))
         return 0
 
-    elif args.action == "evaluate-ump":
+    elif config.args.action == "evaluate-ump":
         print "Evaluate UMP measurements for given machine"
 
-        assert args.machine.startswith(m.get_name()) # E.g. ziger1 will be ziger, generally: machineNNN, where NNN is a number
+        assert config.args.machine.startswith(m.get_name()) # E.g. ziger1 will be ziger, generally: machineNNN, where NNN is a number
         (results, sim_results) = helpers.extract_machine_results(m)
 
         # debug output
@@ -175,14 +178,14 @@ def build_and_simulate():
             print '%50s %7d %5d' % (t, v, v_sim)
             
         helpers.output_machine_results(
-            config.translate_machine_name(args.machine), results, sim_results)
+            config.translate_machine_name(config.args.machine), results, sim_results)
 
         return 0
 
-    elif args.action == "evaluate-flounder":
+    elif config.args.action == "evaluate-flounder":
         print "Evaluate FLOUNDER measurements for given machine"
 
-        assert args.machine.startswith(m.get_name()) # E.g. ziger1 will be ziger, generally: machineNNN, where NNN is a number
+        assert config.args.machine.startswith(m.get_name()) # E.g. ziger1 will be ziger, generally: machineNNN, where NNN is a number
         (results, sim_results) = helpers.extract_machine_results(m, nosim=True, flounder=True)
 
         # debug output
@@ -190,15 +193,15 @@ def build_and_simulate():
             print '%50s %7d %5d' % (t, v, v_sim)
             
         helpers.output_machine_results(
-            config.translate_machine_name(args.machine), 
+            config.translate_machine_name(config.args.machine), 
             results, sim_results, flounder=True)
 
         return 0
 
-    elif args.action == "evaluate-umpq":
+    elif config.args.action == "evaluate-umpq":
         print "Evaluate FLOUNDER measurements for given machine"
 
-        assert args.machine.startswith(m.get_name()) # E.g. ziger1 will be ziger, generally: machineNNN, where NNN is a number
+        assert config.args.machine.startswith(m.get_name()) # E.g. ziger1 will be ziger, generally: machineNNN, where NNN is a number
         (results, sim_results) = helpers.extract_machine_results(m, umpq=True)
 
         # debug output
@@ -207,17 +210,17 @@ def build_and_simulate():
             
         # Tables
         helpers.output_machine_results(
-            config.translate_machine_name(args.machine), 
+            config.translate_machine_name(config.args.machine), 
             results, sim_results, umpq=True)
 
         # Plot
         helpers.plot_machine_results(
-            config.translate_machine_name(args.machine),
+            config.translate_machine_name(config.args.machine),
             results, sim_results)
         
         return 0
 
-    elif args.action == "evaluate-all-machines":
+    elif config.args.action == "evaluate-all-machines":
         print "Evaluate all machines"
 
         a = []
@@ -252,7 +255,7 @@ def build_and_simulate():
     evaluation = evaluate.Evaluate()
     ev = evaluation.evaluate(topo, root, m, sched) 
 
-    if args.debug:
+    if config.args.debug:
         (fid, fname) = tempfile.mkstemp(suffix='.tex')
         f = open(fname, 'w+')
         helpers._latex_header(f)

@@ -31,7 +31,10 @@ class Result():
 
     """
     def __init__(self, time, last_node, visu_name):
-        self.time = time
+        # Time _not_ including last_node -> root, i.e. to allow everyone sending
+        self.time_no_ab = time
+        # Time including sender -> root
+        self.time = None 
         self.last_node = last_node
         self.visu_name = visu_name
 
@@ -93,15 +96,20 @@ class Evaluate():
         # evaluate the cost of the protocol in real hardware starting
         # at the last node
         # * Send cost
+        r = Result(self.sim_round, self.last_node, visu_name)
+        print "Terminating(%d,%s,%s) - cost %d for last_node -> root" % \
+            (self.sim_round, str(self.last_node), str(root), 
+             self.model.get_send_cost(self.last_node, root) + 
+             self.topology.edge_weight((self.last_node, root)) +
+             self.model.get_receive_cost(self.last_node, root))
         self.sim_round += self.model.get_send_cost(self.last_node, root);
         # * Propagation
         self.sim_round += self.topology.edge_weight((self.last_node, root))
         # * Receive cost
         self.sim_round += self.model.get_receive_cost(self.last_node, root);
-        
+        r.time = self.sim_round
 
         # XXX Check if this includes the receive cost on the last node (it should)
-        r = Result(self.sim_round, self.last_node, visu_name)
         self.model.set_evaluation_result(r)
 
         self.visu.finalize()
@@ -136,6 +144,7 @@ class Evaluate():
         """
         w = self.topology.edge_weight((src, dest))
         heapq.heappush(self.event_queue, (self.sim_round + w, events.Receive(src, dest)))
+        print "Propagate(%d,%s,%s) - cost %d" % (self.sim_round, str(src), str(dest), w)
 
     def receive(self, src, dest):
         """
@@ -143,11 +152,11 @@ class Evaluate():
         is the node where the message is received. Send will be called to
         trigger sending of messages to children.
         """
-        logging.info("{%s}: receiving message from {%s} in round %d" \
-                         % (str(dest), str(src), self.sim_round))
         self.last_node = dest
         cost = self.model.get_receive_cost(src, dest)
         self.visu.receive(dest, src, self.sim_round, cost)
+        print "Receive(%d,%s,%s) - cost %d" \
+                         % (self.sim_round, str(dest), str(src), cost)
 
         # For rings: sequence number
         # Abort in case the message was seen before
@@ -199,8 +208,10 @@ class Evaluate():
                     (src, dest),
                     self.model.graph.edge_weight((src, dest)))
 
-            print (src, dest, send_time, cost)
             self.visu.send(src, dest, send_time, cost)
+            print 'Send(%d,%s,%s) - cost %d' % \
+                (self.sim_round, str(src), str(dest), cost)
+
             send_compl = send_time + cost
 
             # Add propagation event to the heap to signal to propagate

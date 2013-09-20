@@ -47,21 +47,16 @@ def binary_tree(m, nodes=[], out_degree=2):
     return g
 
 
-def simple_tree(m, nodes, coordinator):
-    """
-    @deprecated Use sequential instead
-    """
-    return sequential(m, nodes, coordinator)
-
-
 def sequential(m, nodes, coordinator):
     """
     Construct a simple two-level tree. The coordinator is the root, and all 
-    the other nodes are its children
+    the other nodes are its children.
+
+    The weights of edges are taken from m.
 
     @type m: graph
     @param m: The machine model. The weights for the edges in the binary_tree
-        will be extracted from the model
+        will be extracted from the model.
 
     @type nodes: list
     @param nodes: list of nodes to build a tree for. If list is

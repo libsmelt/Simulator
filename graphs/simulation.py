@@ -9,6 +9,7 @@ import badtree
 import mst
 import adaptive
 import hybrid_model
+import config
 
 import helpers
 import evaluate
@@ -30,11 +31,20 @@ def _simulation_wrapper(ol, m, gr, multicast=False):
     root = r.get_root_node()
 
     if multicast:
-        # Build multicast tree for the first half 
-        n = r.mod.get_graph().nodes()
-        l = len(n)/2
+        
+        # Multicast, group membership given
+        if config.args.group:
+            n = config.args.group.split(',')
 
-        hybmod_list = r.get_multicast_tree(n[:l])
+        # Multicast, group membership not given, use first half of nodes
+        else:
+            n = r.mod.get_graph().nodes()
+            l = len(n)/2
+            n = n[:l]
+
+        print 'Multicast with nodes: %s' % ('-'.join(n))
+        hybmod_list = r.get_multicast_tree(map(int, n))
+
     else:
         hybmod_list = r.get_broadcast_tree()
 

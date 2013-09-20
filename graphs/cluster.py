@@ -20,7 +20,7 @@ from pygraph.algorithms.minmax import minimal_spanning_tree
 import evaluate
 import model
 import helpers
-import algorithms
+from algorithms import binary_tree, sequential, merge_graphs
 import overlay
 
 class Cluster(overlay.Overlay):
@@ -56,11 +56,10 @@ class Cluster(overlay.Overlay):
             g_numa.add_node(c)
             for co in self.coordinators:
                 if co<c:
-                    logging.info("Adding edge to NUMA node %d %d, " \
-                                     "with weight %d" % \
-                                     (c, co, self.mod.get_graph().edge_weight((c, co))))
-                    g_numa.add_edge((c, co),
-                                    self.mod.get_graph().edge_weight((c, co)))
+                    weight = self.mod.get_graph().edge_weight((c, co))
+                    g_numa.add_edge((c, co), weight)
+                    logging.info(("Adding edge to NUMA node %d %d, "
+                                  "with weight %d") % (c, co, weight))
 
         # Print graph
         helpers.output_graph(g_numa, 'cluster_numa', 'dot')
@@ -89,13 +88,12 @@ class Cluster(overlay.Overlay):
         # except for contention
         # but if we send a message far away, with many hops, that is kind of stupid (or is it?)
 
-        g_outer = algorithms.binary_tree(g_numa)
+        g_outer = binary_tree(g_numa)
         
         for c in self.coordinators:
             numa_node = [ n for n in self.mod.get_numa_node(c) if n in g.nodes() ]
-            g_outer = algorithms.merge_graphs(\
-                algorithms.simple_tree(self.mod.get_graph(), numa_node, c),\
-                g_outer)
+            g_simple = sequential(self.mod.get_graph(), numa_node, c)
+            g_outer = merge_graphs(g_simple, g_outer)
             print "%s" % str(numa_node)
 
         helpers.output_graph(g_outer, 'cluster_outer_bin', 'neato')
