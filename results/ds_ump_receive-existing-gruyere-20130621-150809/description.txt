@@ -1,6 +1,0 @@
-test: ds_ump_receive
-revision: e1dee39e8582 with local changes
-build: existing
-machine: gruyere
-start time: 2013-06-21 15:08:17.807016
-user: skaestle

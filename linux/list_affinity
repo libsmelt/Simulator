@@ -1,1 +1,0 @@
-for p in 24939 24938; do taskset -p 24938; done

@@ -1,6 +1,0 @@
-test: ds_ump_latency
-revision: e1dee39e8582 with local changes
-build: existing
-machine: sbrinz2
-start time: 2013-06-21 13:50:26.675392
-user: skaestle

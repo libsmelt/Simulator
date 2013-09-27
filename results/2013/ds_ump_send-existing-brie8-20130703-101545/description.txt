@@ -1,6 +1,0 @@
-test: ds_ump_send
-revision: 10f0541002c9 unmodified
-build: existing
-machine: brie8
-start time: 2013-07-03 10:15:45.907523
-user: skaestle
