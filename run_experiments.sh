@@ -1,9 +1,29 @@
 #!/bin/bash
 
 MODEL=model.h
-QDIR=$HOME/bf/quorum/usr/quorum/
+BFDIR=/mnt/local/skaestle/bf.quorum/
+QDIR=$BFDIR/usr/quorum/
 TMP=`mktemp`
 PATTERN="Quorum.*everything done.*exiting"
+
+# --------------------------------------------------
+
+function error() {
+	echo $1
+	exit 1
+}
+
+function usage() {
+
+    echo "Usage: $0 machines [machine..]"
+    exit 1
+}
+
+[[ -d $BFDIR ]] || error "Barrelfish directory does not exist"
+[[ -d $QDIR ]] || error "Quorum application not found"
+[[ -n "$1" ]] || usage
+
+# --------------------------------------------------
 
 function get_result_file()
 {
@@ -49,10 +69,10 @@ for m in $@
 do
     for t in mst cluster adaptivetree bintree sequential badtree
     do
-	# Cleanup 
+	# Cleanup
 	rm -f $MODEL
 	echo "" >$TMP
-	
+
 	# Run the simulator
 	./simulator.py $m $t || exit 1
 
@@ -67,7 +87,7 @@ do
 	cp $MODEL $QDIR
 
 	# Compile the program
-	ssh emmentaler2.ethz.ch emntlr_make_generic /local/skaestle/bf.quorum
+	ssh emmentaler2.ethz.ch emntlr_make_generic $BFDIR
 	if [ $? -ne 0 ]
 	then
 	    echo "Compilation failed, exiting"
@@ -75,7 +95,7 @@ do
 	fi
 
 	# Run the machine
-	console $m >$TMP & # Start console process .. 
+	console $m >$TMP & # Start console process ..
 	PID=$! # .. and get PID
 	ps -p $PID
 	rackboot.sh $m # Reboot the machine
@@ -90,7 +110,7 @@ do
 	RESULT=$(get_result_file $m $t)
 	cp -b $TMP ${RESULT}_flounder
 	rm $TMP
-	
+
 #	./simulator.py --evaluate-model $m $t
     done
 done
