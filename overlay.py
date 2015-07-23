@@ -188,33 +188,24 @@ class Overlay(object):
         import adaptive
         import fibonacci
 
-        if overlay_name == "mst":
-            r = mst.Mst
+        d = {
+            'mst': mst.Mst,
+            'cluster': cluster.Cluster,
+            'ring': ring.Ring,
+            'bintree': binarytree.BinaryTree,
+            'sequential': sequential.Sequential,
+            'badtree': badtree.BadTree,
+            'adaptivetree': adaptive.AdapativeTree,
+            'fibonacci': fibonacci.Fibonacci
+        }
 
-        elif overlay_name == "cluster":
-            # XXX Rename to hierarchical 
-            r = cluster.Cluster
-
-        elif overlay_name == "ring":
-            r = ring.Ring
-
-        elif overlay_name == "bintree":
-            r = binarytree.BinaryTree
-
-        elif overlay_name == "sequential":
-            r = sequential.Sequential
-
-        elif overlay_name == "badtree":
-            r = badtree.BadTree
-
-        elif overlay_name == "adaptivetree":
-            r = adaptive.AdapativeTree
-
-        elif overlay_name == "fibonacci":
-            r = fibonacci.Fibonacci
-
+        if overlay_name in d:
+            r = d[overlay_name]
+        
         else:
-            raise Exception('Unknown topology')
+            supported = ', '.join([ x for (x, _) in d.items()])
+            raise Exception('Unknown topology %s - Supported are: %s' % \
+                            (overlay_name, supported))
 
         return r
         
