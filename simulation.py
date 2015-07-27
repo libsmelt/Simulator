@@ -58,6 +58,8 @@ def _simulation_wrapper(ol, m, gr, multicast=False):
 
     assert isinstance(hybmod_list, list)
 
+    r_tmp = None
+
     # If this is a hybrid, consider only the MP part for evaluation
     if isinstance(r, hybrid.Hybrid):
         r_tmp = r
@@ -93,6 +95,7 @@ def _simulation_wrapper(ol, m, gr, multicast=False):
 
 
     # Return result
-    r = r_tmp
+    if r_tmp:
+        r = r_tmp
     return (r, ev, root, sched, r)
 
