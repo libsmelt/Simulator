@@ -18,6 +18,15 @@ class HybridModule(object):
 
 class MPTree(HybridModule):
     
-    def __init__(self, graph):
+    def __init__(self, graph, mp_ol):
+        """Represent a message passing module
+
+        @param graph (digraph) The graph to be used
+
+        @param mp_ol (overlay) The mp_ol network of the messge
+        passing component
+
+        """
         self.graph = graph
+        self.mp_ol = mp_ol
 

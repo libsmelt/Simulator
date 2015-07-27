@@ -131,7 +131,11 @@ def build_and_simulate():
                         help=("Coma separated list of node IDs that should be "
                               "part of the multicast group"))
     parser.add_argument('--debug', action='store_const', default=False, const=True)
-    config.args = parser.parse_args()
+    
+    try:
+        config.args = parser.parse_args()
+    except:
+        exit(1)
 
     print "machine: %s, topology: %s" % (config.args.machine, config.args.overlay)
 
@@ -243,6 +247,10 @@ def build_and_simulate():
 
         return 0
 
+    else:
+        print 'Unknown action .. '
+        exit(1)
+
     # --------------------------------------------------
     # Output graphs
     helpers.output_graph(gr, '%s_full_mesh' % m.get_name())
@@ -269,9 +277,4 @@ def build_and_simulate():
 
 if __name__ == "__main__":
     sys.excepthook = helpers.info
-    try:
-        build_and_simulate()
-    except:
-        print "Simulator terminated unexpectedly"
-        print traceback.format_exc()
-        sys.exit(1)
+    build_and_simulate()

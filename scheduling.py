@@ -9,8 +9,10 @@ from pygraph.classes.digraph import digraph
 class Scheduling(object):
 
     def __init__(self, graph):
-        """
-        Initializes Scheduling with a graph model
+        """Initializes Scheduling with a graph model
+
+        @param graph An instance of digraph representing the tree
+        topology for which to search a model for.
         """
         print "Initializing scheduler with %s" % str(graph)
         self.graph = graph

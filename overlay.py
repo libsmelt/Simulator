@@ -95,14 +95,15 @@ class Overlay(object):
             # Get tree
             tmp = self._get_broadcast_tree()
 
-            # Debug output of tree
-            fname = '%s_%s' % (self.mod.get_name(), self.get_name())
-            helpers.output_graph(tmp, fname, 'dot')
-
             if isinstance(tmp, graph) or isinstance(tmp, digraph):
                 import hybrid_model
-                self.tree = [ hybrid_model.MPTree(tmp) ]
+                self.tree = [ hybrid_model.MPTree(tmp, self) ]
             elif isinstance(tmp, list):
+
+                # # Debug output of tree
+                # fname = '%s_%s' % (self.mod.get_name(), self.get_name())
+                # helpers.output_graph(tmp, fname, 'dot')
+
                 self.tree = tmp
             else:
                 import pdb; pdb.set_trace()
@@ -165,9 +166,7 @@ class Overlay(object):
         return coordinators
 
     def get_scheduler(self, final_graph):
-        """
-        XXX Currently only one scheduler per model
-
+        """Return a scheduler for the given topology and graph.
         """
         print "Initializing scheduler in overlay: %s" % str(final_graph)
         return sort_longest.SortLongest(final_graph)
@@ -215,6 +214,7 @@ class Overlay(object):
 
         if overlay_name.startswith('hybrid_'):
             e = overlay_name.split('_')
+            print 'Detected hybrid model with base class', e[1]
             r_mp_class = Overlay.get_overlay_class(e[1])
             r = hybrid.Hybrid(topo, r_mp_class)
         else:

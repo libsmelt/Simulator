@@ -16,8 +16,8 @@ class Hybrid(overlay.Overlay):
         """
         Initialize hybrid model
 
-        @param mp_topology: Topology class to use for global
-        communication.
+        @param mp_topology Topology class to use for global
+        communication. This needs to be initialized somewhere.
 
         """
         super(Hybrid, self).__init__(mod)
@@ -41,7 +41,7 @@ class Hybrid(overlay.Overlay):
             coords = map(int, coords)
             g.add_nodes(coords)
 
-            # Add all possible combinations of edges, with the weigts
+            # Add all possible combinations of edges, with the weights
             # from the original model
             for c1 in coords:
                 for c2 in coords:
@@ -49,7 +49,9 @@ class Hybrid(overlay.Overlay):
                         g.add_edge((c1, c2), self.mod.get_graph().edge_weight((c1, c2)))
 
             self.mp_tree = self.mp_topology(simplemachine.SimpleMachine(g))
-            self.mp_tree_topo = self.mp_tree._get_broadcast_tree()
+            tmp = self.mp_tree.get_broadcast_tree()
+            print 'broadcast', str(tmp[0].graph)
+            self.mp_tree_topo = tmp[0].graph
 
             for (cluster, coord) in zip(clusters.get(), coords):
                 
@@ -75,7 +77,7 @@ class Hybrid(overlay.Overlay):
 
         """
         
-        return self.shm + [ hybrid_model.MPTree(self.mp_tree_topo) ]
+        return self.shm + [ hybrid_model.MPTree(self.mp_tree_topo, self.mp_tree) ]
         
     def get_root_node(self):
         return self.mp_tree.get_root_node()

@@ -5,12 +5,12 @@ SCHEDULING_SORT=True
 SCHEDULING_SORT_ID=False
 SCHEDULING_SORT_LONGEST_PATH=False
 USE_UMP_NUMA=False
-USE_UMPQ=True
+USE_UMPQ=False
 
 topologies = [
-#    "ring", 
-    "cluster", 
-    "mst", 
+#    "ring",
+    "cluster",
+    "mst",
     "bintree",
 #    "sequential", SK: Can't predict this very closely right now due to the write-buffer
     "badtree",
@@ -99,7 +99,7 @@ def arg_machine_class(string):
         return tomme.Tomme
     else:
         raise Exception('Unknown machine')
-    
+
 
 def arg_machine(machine_name):
     """

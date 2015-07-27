@@ -64,12 +64,17 @@ class Evaluate():
         """
         Evaluate the latency of sending an individual message along the tree
 
-        @param tree: Overlay as determined by simulator
+        @param tree (overlay) Overlay as determined by simulator
         @param m: Model representing machine
         @param sched: Scheduler for sending messages
 
         """
         import hybrid_model
+        import overlay
+
+        assert isinstance(topo, overlay.Overlay)
+        print 'Evaluate overlay', str(topo), 'using scheduler', str(sched), \
+            'tree is', str(topo.get_tree())
 
         assert len(topo.get_tree())==1 # Don't support evaluation for Hybrid models yet
         for l in topo.get_tree():

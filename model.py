@@ -19,9 +19,12 @@ class Model(object):
         """
         self.graph = graph
         try:
+            print 'Looking for measurements/coresenum_print_%s' % \
+                self.get_name()
             self.machine_topology = topology_parser.parse_coresenum(
-                open('../measurements/coresenum_print_%s' % self.get_name()))
+                open('measurements/coresenum_print_%s' % self.get_name()))
         except:
+            print 'Warning, did not find coresenum data for machine'
             self.machine_topology = None
             pass
 
