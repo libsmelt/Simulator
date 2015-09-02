@@ -210,9 +210,14 @@ class Overlay(object):
         
     @staticmethod
     def get_overlay(overlay_name, topo):
+        """
+        @param topo That seems to be the machine!
+        """
         import hybrid
 
-        if overlay_name.startswith('hybrid_'):
+        if overlay_name == 'shm':
+            r = hybrid.Hybrid(topo, None)
+        elif overlay_name.startswith('hybrid_'):
             e = overlay_name.split('_')
             print 'Detected hybrid model with base class', e[1]
             r_mp_class = Overlay.get_overlay_class(e[1])

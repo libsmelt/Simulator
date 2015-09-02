@@ -16,6 +16,7 @@ class Hybrid(overlay.Overlay):
         """
         Initialize hybrid model
 
+        @param mod The machine model
         @param mp_topology Topology class to use for global
         communication. This needs to be initialized somewhere.
 
@@ -24,7 +25,23 @@ class Hybrid(overlay.Overlay):
         self.shm = []
         self.mp_topology = mp_topology
 
-        if self.mod.machine_topology:
+        self.do_shm = not self.mp_topology
+        self.root = -1
+
+        if self.do_shm:
+
+            # There is no message passing tree
+            self.mp_tree = None
+            self.mp_tree_topo = None
+
+            # choose first core to be sender - this ensures that the
+            # sender's core ID is valid
+            self.root = mod.get_cores()[0]
+            self.shm.append(ShmSpmc(self.root,
+                                    mod.get_cores(),
+                                    None))
+
+        elif self.mod.machine_topology:
 
             g = digraph()
 
@@ -69,18 +86,23 @@ class Hybrid(overlay.Overlay):
             # run mp_topology on the entire graph. This essentially
             # corresponds to using a MP-only based implementation.
 
-            raise Exception("Not supported!")
+            raise Exception("coresenum missing for this machine, aborting!")
 
     def _get_broadcast_tree(self):
         """
         Generate a hybrid broadcast topology
 
         """
-        
-        return self.shm + [ hybrid_model.MPTree(self.mp_tree_topo, self.mp_tree) ]
+        if self.do_shm:
+            return self.shm
+        else:
+            return self.shm + [ hybrid_model.MPTree(self.mp_tree_topo, self.mp_tree) ]
         
     def get_root_node(self):
-        return self.mp_tree.get_root_node()
+        if self.do_shm:
+            return self.root
+        else:
+            return self.mp_tree.get_root_node()
 
     def get_scheduler(self, graph):
         """
@@ -88,3 +110,7 @@ class Hybrid(overlay.Overlay):
         """
         print "get_scheduler for hybrid tree using %s" % str(self.mp_tree)
         return self.mp_tree.get_scheduler(self.mp_tree._get_broadcast_tree())
+
+    def get_name(self):
+        
+        return "Hybrid - " + self.mp_tree.get_name()

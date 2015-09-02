@@ -24,6 +24,10 @@ def _simulation_wrapper(ol, m, gr, multicast=False):
     Wrapper for simulationg machines
 
     @param ol - Topology to Simulate
+    @param m  - machine to run on
+
+
+    @return (r, evaluation, root, scheduler, instanceof(overlay))
 
     """
     print 'Simulating machine [%s] with topology [%s] - multicast %d' % \
@@ -59,43 +63,55 @@ def _simulation_wrapper(ol, m, gr, multicast=False):
     assert isinstance(hybmod_list, list)
 
     r_tmp = None
+    skip_mp = False
 
     # If this is a hybrid, consider only the MP part for evaluation
     if isinstance(r, hybrid.Hybrid):
         r_tmp = r
         r = r.mp_tree # Get the Overlay for the MP part of the evaluation
+        if not r:
+            skip_mp = True
         print 'MP topology is', str(r)
 
-    # XXX Special treatment of non-hybird models
-    mp_model = None
-    for tmp_model in hybmod_list:
-        if isinstance(tmp_model, hybrid_model.MPTree):
+    if not skip_mp:
 
-            assert not mp_model # Otherwise, we found to MP trees in
-                                # the hybrid model, which we don't
-                                # support ATM
+        # XXX Special treatment of non-hybird models
+        mp_model = None
+        for tmp_model in hybmod_list:
+            if isinstance(tmp_model, hybrid_model.MPTree):
 
-            mp_model = tmp_model
-            final_graph = mp_model.graph
-            mp_ol = mp_model.mp_ol
-            print 'Getting scheduler for topology', str(r), \
-                'graph is', str(final_graph), \
-                'overlay is', str(mp_ol)
+                assert not mp_model # Otherwise, we found to MP trees in
+                                    # the hybrid model, which we don't
+                                    # support ATM
 
-            # XXX r here is a class, and not an instance of the class
+                mp_model = tmp_model
+                final_graph = mp_model.graph
+                mp_ol = mp_model.mp_ol
+                print 'Getting scheduler for topology', str(r), \
+                    'graph is', str(final_graph), \
+                    'overlay is', str(mp_ol)
 
-            sched = r.get_scheduler(final_graph)
-    
-    if not mp_model:
-        raise Exception('XXX Do not know how to get scheduler for list of modules')
+                # XXX r here is a class, and not an instance of the class
 
-    # Evaluate the MP part
-    evaluation = evaluate.Evaluate()
-    ev = evaluation.evaluate(r, root, m, sched) # Fails - only evaluate MP part
+                sched = r.get_scheduler(final_graph)
+
+        if not mp_model:
+            raise Exception('XXX Do not know how to get scheduler for list of modules')
+
+        # Evaluate the MP part
+        evaluation = evaluate.Evaluate()
+        ev = evaluation.evaluate(r, root, m, sched) # Fails - only evaluate MP part
 
 
-    # Return result
-    if r_tmp:
-        r = r_tmp
-    return (r, ev, root, sched, r)
+        # Return result
+        if r_tmp:
+            r = r_tmp
+        return (r, ev, root, sched, r)
 
+    else:
+        from evaluate import Result
+        ev = Result(-1, m.get_cores()[-1], "SHM")
+        ev.time = -1
+        m.set_evaluation_result(ev)
+        import shm
+        return (r_tmp, ev, root, None, shm.Shm(m))

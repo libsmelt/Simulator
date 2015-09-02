@@ -125,13 +125,13 @@ def build_and_simulate():
                         const=True, help='Perfom multicast rather than broadcast')
     parser.add_argument('machine',
                         help="Machine to simulate")
-    parser.add_argument('overlay', 
+    parser.add_argument('overlay', nargs='+',
                         help="Overlay to use for atomic broadcast")
     parser.add_argument('--group', default=None,
                         help=("Coma separated list of node IDs that should be "
                               "part of the multicast group"))
     parser.add_argument('--debug', action='store_const', default=False, const=True)
-    
+
     try:
         config.args = parser.parse_args()
     except:
@@ -151,13 +151,34 @@ def build_and_simulate():
     # Switch main action
     # XXX Cleanup required
     if config.args.action == "simulate":
-        (topo, ev, root, sched, topology) = \
-            simulation._simulation_wrapper(config.args.overlay, m, gr, config.args.multicast)
-        hierarchies = topo.get_tree()
-        print "Cost for tree is: %d (%d), last node is %s" % (ev.time, ev.time_no_ab, ev.last_node)
-        # Output c configuration for quorum program
-        helpers.output_quorum_configuration(
-            m, hierarchies, root, sched, topology)
+        # Generate model headers
+        helpers.output_quroum_start(m, len(config.args.overlay))
+        all_last_nodes = []
+        model_descriptions = []
+        num_models = 0
+        # Generate representation of each topology
+        for _overlay in config.args.overlay:
+
+            # type(topology) = hybrid.Hybrid | binarytree.BinaryTree -- inherited from overlay.Overlay
+            (topo, ev, root, sched, topology) = \
+                simulation._simulation_wrapper(_overlay, m, gr, config.args.multicast)
+            hierarchies = topo.get_tree()
+
+            # Determine last node for this model
+            d = helpers.core_index_dict(m.graph.nodes())
+            all_last_nodes.append(d[m.evaluation.last_node])
+            
+            model_descriptions.append(topology.get_name())
+
+            print "Cost for tree is: %d (%d), last node is %s" % (ev.time, ev.time_no_ab, ev.last_node)
+            # Output c configuration for quorum program
+            helpers.output_quorum_configuration( \
+                        m, hierarchies, root, sched, topology, num_models)
+
+            num_models += 1
+
+        # Generate footer
+        helpers.output_quorum_end(all_last_nodes, model_descriptions)
         return 0
 
     elif config.args.action == 'ump-breakdown':
@@ -166,8 +187,9 @@ def build_and_simulate():
 
     elif config.args.action == "evaluate":
         print "Evaluating model"
+        assert len(config.args.overlay) == 1 # Currently only supported if only one overlay is given
         helpers.parse_and_plot_measurement(
-            range(m.get_num_cores()), config.args.machine, config.args.overlay, 
+            range(m.get_num_cores()), config.args.machine, config.args.overlay[0], 
             config.get_ab_machine_results(config.args.machine, config.args.overlay))
         return 0
 

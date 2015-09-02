@@ -41,6 +41,9 @@ from pygraph.classes.digraph import digraph
 from pygraph.readwrite.dot import write
 from pygraph.algorithms.minmax import shortest_path
 
+from model import Model
+from overlay import Overlay
+
 SHM_REGIONS_OFFSET=20
 SHM_SLAVE_START=50
 
@@ -61,13 +64,20 @@ def output_graph(graph, name, algorithm='neato'):
     gv.render(gvv, 'png', ('%s.png' % name))
 
 
-def output_quorum_configuration(model, hierarchies, root, sched, topo):
+F_MODEL='model.h'
+F_MODEL_DEFS='model_defs.h'
+
+def output_quorum_configuration(model, hierarchies, root, sched, topo, midx):
     """
     Output a C array representing overlay and scheduling
     @param hierarchies: List of HybridModules, each of which is responsible for
           sending messages for a group/cluster of cores
-
+    @param topology: instanceof(overlay.Overlay)
+    @param midx: index of the model currently generated
     """
+    assert isinstance(model, Model)
+    assert isinstance(topo, Overlay)
+
     import shm
 
     d = core_index_dict(model.graph.nodes())
@@ -91,17 +101,49 @@ def output_quorum_configuration(model, hierarchies, root, sched, topo):
             raise Error('Unsupported Hybrid Module')
 
     # Generate c code
-    stream = open("model.h", "w")
-    defstream = open("model_defs.h", "w")
+    stream = open(F_MODEL, "a")
+    __matrix_to_c(stream, mat, midx)
+
+def output_quroum_start(model, num_models):
+    """Output the header of the model files
+
+    @param model: see output_quorum_configuration 
+    """
+
+    stream = open(F_MODEL, "w")
+    defstream = open(F_MODEL_DEFS, "w")
     __c_header_model_defs(defstream,
-                          d[model.evaluation.last_node],
                           type(model),
-                          type(topo),
-                          len(mat))
+                          model.get_num_cores())
     __c_header_model(stream)
-    __matrix_to_c(stream, mat)
+
+    defstream.write('#define NUM_MODELS %d\n' % num_models)
+
+
+def output_quorum_end(all_last_nodes, model_descriptions):
+    """Output the footer of the model files
+
+    @param last_node: last node to receive a message - currently has
+    to be the same for all models
+    
+    @param model_description A string representation for each model
+
+    """
+    stream = open(F_MODEL, "a")
+    defstream = open(F_MODEL_DEFS, "a")
+   
+    defstream.write('#define ALL_LAST_NODES ((int[]) {%s})\n' % \
+                    ', '.join([ str(i) for i in all_last_nodes]))
+    defstream.write('#define LAST_NODE ALL_LAST_NODES[get_model_idx()]\n')
+
+    stream.write('int *model_combined[NUM_MODELS] = {%s};\n' % \
+                 ', '.join(['(int*) model%i' % i for i in range(len(model_descriptions))]))
+    stream.write('const char* model_names[NUM_MODELS] = {%s};\n' % \
+                 ', '.join(['"%s"' % s for s in model_descriptions]))
+
     __c_footer(stream)
     __c_footer(defstream)
+
 
 SEND_SHM_IDX=SHM_SLAVE_START
 def send_shm(module, mat, core_dict):
@@ -187,12 +229,12 @@ def fill_matrix(s, children, parent, mat, sched, core_dict, cost_dict=None):
         mat[core_dict[s]][core_dict[parent]] = 99
 
 
-def __matrix_to_c(stream, mat):
+def __matrix_to_c(stream, mat, midx):
     """
     Print given matrix as C
     """
     dim = len(mat)
-    stream.write("int model[MODEL_NUM_CORES][MODEL_NUM_CORES] = {\n")
+    stream.write("int model%d[MODEL_NUM_CORES][MODEL_NUM_CORES] = {\n" % midx)
     # x-axis labens
     stream.write(("//   %s\n" % ' '.join([ "%2d" % x for x in range(dim) ])))
     for x in range(dim):
@@ -212,12 +254,11 @@ def __c_header(stream, name):
     stream.write('#ifndef %s\n' % name)
     stream.write('#define %s 1\n\n' % name)
 
-def __c_header_model_defs(stream, last_node, machine, topology, dim):
+def __c_header_model_defs(stream, machine, dim):
     __c_header(stream, 'MULTICORE_MODEL_DEFS')
     stream.write('#define MACHINE "%s"\n' % machine)
-    stream.write('#define TOPOLOGY "%s"\n' % topology)
-    stream.write('#define LAST_NODE %d\n' % last_node)
     stream.write("#define MODEL_NUM_CORES %d\n\n" % dim)
+    stream.write('#define TOPOLOGY "multi-model"\n')
 
     stream.write('#define SHM_SLAVE_START %d\n' % SHM_SLAVE_START)
     stream.write('#define SHM_SLAVE_MAX %d\n' % 

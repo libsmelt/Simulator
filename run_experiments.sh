@@ -1,10 +1,12 @@
 #!/bin/bash
 
 MODEL=model.h
+MODEL_DEFS=model_defs.h
 BFDIR=/mnt/local/skaestle/bf.quorum/
 QDIR=$BFDIR/usr/quorum/
 TMP=`mktemp`
-PATTERN="Quorum.*everything done.*exiting"
+PATTERN="All experiments done, exiting"
+HOSTNAME=emmentaler2.ethz.ch
 
 # --------------------------------------------------
 
@@ -19,8 +21,6 @@ function usage() {
     exit 1
 }
 
-[[ -d $BFDIR ]] || error "Barrelfish directory does not exist"
-[[ -d $QDIR ]] || error "Quorum application not found"
 [[ -n "$1" ]] || usage
 
 # --------------------------------------------------
@@ -37,7 +37,7 @@ EOF
 # --------------------------------------------------
 function wait_result() {
 
-	m=$1
+	m=$1 # For reboots
 	i=0
 	j=0
 
@@ -48,29 +48,42 @@ function wait_result() {
 		sleep 2
 		i=$(($i+1))
 
-		if [[ $i -ge 300 ]]
-		then
-			echo "Timeout, restarting machine"
-			rackpower -r $m
-			i=0
-			j=$(($j+1))
-			if [[ $j -ge 10 ]]
-			then
-				echo "Aborting machine restarts after 10 tries"
-				exit 1
-			fi
-		fi
+		# if [[ $i -ge 300 ]]
+		# then
+		# 	echo "Timeout, restarting machine"
+		# 	rackpower -r $m
+		# 	i=0
+		# 	j=$(($j+1))
+		# 	if [[ $j -ge 10 ]]
+		# 	then
+		# 		echo "Aborting machine restarts after 10 tries"
+		# 		exit 1
+		# 	fi
+		# fi
     done
 }
+
+function ctrl_c() {
+    echo "** Trapped CTRL-C"
+	echo "^c^e." > $FIFO
+
+	sleep 2
+
+    exit 0
+}
+
+FIFO=`mktemp`
+mkfifo $FIFO
+trap ctrl_c INT
 
 # main
 # --------------------------------------------------
 for m in $@
 do
-    for t in mst cluster adaptivetree bintree sequential badtree
+    for t in "shm hybrid_bintree bintree adaptivetree cluster" #mst cluster adaptivetree bintree sequential badtree
     do
 	# Cleanup
-	rm -f $MODEL
+	rm -f $MODEL $MODEL_DEFS
 	echo "" >$TMP
 
 	# Run the simulator
@@ -84,10 +97,11 @@ do
 	fi
 
 	# Copy the model
-	cp $MODEL $QDIR
+	scp $MODEL emmentaler2.ethz.ch:$QDIR
+	scp $MODEL_DEFS emmentaler2.ethz.ch:$QDIR
 
 	# Compile the program
-	ssh emmentaler2.ethz.ch emntlr_make_generic $BFDIR
+	ssh emmentaler2.ethz.ch /home/skaestle/bin/eth/emntlr_make_generic $BFDIR
 	if [ $? -ne 0 ]
 	then
 	    echo "Compilation failed, exiting"
@@ -95,23 +109,24 @@ do
 	fi
 
 	# Run the machine
-	console $m >$TMP & # Start console process ..
-	PID=$! # .. and get PID
-	ps -p $PID
-	rackboot.sh $m # Reboot the machine
+	echo "Writing to tmp file: $TMP"
+	bfrack console $m >$TMP <$FIFO & # Start console process ..
+	PID=$!;	ps -p $PID
+	bfrack boot $m # Reboot the machine
 	wait_result $m # Wait for result
-	kill $PID # Kill console process
-	ps -p $PID
 
 	echo "Benchmark terminating"
 
-	# Copy result
-	touch $TMP
-	RESULT=$(get_result_file $m $t)
-	cp -b $TMP ${RESULT}_flounder
+	# # Copy result
+	# touch $TMP
+	# RESULT=$(get_result_file $m $t)
+	# cp -b $TMP ${RESULT}_flounder
+
 	rm $TMP
 
 #	./simulator.py --evaluate-model $m $t
+
+	ctrl_c
     done
 done
 

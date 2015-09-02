@@ -2,16 +2,16 @@
 
 import sys
 
-sys.path.append('/home/skaestle/bf/quorum/tools/harness')
-sys.path.append('/home/skaestle/bf/quorum/tools/harness/tests')
-sys.path.append('/home/skaestle/bf/quorum/tools/harness/machines')
+sys.path.append('/home/skaestle/bf/git/tools/harness')
+sys.path.append('/home/skaestle/bf/git/tools/harness/tests')
+sys.path.append('/home/skaestle/bf/git/tools/harness/machines')
 
 # from eth_machinedata import machines
 
 # for (key, m) in machines.items():
 #     print '%s -> %s' % (key, m.get('machine_name'))
 
-import ump_latency
+import rpctests
 import results
 
 l = ump_latency.UMPLatency(None)
