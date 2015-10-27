@@ -1,0 +1,12 @@
+ubuntu [16 CPUs]
+  NUMA 0 -> Package 0 -> Cache level 3 [Unified size:8192K ways:16] [8 CPUs]
+    Cache level 2 [Unified size:256K ways:8] -> Cache level 1 [Instruction size:32K ways:4] -> Cache level 0 [Data size:32K ways:8] -> Core [2 CPUs]
+    Cache level 2 [Unified size:256K ways:8] -> Cache level 1 [Instruction size:32K ways:4] -> Cache level 0 [Data size:32K ways:8] -> Core [2 CPUs]
+    Cache level 2 [Unified size:256K ways:8] -> Cache level 1 [Instruction size:32K ways:4] -> Cache level 0 [Data size:32K ways:8] -> Core [2 CPUs]
+    Cache level 2 [Unified size:256K ways:8] -> Cache level 1 [Instruction size:32K ways:4] -> Cache level 0 [Data size:32K ways:8] -> Core [2 CPUs]
+  NUMA 1 -> Package 1 -> Cache level 3 [Unified size:8192K ways:16] [8 CPUs]
+    Cache level 2 [Unified size:256K ways:8] -> Cache level 1 [Instruction size:32K ways:4] -> Cache level 0 [Data size:32K ways:8] -> Core [2 CPUs]
+    Cache level 2 [Unified size:256K ways:8] -> Cache level 1 [Instruction size:32K ways:4] -> Cache level 0 [Data size:32K ways:8] -> Core [2 CPUs]
+    Cache level 2 [Unified size:256K ways:8] -> Cache level 1 [Instruction size:32K ways:4] -> Cache level 0 [Data size:32K ways:8] -> Core [2 CPUs]
+    Cache level 2 [Unified size:256K ways:8] -> Cache level 1 [Instruction size:32K ways:4] -> Cache level 0 [Data size:32K ways:8] -> Core [2 CPUs]
+
