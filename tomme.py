@@ -17,10 +17,8 @@ class Tomme(numa_model.NUMAModel):
         """
         g = super(Tomme, self)._build_graph()
         super(Tomme, self).__init__(g)
-        super(Tomme, self)._parse_receive_result_file(
-            'measurements/receive_%s' % self.get_name())
-        super(Tomme, self)._parse_send_result_file(
-            'measurements/send_%s' % self.get_name())
+        super(Tomme, self)._parse_receive_result_file()
+        super(Tomme, self)._parse_send_result_file()
 
     # --------------------------------------------------
     # Characteritics of model

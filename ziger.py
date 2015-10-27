@@ -16,10 +16,8 @@ class Ziger(numa_model.NUMAModel):
         """
         g = super(Ziger, self)._build_graph()
         super(Ziger, self).__init__(g)
-        super(Ziger, self)._parse_receive_result_file(
-            'measurements/receive_%s' % self.get_name())
-        super(Ziger, self)._parse_send_result_file(
-            'measurements/send_%s' % self.get_name())
+        super(Ziger, self)._parse_receive_result_file()
+        super(Ziger, self)._parse_send_result_file()
         
     # --------------------------------------------------
     # Characteritics of model

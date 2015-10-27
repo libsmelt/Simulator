@@ -17,10 +17,8 @@ class Gruyere(numa_model.NUMAModel):
         """
         g = super(Gruyere, self)._build_graph()
         super(Gruyere, self).__init__(g)
-        super(Gruyere, self)._parse_receive_result_file(
-            'measurements/receive_%s' % self.get_name())
-        super(Gruyere, self)._parse_send_result_file(
-            'measurements/send_%s' % self.get_name())
+        super(Gruyere, self)._parse_receive_result_file()
+        super(Gruyere, self)._parse_send_result_file()
 
     def get_send_cost(self, src, dest):
         return super(Gruyere, self)._get_send_cost(src, dest)

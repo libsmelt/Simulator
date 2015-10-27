@@ -1,2 +1,4 @@
 *.pyc
-*~
+*~measurements/*
+measurements_nosymlink/*
+measurements_nosymlink/*

@@ -106,16 +106,16 @@ class NUMAModel(model.Model):
         return g_numa
 
 
-    def _parse_receive_result_file(self, fname):
+    def _parse_receive_result_file(self):
         """
         Parse pairwise receive cost results measure with the UMP receive
         benchmark in the Barrelfish tree.
 
         We then use these measurements for the receive cost in the simulator
-        @param f: Handle to results.dat file of UMP receive benchmark
 
         """
-        fname = fname + config.result_suffix()
+        fname = '%s/%s/pairwise_receive' % \
+                (config.MACHINE_DATABASE, self.get_name())
         f = open(fname)
         assert not self.recv_cost
         for l in f.readlines():
@@ -129,16 +129,16 @@ class NUMAModel(model.Model):
                 assert (src, dest) not in self.recv_cost
                 self.recv_cost[(src, dest)] = cost
 
-    def _parse_send_result_file(self, fname):
+    def _parse_send_result_file(self):
         """
         Parse pairwise send cost results measure with the UMP send
         benchmark in the Barrelfish tree.
 
         We then use these measurements for the send cost in the simulator
-        @param f: Handle to results.dat file of UMP send benchmark
 
         """
-        fname = fname + config.result_suffix()
+        fname = '%s/%s/pairwise_send' % \
+                (config.MACHINE_DATABASE, self.get_name())
         f = open(fname)
         assert not self.send_cost
         for l in f.readlines():

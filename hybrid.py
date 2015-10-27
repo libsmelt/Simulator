@@ -86,7 +86,7 @@ class Hybrid(overlay.Overlay):
             # run mp_topology on the entire graph. This essentially
             # corresponds to using a MP-only based implementation.
 
-            raise Exception("coresenum missing for this machine, aborting!")
+            raise Exception("Machine [%s] not in database, aborting!" % self.mod.name)
 
     def _get_broadcast_tree(self):
         """

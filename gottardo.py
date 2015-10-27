@@ -16,10 +16,8 @@ class Gottardo(numa_model.NUMAModel):
         """
         g = super(Gottardo, self)._build_graph()
         super(Gottardo, self).__init__(g)
-        super(Gottardo, self)._parse_receive_result_file(
-            'measurements/receive_%s' % self.get_name())
-        super(Gottardo, self)._parse_send_result_file(
-            'measurements/send_%s' % self.get_name())
+        super(Gottardo, self)._parse_receive_result_file()
+        super(Gottardo, self)._parse_send_result_file()
 
     # --------------------------------------------------
     # Characteritics of model

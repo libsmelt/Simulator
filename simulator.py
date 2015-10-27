@@ -298,5 +298,6 @@ def build_and_simulate():
         helpers.run_pdflatex(fname)
 
 if __name__ == "__main__":
+
     sys.excepthook = helpers.info
     build_and_simulate()

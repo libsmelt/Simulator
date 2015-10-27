@@ -18,11 +18,8 @@ class Sbrinz(numa_model.NUMAModel):
         g = super(Sbrinz, self)._build_graph()
         super(Sbrinz, self).__init__(g)
 
-        r = 'measurements/receive_sbrinz'
-        s = 'measurements/send_sbrinz'
-
-        numa_model.NUMAModel._parse_receive_result_file(self, r)
-        numa_model.NUMAModel._parse_send_result_file(self, s)
+        numa_model.NUMAModel._parse_receive_result_file(self)
+        numa_model.NUMAModel._parse_send_result_file(self)
 
     # --------------------------------------------------
     # Characteritics of model

@@ -1,6 +1,8 @@
 # Copyright (c) 2007, 2008, 2009, 2010, 2011, 2012, 2013 ETH Zurich.
 # This is meant to hold all sort of configuration options
 
+import os
+
 SCHEDULING_SORT=True
 SCHEDULING_SORT_ID=False
 SCHEDULING_SORT_LONGEST_PATH=False
@@ -26,6 +28,9 @@ machines = [
 #    'gottardo',
     'appenzeller'
     ]
+
+# Path to the machine database.
+MACHINE_DATABASE=os.getenv('HOME') + '/projects/netos-machine-hardware-information'
 
 def result_suffix():
     return _result_suffix(USE_UMP_NUMA, USE_UMPQ)
