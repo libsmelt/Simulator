@@ -90,7 +90,7 @@ def _simulation_wrapper(ol, m, gr, multicast=False):
                 print 'Getting scheduler for topology', str(r), \
                     'graph is', str(final_graph), \
                     'overlay is', str(mp_ol)
-
+                
                 # XXX r here is a class, and not an instance of the class
 
                 sched = r.get_scheduler(final_graph)

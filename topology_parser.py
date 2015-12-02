@@ -2,6 +2,7 @@ from string import lstrip
 import re
 import os
 import config
+import StringIO
 
 resources = [ 'Cache level 0',
               'Cache level 1',
@@ -50,8 +51,21 @@ class Resource(object):
     def get(self):
         return self.all
 
+    
+def _parse_line(cpuid, match):
+    """Search a line with the content <match>: <value> in the given
+    StringIO instance and return <value>
 
-   
+    """
+    cpuid.seek(0)
+    for l in cpuid.readlines():
+        m = re.match('^(%s.*):\s+(\S+)' % match, l)
+        if m:
+            return (m.group(1), m.group(2))
+
+    return (None, None)
+
+
 def parse_machine_db(machine):
     '''Returns a dictionary of lists of lists with cores sharing the same
     instance of the resource indicated by the dictionary key
@@ -61,6 +75,7 @@ def parse_machine_db(machine):
     curr_res = None # Current resource
 
     stream = open('%s/%s/likwid.txt' % (config.MACHINE_DATABASE, machine))
+
     for l in stream.readlines():
 
         # Find sockets
@@ -79,19 +94,28 @@ def parse_machine_db(machine):
             res[curr_res].add_clusters(m.group(1).split(') ('))
 
     stream.close()
-    stream = open('%s/%s/lscpu.txt' % (config.MACHINE_DATABASE, machine))
 
-    for l in stream.readlines():
+    stream = open('%s/%s/lscpu.txt' % (config.MACHINE_DATABASE, machine))
+    lscpu = StringIO.StringIO(stream.read())
+    stream.close()
+
+    for l in lscpu:
 
         # Find NUMA node
-        m = re.match('^NUMA node\d+ CPU\(s\):\s+([0-9,]*)', l)
+        m = re.match('^NUMA node\d+ CPU\(s\):\s+([0-9,\-]*)', l)
         if m:
-            c = m.group(1).split(',')
-            res['NUMA'].add_cluster(c)
+            cores = m.group(1)
+            if '-' in cores:
+                (s, e) = cores.split('-')
+                res['NUMA'].add_cluster(range(int(s), int(e)+1))
+            else:
+                c = cores.split(',')
+                res['NUMA'].add_cluster(c)
             
     for r in res.values():
         r.pr()
 
+    res['numcpus'] = int(_parse_line(lscpu, 'CPU\(s\)')[1])
             
     return res
 

@@ -91,18 +91,21 @@ class Overlay(object):
         tree in broadcast_tree
         """
         if self.tree is None:
+
+            print "Generating model"
             
             # Get tree
             tmp = self._get_broadcast_tree()
+            
+            # Debug output of tree
+            fname = '%s_%s' % (self.mod.get_name(), self.get_name())
+            helpers.output_clustered_graph(tmp, fname, self.mod.get_numa_information())
 
             if isinstance(tmp, graph) or isinstance(tmp, digraph):
                 import hybrid_model
                 self.tree = [ hybrid_model.MPTree(tmp, self) ]
-            elif isinstance(tmp, list):
 
-                # # Debug output of tree
-                # fname = '%s_%s' % (self.mod.get_name(), self.get_name())
-                # helpers.output_graph(tmp, fname, 'dot')
+            elif isinstance(tmp, list):
 
                 self.tree = tmp
             else:

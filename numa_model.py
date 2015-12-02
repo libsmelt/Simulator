@@ -11,17 +11,12 @@ from pygraph.algorithms.minmax import shortest_path
 # --------------------------------------------------
 class NUMAModel(model.Model):
 
+    # Graph representing the NUMA structure of a machine
+    g_numa = None
+    
     def __init__(self, g):
 
         super(NUMAModel, self).__init__(g)
-
-        # Dictionary for receive costs
-        # key is (src, dest), value is the cost in cycles/10
-        self.recv_cost = {}
-
-        # Dictionary for send costs
-        # key is (src, dest), value is the cost in cycles/10
-        self.send_cost = {}
 
 
     # --------------------------------------------------
@@ -44,6 +39,14 @@ class NUMAModel(model.Model):
     # --------------------------------------------------
 
     def _build_numa_graph(self):
+        """Build a graph representing the NUMA topology of the machine.
+
+        This graph is used to calculate cost for fully-meshed machine
+        model.
+
+        This graph expresses the cost of sending messages between NUMA
+        nodes.
+        """
         return None
 
 
@@ -52,6 +55,10 @@ class NUMAModel(model.Model):
         Build a graph model for a NUMA machine
         """
         self.g_numa = self._build_numa_graph()
+
+        if not self.g_numa:
+            return
+            
         helpers.output_graph(self.g_numa, '%s_numa' % self.get_name())
 
         gr = graph()
@@ -106,70 +113,3 @@ class NUMAModel(model.Model):
         return g_numa
 
 
-    def _parse_receive_result_file(self):
-        """
-        Parse pairwise receive cost results measure with the UMP receive
-        benchmark in the Barrelfish tree.
-
-        We then use these measurements for the receive cost in the simulator
-
-        """
-        fname = '%s/%s/pairwise_receive' % \
-                (config.MACHINE_DATABASE, self.get_name())
-        f = open(fname)
-        assert not self.recv_cost
-        for l in f.readlines():
-            l = l.rstrip()
-            m = re.match('(\d+)\s+(\d+)\s+([0-9.]+)\s+([0-9.]+)', l)
-            if m:
-                (src, dest, cost, stderr) = (int(m.group(1)), 
-                                             int(m.group(2)),
-                                             float(m.group(3)),
-                                             float(m.group(4)))
-                assert (src, dest) not in self.recv_cost
-                self.recv_cost[(src, dest)] = cost
-
-    def _parse_send_result_file(self):
-        """
-        Parse pairwise send cost results measure with the UMP send
-        benchmark in the Barrelfish tree.
-
-        We then use these measurements for the send cost in the simulator
-
-        """
-        fname = '%s/%s/pairwise_send' % \
-                (config.MACHINE_DATABASE, self.get_name())
-        f = open(fname)
-        assert not self.send_cost
-        for l in f.readlines():
-            l = l.rstrip()
-            m = re.match('(\d+)\s+(\d+)\s+([0-9.]+)\s+([0-9.]+)', l)
-            if m:
-                (src, dest, cost, stderr) = (int(m.group(1)), 
-                                             int(m.group(2)),
-                                             float(m.group(3)),
-                                             float(m.group(4)))
-                assert (src, dest) not in self.send_cost
-                self.send_cost[(src, dest)] = cost
-
-
-    def _get_receive_cost(self, src, dest):
-        """
-        Return the receive cost for a pair (src, dest) of cores
-        
-        """
-        if (src==dest):
-            return 0
-        assert (src, dest) in self.recv_cost
-        return self.recv_cost[(src, dest)]
-
-
-    def _get_send_cost(self, src, dest):
-        """
-        Return the send cost for a pair (src, dest) of cores
-        
-        """
-        if (src==dest):
-            return 0
-        assert (src, dest) in self.send_cost
-        return self.send_cost[(src, dest)]

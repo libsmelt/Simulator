@@ -41,16 +41,40 @@ from pygraph.classes.digraph import digraph
 from pygraph.readwrite.dot import write
 from pygraph.algorithms.minmax import shortest_path
 
+# For printing clusters
+import networkx as nx
+
 from model import Model
 from overlay import Overlay
 
 SHM_REGIONS_OFFSET=20
 SHM_SLAVE_START=50
 
+def output_clustered_graph(graph, name, clustering):
+    
+    # Create AGraph via networkx
+    G = nx.DiGraph()
+    G.add_nodes_from(graph.nodes())
+    G.add_edges_from(graph.edges())
+
+    A = nx.to_agraph(G)
+
+    clist = [ 'red', 'green', 'blue', 'orange', 'grey', 'yellow' ]
+    
+    i = 0
+    for c in clustering:
+        A.add_subgraph(c, name='cluster_%d' % i, color=clist[i % len(clist)])
+        i += 1
+
+    name = 'graphs/%s.png' % name
+    A.draw(name, prog="dot")
+
+
 def output_graph(graph, name, algorithm='neato'):
     """
     Output the graph as png image and also as text file
     @param name Name of the file to write to
+
     """
     dot = write(graph, True)
     gvv = gv.readstring(dot)

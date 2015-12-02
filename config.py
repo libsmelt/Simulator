@@ -72,7 +72,10 @@ def get_machine_result_suffix(flounder, umpq):
 
 
 def translate_machine_name(n):
-    return ''.join([i for i in n if not i.isdigit()])
+    """Remove digits from machine name unless machine is a sgs machine
+    """
+    return n if n.startswith('sgs') else \
+        ''.join([i for i in n if not i.isdigit()])
 
 
 def arg_machine_class(string):

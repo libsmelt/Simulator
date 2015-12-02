@@ -75,7 +75,11 @@ def arg_machine_class(string):
     elif string == 'tomme':
         return tomme.Tomme
     else:
-        raise Exception('Unknown machine')
+        if string in netos_machine.get_list():
+            print "This is a Net OS machine"
+            return netos_machine.NetosMachine
+        else:
+            raise Exception('Unknown machine %s' % string)
     
 
 def arg_machine(machine_name):
@@ -101,7 +105,8 @@ def build_and_simulate():
     # XXX The arguments are totally broken. Fix them!
     parser = argparse.ArgumentParser(
         description=('Simulator for multicore machines. The default action is '
-        'to simulate the given combination of topology and machine'))
+                     'to simulate the given combination of topology and machine. '
+                     'Available machines: %s' % ', '.join(config.machines) ))
     parser.add_argument('--evaluate-model', dest="action", action="store_const",
                         const="evaluate", default="simulate", 
                         help="Dump machine model instead of simulating")
@@ -299,5 +304,11 @@ def build_and_simulate():
 
 if __name__ == "__main__":
 
+    import netos_machine
+    import config
+
+    # Append NetOS machines
+    config.machines += netos_machine.get_list()
+    
     sys.excepthook = helpers.info
     build_and_simulate()
