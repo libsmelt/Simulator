@@ -63,7 +63,6 @@ def output_graph(graph, name, algorithm='neato'):
     gv.layout(gvv, algorithm)
     gv.render(gvv, 'png', ('%s.png' % name))
 
-
 F_MODEL='model.h'
 F_MODEL_DEFS='model_defs.h'
 
@@ -117,7 +116,7 @@ def output_quroum_start(model, num_models):
                           model.get_num_cores())
     __c_header_model(stream)
 
-    defstream.write('#define NUM_MODELS %d\n' % num_models)
+    defstream.write('#define NUM_TOPOS %d\n' % num_models)
 
 
 def output_quorum_end(all_last_nodes, model_descriptions):
@@ -134,11 +133,11 @@ def output_quorum_end(all_last_nodes, model_descriptions):
    
     defstream.write('#define ALL_LAST_NODES ((int[]) {%s})\n' % \
                     ', '.join([ str(i) for i in all_last_nodes]))
-    defstream.write('#define LAST_NODE ALL_LAST_NODES[get_model_idx()]\n')
+    defstream.write('#define LAST_NODE ALL_LAST_NODES[get_topo_idx()]\n')
 
-    stream.write('int *model_combined[NUM_MODELS] = {%s};\n' % \
-                 ', '.join(['(int*) model%i' % i for i in range(len(model_descriptions))]))
-    stream.write('const char* model_names[NUM_MODELS] = {%s};\n' % \
+    stream.write('int *topo_combined[NUM_TOPOS] = {%s};\n' % \
+                 ', '.join(['(int*) topo%i' % i for i in range(len(model_descriptions))]))
+    stream.write('const char* topo_names[NUM_TOPOS] = {%s};\n' % \
                  ', '.join(['"%s"' % s for s in model_descriptions]))
 
     __c_footer(stream)
@@ -234,7 +233,7 @@ def __matrix_to_c(stream, mat, midx):
     Print given matrix as C
     """
     dim = len(mat)
-    stream.write("int model%d[MODEL_NUM_CORES][MODEL_NUM_CORES] = {\n" % midx)
+    stream.write("int topo%d[TOPO_NUM_CORES][TOPO_NUM_CORES] = {\n" % midx)
     # x-axis labens
     stream.write(("//   %s\n" % ' '.join([ "%2d" % x for x in range(dim) ])))
     for x in range(dim):
@@ -257,7 +256,7 @@ def __c_header(stream, name):
 def __c_header_model_defs(stream, machine, dim):
     __c_header(stream, 'MULTICORE_MODEL_DEFS')
     stream.write('#define MACHINE "%s"\n' % machine)
-    stream.write("#define MODEL_NUM_CORES %d\n\n" % dim)
+    stream.write("#define TOPO_NUM_CORES %d\n\n" % dim)
     stream.write('#define TOPOLOGY "multi-model"\n')
 
     stream.write('#define SHM_SLAVE_START %d\n' % SHM_SLAVE_START)
