@@ -47,11 +47,21 @@ import networkx as nx
 from model import Model
 from overlay import Overlay
 
+class bcolors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+
 SHM_REGIONS_OFFSET=20
 SHM_SLAVE_START=50
 
 def output_clustered_graph(graph, name, clustering):
-    
+
     # Create AGraph via networkx
     G = nx.DiGraph()
     G.add_nodes_from(graph.nodes())
@@ -60,7 +70,7 @@ def output_clustered_graph(graph, name, clustering):
     A = nx.to_agraph(G)
 
     clist = [ 'red', 'green', 'blue', 'orange', 'grey', 'yellow' ]
-    
+
     i = 0
     for c in clustering:
         A.add_subgraph(c, name='cluster_%d' % i, color=clist[i % len(clist)])
@@ -108,7 +118,7 @@ def output_quorum_configuration(model, hierarchies, root, sched, topo, midx):
 
     dim = model.get_num_cores()
     mat = [[0 for x in xrange(dim)] for x in xrange(dim)]
-    
+
     import hybrid_model
 
     # Build the matrix
@@ -130,7 +140,7 @@ def output_quorum_configuration(model, hierarchies, root, sched, topo, midx):
 def output_quroum_start(model, num_models):
     """Output the header of the model files
 
-    @param model: see output_quorum_configuration 
+    @param model: see output_quorum_configuration
     """
 
     stream = open(F_MODEL, "w")
@@ -148,13 +158,13 @@ def output_quorum_end(all_last_nodes, model_descriptions):
 
     @param last_node: last node to receive a message - currently has
     to be the same for all models
-    
+
     @param model_description A string representation for each model
 
     """
     stream = open(F_MODEL, "a")
     defstream = open(F_MODEL_DEFS, "a")
-   
+
     defstream.write('#define ALL_LAST_NODES ((int[]) {%s})\n' % \
                     ', '.join([ str(i) for i in all_last_nodes]))
     defstream.write('#define LAST_NODE ALL_LAST_NODES[get_topo_idx()]\n')
@@ -284,9 +294,9 @@ def __c_header_model_defs(stream, machine, dim):
     stream.write('#define TOPOLOGY "multi-model"\n')
 
     stream.write('#define SHM_SLAVE_START %d\n' % SHM_SLAVE_START)
-    stream.write('#define SHM_SLAVE_MAX %d\n' % 
+    stream.write('#define SHM_SLAVE_MAX %d\n' %
                  (SHM_SLAVE_START + SHM_REGIONS_OFFSET - 1))
-    stream.write('#define SHM_MASTER_START %d\n' % 
+    stream.write('#define SHM_MASTER_START %d\n' %
                  (SHM_SLAVE_START + SHM_REGIONS_OFFSET));
     stream.write('#define SHM_MASTER_MAX %d\n' %
                  (SHM_SLAVE_START + SHM_REGIONS_OFFSET + SHM_REGIONS_OFFSET - 1));
@@ -603,11 +613,11 @@ def plot_machine_results(machine, res_measurement, res_sim):
     xlabels = ','.join([ l for (l, v) in res_sim ])
     args = [ 'ybar', 'ymin=0', 'symbolic x coords={%s}' % xlabels, 'xtick=data',
              'error bars/y dir=both', 'error bars/y explicit',
-             'legend style={ at={(0.5,1.03)}, anchor=south }', 
+             'legend style={ at={(0.5,1.03)}, anchor=south }',
              'legend columns=2' ]
 
     plotname = "%02d%02d%02d" % (now.year, now.month, now.day)
-    _pgf_plot_header(f, plotname, 'topology results for %s' % machine, 
+    _pgf_plot_header(f, plotname, 'topology results for %s' % machine,
                      'topology', 'cost [cycles]', args)
 
     minhw = min([x for (_, x, _) in res_measurement])

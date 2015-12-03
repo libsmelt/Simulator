@@ -13,11 +13,12 @@ from pygraph.classes.digraph import digraph
 
 # --------------------------------------------------
 class SchedAdaptive(scheduling.Scheduling):
-    """
-    Scheduler supporting dynamic creation of broadcast tree
-
+    """Scheduler supporting dynamic creation of broadcast tree
     """
 
+    """I think this stores all outgoing connections (s, r) for each node,
+    that are used in the schedule
+    """
     store = dict()
 
     def __init__(self, graph, mod):
@@ -44,7 +45,7 @@ class SchedAdaptive(scheduling.Scheduling):
 
         @param sending_node Sending node for which to determine scheduling
         @param active_nodes List of active nodes
-        @return A list containing all inactive nodes
+        @return A list containing all inactive nodes sorted by cost
 
         """
         assert active_nodes is not None

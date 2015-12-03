@@ -33,7 +33,7 @@ class Model(object):
             self.machine_topology = None
             pass
 
-        
+
     # --------------------------------------------------
     # Characteritics of model
     def get_name(self):
@@ -46,6 +46,7 @@ class Model(object):
         return None
 
     def get_cores_per_node(self):
+        print helpers.bcolors.WARNING + "Warning: Deprecated?" + helpers.bcolors.ENDC
         assert self.get_num_numa_nodes() is not None # Should be overriden in childs
         if self.get_num_numa_nodes()>0:
             return self.get_num_cores() / self.get_num_numa_nodes()
@@ -54,9 +55,11 @@ class Model(object):
 
     # Transport cost
     def get_cost_within_numa(self):
+        print helpers.bcolors.WARNING + "Warning: Deprecated?" + helpers.bcolors.ENDC
         return 1
 
     def get_cost_across_numa(self):
+        print helpers.bcolors.WARNING + "Warning: Deprecated?" + helpers.bcolors.ENDC
         return 10
 
     # Node processing cost
@@ -69,15 +72,15 @@ class Model(object):
         invalid) cache-line in the local cache with the updates
         version in the senders cache.
         """
-        return 25
+        return self._get_receive_cost(src, dest)
 
     def get_send_cost(self, src, dest):
         """
         The cost of the send operation (e.g. to work to done on the
         sending node) when sending a message to core dest
         """
-        return 25
-    
+        return self._get_send_cost(src, dest)
+
     def get_numa_information(self):
         """
         Return information on NUMA nodes. This is a a list of
@@ -139,12 +142,12 @@ class Model(object):
         Determine NUMA node for the given core
         """
         return core1 / self.get_cores_per_node()
-        
+
     # --------------------------------------------------
 
     def _add_numa(self, graph, node1, node2, cost):
         """
-        Wrapper function to add edges between two NUMA nodes. 
+        Wrapper function to add edges between two NUMA nodes.
         """
         n1 = node1*self.get_cores_per_node()
         n2 = node2*self.get_cores_per_node()
@@ -168,7 +171,7 @@ class Model(object):
                          (src, len(cost)))
         for trg in range(len(cost)):
             if src!=trg:
-                self._add_numa(g, src, trg, 
+                self._add_numa(g, src, trg,
                                cost[trg]*self.get_cost_across_numa())
 
     def _connect_numa_internal(self, graph, numa_node):
@@ -201,7 +204,7 @@ class Model(object):
             l = l.rstrip()
             m = re.match('(\d+)\s+(\d+)\s+([0-9.]+)\s+([0-9.]+)', l)
             if m:
-                (src, dest, cost, stderr) = (int(m.group(1)), 
+                (src, dest, cost, stderr) = (int(m.group(1)),
                                              int(m.group(2)),
                                              float(m.group(3)),
                                              float(m.group(4)))
@@ -224,7 +227,7 @@ class Model(object):
             l = l.rstrip()
             m = re.match('(\d+)\s+(\d+)\s+([0-9.]+)\s+([0-9.]+)', l)
             if m:
-                (src, dest, cost, stderr) = (int(m.group(1)), 
+                (src, dest, cost, stderr) = (int(m.group(1)),
                                              int(m.group(2)),
                                              float(m.group(3)),
                                              float(m.group(4)))
@@ -235,9 +238,9 @@ class Model(object):
     def _get_receive_cost(self, src, dest):
         """
         Return the receive cost for a pair (src, dest) of cores
- 
+
         This is the cost on dest to receive a message from src.
-       
+
         """
         if (src==dest):
             return 0
@@ -248,10 +251,9 @@ class Model(object):
     def _get_send_cost(self, src, dest):
         """
         Return the send cost for a pair (src, dest) of cores
-        
+
         """
         if (src==dest):
             return 0
         assert (src, dest) in self.send_cost
         return self.send_cost[(src, dest)]
-    

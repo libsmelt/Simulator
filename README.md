@@ -3,6 +3,11 @@ This is a simulator for multicores.
 It can be used to Simulate broadcast trees and generate configurations
 to be fed into the Barrelfish's Quorum program.
 
+# Setup
+
+- python-networkx
+- python-pygraphviz
+
 # Machines
 
 In order for the Simulator to find good configurations for distributed
