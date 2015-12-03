@@ -16,8 +16,10 @@ class SchedAdaptive(scheduling.Scheduling):
     """Scheduler supporting dynamic creation of broadcast tree
     """
 
-    """I think this stores all outgoing connections (s, r) for each node,
-    that are used in the schedule
+    """For each node <s>, Stores all outgoing connections (cost, r) that
+    are used in the schedule, where r is the receiver and cost the
+    cost associated with sending a message from s to r.
+
     """
     store = dict()
 
@@ -45,10 +47,10 @@ class SchedAdaptive(scheduling.Scheduling):
 
         @param sending_node Sending node for which to determine scheduling
         @param active_nodes List of active nodes
-        @return A list containing all inactive nodes sorted by cost
-
+        @return A list containing all inactive nodes sorted by cost.
         """
         assert active_nodes is not None
+        assert sending_node in active_nodes
 
         # Find cores that ...
         # Principles are:
@@ -56,51 +58,111 @@ class SchedAdaptive(scheduling.Scheduling):
         #     across NUMA domains
         # * Send expensive messages first
         cores = self.graph.nodes()
-        inactive_nodes = [
-            # build (cost, core) tuple
-            (self.mod.get_send_cost(sending_node, c), c) \
-                for c in cores if (
-                    # .. are on a NUMA node that is inactive
-                    not self._numa_domain_active(c, active_nodes) or
-                    # .. or on the same NUMA node
-                    self.mod.on_same_numa_node(sending_node, c)
-                    # IGNORE: ourself and active nodes
-                    ) and c != sending_node and c not in active_nodes
-            ]
+        inactive_nodes = []
 
+        for c in cores:
+
+            # Never send to ourself
+            if c == sending_node:
+                continue
+            
+            # Is the target node active already?
+            node_active = self._numa_domain_active(c, active_nodes)
+
+            # Is the target core on the sender's local node?
+            # but we did not yet send it there before
+            same_node = self.mod.on_same_numa_node(sending_node, c)
+
+            # Shoulds this node be considered for sending?
+            # Yes, if receiver is on inactive node, or on local node
+            consider = not node_active or same_node
+
+            # Do not resent messages to local cores. The local node is
+            # already active at that point, so remove nodes will not
+            # recent messages to any of the cores on that node.
+            #
+            # What remains to be checked is whether any of the other
+            # cores on the same node already sent a message.
+            if same_node:
+
+                # Check if somebody else sent a message there already
+                for othercores in self.mod.get_numa_node(sending_node):
+                    if c in [s for (_,s) in self.store[othercores]]:
+                        
+                        print 'Not considering %d, as message was already sent' % c
+                        consider = False
+
+                # Check if node is already active (e.g. the root,
+                # which no one sent a message to already
+                if c in active_nodes:
+                    print 'Not considering %d, already active' % c
+                    consider = False
+
+                        
+            # If we consider this core, it's node is inactive, which
+            # means that c is inactive itself.
+            assert not consider or not c in active_nodes
+            
+            if consider:
+                # build (cost, core) tuple
+                # Here, we use send + receive time as the cost, as we are
+                # looking for a metric that estimates the total cost of
+                # sending a message across - not just from the perspective
+                # if the sender
+                inactive_nodes.append((self.mod.get_send_cost(sending_node, c)+\
+                                       self.mod.get_receive_cost(sending_node, c), c))
+
+            print '%s %d -> %d, as node_active=%d and same_node=%d' % \
+                ('Considering' if consider else 'Not sending', \
+                 sending_node, c, node_active, same_node)
+
+            
         print "inactive_nodes from %d with cost: %s" % \
             (sending_node, inactive_nodes)
 
         # Prefer expensive links
         inactive_nodes.sort(key=lambda tup: tup[0], reverse=True)
+        print "   sorted: %s" % (inactive_nodes)
 
         if len(inactive_nodes)==0:
             return []
 
         # Return only one node
-        (next_s, next_r) = inactive_nodes[0]
+        (_, next_r) = inactive_nodes[0]
+        print 'Choosing %d' % next_r
 
-        # Replace target core (which is the most expensive node in
-        # the system), with the cheapest on that node
+        # Replace target core (which is the most expensive node in the
+        # system), with the cheapest on that node for remote nodes,
+        # For local nodes, just send to the previously selected one,
+        # which is already the most expensive one on that node.
 
         # Assumption: fully-connected model
 
-        # All nodes on receivers node
-        c_all = self.mod.get_numa_node(next_r)
-        c_cost = [ (r, self.mode.get_send_cost(next_s, r)) for r in c_all ]
+        # All nodes on receivers node and their cost for current sender
+        # Here, we only consider the send time, as we want to minimize time
+        # spent on the sender
 
-        # Sort, cheapest node first
-        c_cost.sort(key=lambda tup: tup[1])
+        if self.mod.on_same_numa_node(next_r, sending_node):
+            next_hop = (self.mod.get_send_cost(sending_node, next_r), next_r)
+            
+        else:
+            c_all = self.mod.get_numa_node(next_r)
+            c_cost = [ (self.mod.get_send_cost(sending_node, r), r) \
+                       for r in c_all if r != sending_node ]
+            # Sort, cheapest node first
+            c_cost.sort(key=lambda tup: tup[0])
+            print 'Other cores on that node:', str(c_cost)
 
-        # Pick first
-        next_hop = [(next_s, c_cost[0][0])]
+            # Pick first - but list returned needs to have same length
+            # as number of inactive nodes
+            next_hop = (c_cost[0][0], c_cost[0][1])
 
         # Remember choice
         assert next_hop not in self.store[sending_node] # same node
         self.store[sending_node].append(next_hop)
-        print self.store[sending_node]
+        print "Targets from", sending_node, ":", self.store[sending_node]
 
-        return next_hop
+        return [next_hop]
 
 
     def get_final_schedule(self, sending_node, active_nodes=None):
@@ -108,4 +170,11 @@ class SchedAdaptive(scheduling.Scheduling):
         Return schedule previously found by iterative find_schedule calls.
 
         """
-        return [(None, s) for (c,s) in self.store[sending_node]]
+        try:
+            res = [(None, r) for (c, r) in self.store[sending_node]]
+            print 'Node', sending_node, 'is sending a message to', \
+                [ r for (_, r) in res ]
+            return res
+        except:
+            print 'Node', sending_node, 'is not sending any message'
+            return []

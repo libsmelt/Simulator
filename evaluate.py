@@ -197,11 +197,11 @@ class Evaluate():
         # Ignore all nodes that received the message already
         nb_filtered = [ tmp for (cost, tmp) in nb if tmp not in self.nodes_active ]
 
-        # Sanity checks for adaptive scheduling
-        if isinstance(self.schedule, sched_adaptive.SchedAdaptive):
-            # Otherwise, state in Scheduler is inconsistent with state of evaluation
-            # Currently, this state is only the list of active nodes
-            assert len(nb_filtered) == len(nb) or pdb.set_trace()
+        # # Sanity checks for adaptive scheduling
+        # if isinstance(self.schedule, sched_adaptive.SchedAdaptive):
+        #     # Otherwise, state in Scheduler is inconsistent with state of evaluation
+        #     # Currently, this state is only the list of active nodes
+        #     assert len(nb_filtered) == len(nb) or pdb.set_trace()
 
         if len(nb_filtered) > 0:
             dest = nb_filtered[0]

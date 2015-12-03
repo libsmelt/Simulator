@@ -121,6 +121,16 @@ class NetosMachine(model.Model):
 
         return gr
 
+
+    def get_numa_id(self, core1):
+        """Determine ID of the NUMA node <core1> resides on.
+        """
+        nodes = self.res['NUMA'].get()
+        for (n, i) in zip(nodes, range(len(nodes))):
+            if core1 in n:
+                return i
+            
+    
         
 # --------------------------------------------------
 # Static function
