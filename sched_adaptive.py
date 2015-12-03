@@ -89,13 +89,13 @@ class SchedAdaptive(scheduling.Scheduling):
                 for othercores in self.mod.get_numa_node(sending_node):
                     if c in [s for (_,s) in self.store[othercores]]:
                         
-                        print 'Not considering %d, as message was already sent' % c
+                        logging.info('Not considering %d, as message was already sent' % c)
                         consider = False
 
                 # Check if node is already active (e.g. the root,
                 # which no one sent a message to already
                 if c in active_nodes:
-                    print 'Not considering %d, already active' % c
+                    logging.info('Not considering %d, already active' % c)
                     consider = False
 
                         
@@ -112,24 +112,24 @@ class SchedAdaptive(scheduling.Scheduling):
                 inactive_nodes.append((self.mod.get_send_cost(sending_node, c)+\
                                        self.mod.get_receive_cost(sending_node, c), c))
 
-            print '%s %d -> %d, as node_active=%d and same_node=%d' % \
+            logging.info('%s %d -> %d, as node_active=%d and same_node=%d' % \
                 ('Considering' if consider else 'Not sending', \
-                 sending_node, c, node_active, same_node)
+                 sending_node, c, node_active, same_node))
 
             
-        print "inactive_nodes from %d with cost: %s" % \
-            (sending_node, inactive_nodes)
+        logging.info("inactive_nodes from %d with cost: %s" % \
+            (sending_node, inactive_nodes))
 
         # Prefer expensive links
         inactive_nodes.sort(key=lambda tup: tup[0], reverse=True)
-        print "   sorted: %s" % (inactive_nodes)
+        logging.info("   sorted: %s" % (inactive_nodes))
 
         if len(inactive_nodes)==0:
             return []
 
         # Return only one node
         (_, next_r) = inactive_nodes[0]
-        print 'Choosing %d' % next_r
+        logging.info('Choosing %d' % next_r)
 
         # Replace target core (which is the most expensive node in the
         # system), with the cheapest on that node for remote nodes,
@@ -151,7 +151,7 @@ class SchedAdaptive(scheduling.Scheduling):
                        for r in c_all if r != sending_node ]
             # Sort, cheapest node first
             c_cost.sort(key=lambda tup: tup[0])
-            print 'Other cores on that node:', str(c_cost)
+            logging.info('Other cores on that node:', str(c_cost))
 
             # Pick first - but list returned needs to have same length
             # as number of inactive nodes
@@ -160,7 +160,7 @@ class SchedAdaptive(scheduling.Scheduling):
         # Remember choice
         assert next_hop not in self.store[sending_node] # same node
         self.store[sending_node].append(next_hop)
-        print "Targets from", sending_node, ":", self.store[sending_node]
+        logging.info("Targets from", sending_node, ":", self.store[sending_node])
 
         return [next_hop]
 
@@ -172,9 +172,9 @@ class SchedAdaptive(scheduling.Scheduling):
         """
         try:
             res = [(None, r) for (c, r) in self.store[sending_node]]
-            print 'Node', sending_node, 'is sending a message to', \
-                [ r for (_, r) in res ]
+            logging.info('Node', sending_node, 'is sending a message to', \
+                [ r for (_, r) in res ])
             return res
         except:
-            print 'Node', sending_node, 'is not sending any message'
+            logging.info('Node', sending_node, 'is not sending any message')
             return []

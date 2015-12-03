@@ -61,6 +61,8 @@ SHM_REGIONS_OFFSET=20
 SHM_SLAVE_START=50
 
 def output_clustered_graph(graph, name, clustering):
+    """Will ommit edge labels
+    """
 
     # Create AGraph via networkx
     G = nx.DiGraph()
@@ -228,6 +230,39 @@ def walk_graph(g, root, func, mat, sched, core_dict):
         func(a, nbs, parent, mat, sched, core_dict)
 
 
+def draw_final(mod, sched):
+    """Draw a graph of the final schedule
+
+    Draw clusters to visualize NUMA nodes.
+    """
+
+    import model
+    import scheduling
+    
+    assert isinstance(mod, model.Model)
+    assert isinstance(sched, scheduling.Scheduling)
+
+    import pygraphviz as pgv
+    A = pgv.AGraph()
+
+    for c in mod.get_cores():
+        A.add_node(c)
+        
+    for c in mod.get_cores():
+        s =  sched.get_final_schedule(c)
+        for ((_,r), i) in zip(s, range(len(s))):
+            A.add_edge(c, r, label=str(i))
+
+    clist = [ 'red', 'green', 'blue', 'orange', 'grey', 'yellow' ]
+
+    i = 0
+    for c in mod.get_numa_information():
+        A.add_subgraph(c, name='cluster_%d' % i, color=clist[i % len(clist)])
+        i += 1
+
+    A.draw('graphs/final-clustered.png', prog='dot')
+        
+
 def fill_matrix(s, children, parent, mat, sched, core_dict, cost_dict=None):
     """
     @param s: Sending core
@@ -251,14 +286,16 @@ def fill_matrix(s, children, parent, mat, sched, core_dict, cost_dict=None):
     target_nodes = sched.get_final_schedule(s)
 
     # Send message
-    for (cost, r) in target_nodes:
+    for (_, r) in target_nodes:
         logging.info("%d -> %d [%r]" %
                      (core_dict[s], core_dict[r], r in children))
+        assert r in children # As we have a fully connected graph
         if r in children:
             mat[core_dict[s]][core_dict[r]] = i
             i += 1
+            
     if not parent == None:
-        assert len(children)<90
+        assert len(children)<90 # ?
         mat[core_dict[s]][core_dict[parent]] = 99
 
 

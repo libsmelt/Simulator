@@ -176,9 +176,15 @@ def build_and_simulate():
             model_descriptions.append(topology.get_name())
 
             print "Cost for tree is: %d (%d), last node is %s" % (ev.time, ev.time_no_ab, ev.last_node)
+            
             # Output c configuration for quorum program
             helpers.output_quorum_configuration( \
                         m, hierarchies, root, sched, topology, num_models)
+
+            # Output final graph: we have to do this here, as the
+            # final topology for the adaptive tree is not known before
+            # simulating it.
+            helpers.draw_final(m, sched)
 
             num_models += 1
 

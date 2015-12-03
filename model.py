@@ -141,6 +141,8 @@ class Model(object):
         """
         Determine NUMA node for the given core
         """
+        print helpers.bcolors.WARNING + "Warning: Deprecated: get_numa_id" \
+            + helpers.bcolors.ENDC
         return core1 / self.get_cores_per_node()
 
     # --------------------------------------------------

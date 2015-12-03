@@ -28,10 +28,14 @@ class Scheduling(object):
         return None
 
     def get_final_schedule(self, sending_node, active_nodes=None):
-        """
-        Get the final schedule. This is equal to what will be returned
+        """Get the final schedule. This is equal to what will be returned
         from find_schedule except for adaptive models, that just
         replay what they generated before.
+
+        The restult is a list of tuples (cost, receiver). Each element
+        represents one edge used in the topology tree. The elements in
+        the list have to be given in the order in which messages
+        should be sent to neighbors.
 
         """
         return self.find_schedule(sending_node, active_nodes)
