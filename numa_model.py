@@ -13,28 +13,12 @@ class NUMAModel(model.Model):
 
     # Graph representing the NUMA structure of a machine
     g_numa = None
-    
+
     def __init__(self, g):
 
+        print helpers.bcolors.WARNING + "Warning: NUMAModel deprecated" + helpers.bcolors.ENDC
         super(NUMAModel, self).__init__(g)
 
-
-    # --------------------------------------------------
-
-    def get_num_numa_hops(self, src, dest):
-        """
-        Get number of NUMA hops for communication between given pair
-        of NUMA nodes.
-        """
-        (tree, hops) = shortest_path(self.g_numa, src)
-        return hops.get(dest)
-
-    def get_num_numa_hops_for_cores(self, src, dest):
-        """
-        Get number of NUMA hops for communication between given pair of cores
-        """
-        return self.get_num_numa_hops(self.get_numa_id(src),
-                                      self.get_numa_id(dest))
 
     # --------------------------------------------------
 
@@ -58,7 +42,7 @@ class NUMAModel(model.Model):
 
         if not self.g_numa:
             return
-            
+
         helpers.output_graph(self.g_numa, '%s_numa' % self.get_name())
 
         gr = graph()
@@ -74,7 +58,7 @@ class NUMAModel(model.Model):
         res = []
         l = []
         for c in range(self.get_num_cores()):
-            if c % self.get_cores_per_node() == 0: 
+            if c % self.get_cores_per_node() == 0:
                 if len(l)>0:
                     res.append(l)
                 l = []
@@ -111,5 +95,3 @@ class NUMAModel(model.Model):
         helpers.output_graph(g_numa, '%s_numa' % self.get_name());
 
         return g_numa
-
-

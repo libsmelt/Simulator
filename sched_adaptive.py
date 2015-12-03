@@ -36,7 +36,7 @@ class SchedAdaptive(scheduling.Scheduling):
             if c in nodes_active:
                 return True
         return False
-        
+
 
     def find_schedule(self, sending_node, active_nodes=None):
         """
@@ -49,15 +49,15 @@ class SchedAdaptive(scheduling.Scheduling):
         """
         assert active_nodes is not None
 
-        # Find cores that ... 
+        # Find cores that ...
         # Principles are:
-        # * The filter makes sure that we do _not_ send unnecessary messages 
+        # * The filter makes sure that we do _not_ send unnecessary messages
         #     across NUMA domains
         # * Send expensive messages first
         cores = self.graph.nodes()
         inactive_nodes = [
             # build (cost, core) tuple
-            (self.mod.get_num_numa_hops_for_cores(sending_node, c), c) \
+            (self.mod.get_send_cost(sending_node, c), c) \
                 for c in cores if (
                     # .. are on a NUMA node that is inactive
                     not self._numa_domain_active(c, active_nodes) or
@@ -73,20 +73,38 @@ class SchedAdaptive(scheduling.Scheduling):
         # Prefer expensive links
         inactive_nodes.sort(key=lambda tup: tup[0], reverse=True)
 
-        # Remember choice
-        if len(inactive_nodes)>0:
-            # don't add same node twice
-            assert inactive_nodes[0] not in self.store[sending_node]
-            self.store[sending_node].append(inactive_nodes[0])
-            print self.store[sending_node]
+        if len(inactive_nodes)==0:
+            return []
 
-        return inactive_nodes
+        # Return only one node
+        (next_s, next_r) = inactive_nodes[0]
+
+        # Replace target core (which is the most expensive node in
+        # the system), with the cheapest on that node
+
+        # Assumption: fully-connected model
+
+        # All nodes on receivers node
+        c_all = self.mod.get_numa_node(next_r)
+        c_cost = [ (r, self.mode.get_send_cost(next_s, r)) for r in c_all ]
+
+        # Sort, cheapest node first
+        c_cost.sort(key=lambda tup: tup[1])
+
+        # Pick first
+        next_hop = [(next_s, c_cost[0][0])]
+
+        # Remember choice
+        assert next_hop not in self.store[sending_node] # same node
+        self.store[sending_node].append(next_hop)
+        print self.store[sending_node]
+
+        return next_hop
+
 
     def get_final_schedule(self, sending_node, active_nodes=None):
         """
-        Return schedule previously found by iterative find_schedule calls. 
+        Return schedule previously found by iterative find_schedule calls.
 
         """
         return [(None, s) for (c,s) in self.store[sending_node]]
-
-
