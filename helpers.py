@@ -265,14 +265,14 @@ def draw_final(mod, sched, topo):
         leaf = c in topo.get_leaf_nodes(sched)
         if leaf:
             print 'Drawing leaf %d' % c
-        A.add_node(c, color='red' if leaf else 'black')
+        A.add_node(c, color='grey' if leaf else 'black')
         
     for c in mod.get_cores():
         s =  sched.get_final_schedule(c)
         for ((_,r), i) in zip(s, range(len(s))):
-            A.add_edge(c, r, label=str(i))
+            A.add_edge(c, r, label=str(i+1))
 
-    clist = [ 'red', 'green', 'blue', 'orange', 'grey', 'yellow' ]
+    clist = [ 'red', 'green', 'blue', 'orange', 'grey', 'yellow', 'black', 'pink' ]
 
     i = 0
     for c in mod.get_numa_information():
@@ -698,3 +698,17 @@ def plot_machine_results(machine, res_measurement, res_sim):
     f.close() # should flush ..
 
     run_pdflatex(fname)
+
+class bcolors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+    
+def warn(msg):
+    print bcolors.WARNING + msg + bcolors.ENDC
+    

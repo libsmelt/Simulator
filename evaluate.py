@@ -64,7 +64,7 @@ class Evaluate():
         """
         Evaluate the latency of sending an individual message along the tree
 
-        @param tree (overlay) Overlay as determined by simulator
+        @param topo: (class: overlay.Overlay) Overlay as determined by simulator
         @param m: Model representing machine
         @param sched: Scheduler for sending messages
 
@@ -79,6 +79,7 @@ class Evaluate():
         assert len(topo.get_tree())==1 # Don't support evaluation for Hybrid models yet
         for l in topo.get_tree():
             if isinstance(l, hybrid_model.MPTree):
+                assert not self.topology # We only support one Overlay currently
                 self.topology = l.graph
 
         self.schedule = sched
