@@ -23,10 +23,13 @@ def binary_tree(m, nodes=[], out_degree=2):
     @type out_degree: number
     @param out_degree: outdegree of nodes in the generated graph. Currently,
         this is ignored
+
+    @return g digraph storing the binary graph
     """
     assert(len(m.nodes())>0) # graph has nodes
+    assert out_degree == 2 # others NYI
 
-    g = graph()
+    g = digraph()
     if len(nodes)==0:
         nodes = m.nodes()
     num = len(nodes)
@@ -64,16 +67,18 @@ def sequential(m, nodes, coordinator):
 
     @type coordinator: number
     @param coordinator: This node will be the root of the tree
+
+    @return digraph
     """
     assert(len(m.nodes())>0) # graph has nodes
 
-    g = graph()
+    g = digraph()
     g.add_node(coordinator)
 
     for n in nodes:
         if n != coordinator:
             g.add_node(n)
-            g.add_edge((n, coordinator), \
+            g.add_edge((coordinator, n), \
                            m.edge_weight((n, coordinator)))
     return g
 
@@ -84,6 +89,8 @@ def invert_weights(g):
 
     The most expensive links will then be the cheapest and vice versa.
     """
+
+    assert isinstance(g, digraph)
     
     # Determine the most expensive edge
     w = 0
@@ -91,7 +98,7 @@ def invert_weights(g):
         w = max(w, g.edge_weight((s,d)))
     print 'Maximum edge weight is %d' % w
     w += 1 # Make sure the most expensive edge will have a cost of 1 afterwards
-    g_inv = graph()
+    g_inv = digraph()
     for n in g.nodes():
         g_inv.add_node(n)
     for (s,d) in g.edges():
@@ -101,7 +108,7 @@ def invert_weights(g):
         try:
             g_inv.add_edge((s,d), w_inv)
         except:
-            assert g_inv.edge_weight((s,d)) == w_inv
+            assert g_inv.edge_weight((s,d)) == w_inv # This one fails
             print "Edge %d %d already in graph, ignoring .. " % (s,d)
     return g_inv
 
@@ -111,6 +118,7 @@ def merge_graphs(g1, g2):
     Merge two graphs to a new graph (V, E) with V = g1.nodes \union g2.nodes
     and Edge e \in g1 or e \in g2 -> e \in E.
     """
+
     if g1.DIRECTED or g2.DIRECTED:
         g = digraph()
     else:

@@ -40,7 +40,9 @@ class Overlay(object):
         :returns graph: Broadcast tree as graph
 
         """
-        return self._build_tree(self.mod.get_graph())
+        tmp = self._build_tree(self.mod.get_graph())
+        assert isinstance(tmp, digraph)
+        return tmp
 
     def _get_multicast_tree(self, g):
         """
@@ -275,8 +277,11 @@ class Overlay(object):
                     # - adaptive tree
                     # - binary tree
                     # - clustered
+                    # - sequential
+                    # - fibonacci
+                    # - mst
 
-                    # Untested: badtree, sequential, fibonacci, ring, mst, adaptivetree
+                    # Untested: badtree, ring
                     
                     l = [ y for (x,y) in tree.edges() if x == n ]
 

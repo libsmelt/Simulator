@@ -1,6 +1,6 @@
 # Copyright (c) 2007, 2008, 2009, 2010, 2011, 2012, 2013 ETH Zurich.
 
-from pygraph.classes.graph import graph
+from pygraph.classes.digraph import digraph
 
 import sched_adaptive
 import overlay
@@ -32,6 +32,6 @@ class AdapativeTree(overlay.Overlay):
         but no edges.
 
         """
-        gout = graph()
+        gout = digraph()
         map(gout.add_node, [ n for n in g.nodes() ])
         return gout

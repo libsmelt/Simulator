@@ -51,7 +51,7 @@ class Cluster(overlay.Overlay):
         coords = [ c for c in self.coordinators if c in g.nodes() ]
 
         # Build NUMA node graph with weights first
-        g_numa = graph()
+        g_numa = digraph()
         for c in coords:
             g_numa.add_node(c)
             for co in self.coordinators:

@@ -43,16 +43,23 @@ class Mst(overlay.Overlay):
         
         """
         # Init graph and add nodes
-        mst = graph()
+        mst = digraph()
         mst.add_nodes(g.nodes())
 
-        mst_edges = minimal_spanning_tree(g)
-        print mst_edges
+        # Get a dictionary representing the spanning tree. From
+        # looking at the code, the dictionary encodes for each node,
+        # where the edge that connects it with the root is coming
+        # from.
+        mst_edges = minimal_spanning_tree(g, self.get_root_node())
+        print 'Minumum spanning tree:', mst_edges
 
-        # Add edges from mst
-        for (trg,src) in mst_edges.items():
-            if src != None:
-                logging.info("Adding edge %s -> %s" % (src, trg))
-                mst.add_edge((src, trg))
+        for (r, s) in mst_edges.items():
 
+            # In case of the root
+            if s == None:
+                continue
+
+            # Otherwise, r is reached via s
+            mst.add_edge((s,r)) # , g.edge_weight((s,r)))
+        
         return mst
