@@ -289,7 +289,6 @@ def fill_matrix(s, children, parent, mat, sched, core_dict, cost_dict=None):
     for (_, r) in target_nodes:
         logging.info("%d -> %d [%r]" %
                      (core_dict[s], core_dict[r], r in children))
-        assert r in children # As we have a fully connected graph
         if r in children:
             mat[core_dict[s]][core_dict[r]] = i
             i += 1
