@@ -159,6 +159,7 @@ def build_and_simulate():
         # Generate model headers
         helpers.output_quroum_start(m, len(config.args.overlay))
         all_last_nodes = []
+        all_leaf_nodes = []
         model_descriptions = []
         num_models = 0
         # Generate representation of each topology
@@ -169,8 +170,10 @@ def build_and_simulate():
                 simulation._simulation_wrapper(_overlay, m, gr, config.args.multicast)
             hierarchies = topo.get_tree()
 
-            # Determine last node for this model
+            # Dictionary for translating core IDs
             d = helpers.core_index_dict(m.graph.nodes())
+            
+            # Determine last node for this model
             all_last_nodes.append(d[m.evaluation.last_node])
             
             model_descriptions.append(topology.get_name())
@@ -184,12 +187,17 @@ def build_and_simulate():
             # Output final graph: we have to do this here, as the
             # final topology for the adaptive tree is not known before
             # simulating it.
-            helpers.draw_final(m, sched)
+            helpers.draw_final(m, sched, topo)
 
+            # Determine last node for this model
+            all_leaf_nodes.append([d[l] for l in topo.get_leaf_nodes(sched)])
+            
             num_models += 1
 
+            
         # Generate footer
-        helpers.output_quorum_end(all_last_nodes, model_descriptions)
+        helpers.output_quorum_end(all_last_nodes, all_leaf_nodes, \
+                                  model_descriptions)
         return 0
 
     elif config.args.action == 'ump-breakdown':

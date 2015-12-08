@@ -6,6 +6,8 @@ import sched_adaptive
 import config
 import helpers
 
+import hybrid_model
+ 
 import random
 
 from pygraph.classes.graph import graph
@@ -16,9 +18,14 @@ class Overlay(object):
     Base class for finding the right overlay topology for a model
 
     """
+
+    """Broadcast tree - expressed as a hybrid model. List of hybrid_model.MPTree
+    """
+    tree = None
+    
     def __init__(self, mod):
         """
-        Initialize the clustering algorithm
+        Initialize
 
         """
         import model
@@ -88,7 +95,8 @@ class Overlay(object):
         Return broadcast tree
         
         Will call _get_broadcast_tree on first execution and store
-        tree in broadcast_tree
+        tree in broadcast_tree.
+
         """
         if self.tree is None:
 
@@ -102,7 +110,6 @@ class Overlay(object):
             helpers.output_clustered_graph(tmp, fname, self.mod.get_numa_information())
 
             if isinstance(tmp, graph) or isinstance(tmp, digraph):
-                import hybrid_model
                 self.tree = [ hybrid_model.MPTree(tmp, self) ]
 
             elif isinstance(tmp, list):
@@ -230,3 +237,66 @@ class Overlay(object):
             r = o(topo)
         return r
 
+
+
+    def get_leaf_nodes(self, sched):
+        """Return leaf nodes in this topology
+
+        @param sched scheduling.Scheduling The scheduler, which knows
+        the final schedule. This is necessary as - for some reason -
+        the tree stored with the overlay has edges in both directions
+        for each connection in the broadcast tree.
+
+        I think this is a bug, and once it is fixed, the Scheduler
+        should really not be needed here.
+
+        """
+
+        assert isinstance(sched, scheduling.Scheduling)
+        
+        leaf_nodes = []
+        
+        for x in self.tree:
+            if isinstance(x, hybrid_model.MPTree):
+
+                print "Found message passing model", str(x.graph)
+
+                tree = x.graph
+                print str(tree.nodes())
+                print str(tree.edges())
+
+                for n in tree.nodes():
+
+                    # OMG, edges are even dublicated in the Scheduler
+                    # for some topologies!  How would I ever figure
+                    # out which are the last nodes ..
+
+                    # Currently working correctly are:
+                    # - adaptive tree
+                    # - binary tree
+                    # - clustered
+
+                    # Untested: badtree, sequential, fibonacci, ring, mst, adaptivetree
+                    
+                    l = [ y for (x,y) in tree.edges() if x == n ]
+
+                    # For some Overlays, it seems that there are edges
+                    # in the broadcast tree that are not atually used
+                    # in the final Schedule. I saw this happening
+                    # especially because for each edge (s, r), there
+                    # is also (r, s) in the broadcast tree.
+                    l_ = [ r for r in l if r in \
+                           [ rr for (_, rr) in sched.get_final_schedule(n)] ]
+
+                    if len(l) != len(l_):
+                        helpers.warn('Overlay contains edged that are not in final schedule. This is a bug')
+                    
+                    if len(l_)==0:
+                        print n, 'is a leaf node'
+                        leaf_nodes.append(n)
+
+                    
+
+                    
+
+        return leaf_nodes

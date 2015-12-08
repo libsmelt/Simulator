@@ -17,6 +17,7 @@ import pdb
 import traceback
 import re
 import general
+import overlay
 
 from config import topologies, machines, get_ab_machine_results, get_machine_result_suffix
 from general import _pgf_header, \
@@ -155,11 +156,15 @@ def output_quroum_start(model, num_models):
     defstream.write('#define NUM_TOPOS %d\n' % num_models)
 
 
-def output_quorum_end(all_last_nodes, model_descriptions):
+def output_quorum_end(all_last_nodes, all_leaf_nodes, model_descriptions):
     """Output the footer of the model files
 
-    @param last_node: last node to receive a message - currently has
-    to be the same for all models
+    @param all_last_nodes: list(int) - A list of last nodes as determined
+    by the Simulator for each model.
+
+    @param all_leaf_nodes: list(list(int)) - A list of leaf nodes for
+    each model. These nodes do not have any children in the broadcast
+    tree.
 
     @param model_description A string representation for each model
 
@@ -176,6 +181,16 @@ def output_quorum_end(all_last_nodes, model_descriptions):
     stream.write('const char* topo_names[NUM_TOPOS] = {%s};\n' % \
                  ', '.join(['"%s"' % s for s in model_descriptions]))
 
+    # Leaf nodes
+    for (leaf_nodes, i) in zip(all_leaf_nodes, range(len(all_leaf_nodes))):
+        stream.write((('std::vector<int> leaf_nodes%d {' % i) + \
+                      ','.join(map(str, leaf_nodes)) + '};\n'));
+
+    stream.write('std::vector<int> *all_leaf_nodes[NUM_TOPOS] = {' + \
+                 ','.join([ ('&leaf_nodes%d' % i) \
+                            for i in range(len(all_leaf_nodes)) ]) + \
+                 '};\n');
+    
     __c_footer(stream)
     __c_footer(defstream)
 
@@ -230,7 +245,7 @@ def walk_graph(g, root, func, mat, sched, core_dict):
         func(a, nbs, parent, mat, sched, core_dict)
 
 
-def draw_final(mod, sched):
+def draw_final(mod, sched, topo):
     """Draw a graph of the final schedule
 
     Draw clusters to visualize NUMA nodes.
@@ -241,12 +256,16 @@ def draw_final(mod, sched):
     
     assert isinstance(mod, model.Model)
     assert isinstance(sched, scheduling.Scheduling)
+    assert isinstance(topo, overlay.Overlay)
 
     import pygraphviz as pgv
     A = pgv.AGraph()
 
     for c in mod.get_cores():
-        A.add_node(c)
+        leaf = c in topo.get_leaf_nodes(sched)
+        if leaf:
+            print 'Drawing leaf %d' % c
+        A.add_node(c, color='red' if leaf else 'black')
         
     for c in mod.get_cores():
         s =  sched.get_final_schedule(c)
