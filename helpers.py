@@ -359,6 +359,7 @@ def __c_header_model_defs(stream, machine, dim):
 def __c_header_model(stream):
     __c_header(stream, 'MULTICORE_MODEL')
     stream.write('#include "model_defs.h"\n\n')
+    stream.write('#include <vector>\n\n')
 
 def __c_footer(stream):
     stream.write("#endif\n")
