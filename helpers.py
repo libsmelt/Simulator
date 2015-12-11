@@ -585,37 +585,6 @@ def extract_machine_results(model, nosim=False, flounder=False, umpq=False):
 
     return (results, sim_results)
 
-def gen_gottardo(m):
-
-    graph = digraph()
-    graph.add_nodes([n for n in range(m.get_num_cores())])
-
-    for n in range(1, m.get_num_cores()):
-        if n % m.get_cores_per_node() == 0:
-            print "Edge %d -> %d" % (0, n)
-            graph.add_edge((0, n))
-
-    dim = m.get_num_cores()
-    mat = [[0 for x in xrange(dim)] for x in xrange(dim)]
-
-    import sort_longest
-    sched = sort_longest.SortLongest(graph)
-
-    # Build the matrix
-    walk_graph(graph, 0, fill_matrix, mat, sched)
-
-    stream = open("hybrid_model.h", "w")
-    defstream = open("hybrid_model_defs.h", "w")
-    __c_header_model_defs(defstream,
-                          m.get_num_cores()-1,
-                          "",
-                          "",
-                          len(mat))
-    __c_header_model(stream)
-    __matrix_to_c(stream, mat)
-    __c_footer(stream)
-    __c_footer(defstream)
-
 
 # http://stackoverflow.com/questions/4836710/does-python-have-a-built-in-function-for-string-natural-sort
 def natural_sort(l):

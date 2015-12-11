@@ -18,7 +18,6 @@ import gruyere
 import nos6
 import ziger
 import sbrinz
-import gottardo
 import appenzeller
 
 # Overlays

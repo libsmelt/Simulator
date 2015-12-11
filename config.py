@@ -25,7 +25,6 @@ machines = [
     "gruyere",
     'sbrinz1',
 # 'sbrinz2',
-#    'gottardo',
     'appenzeller'
     ]
 
@@ -82,15 +81,6 @@ def arg_machine_class(string):
     """
 
     """
-    # Machines
-    import gruyere
-    import nos6
-    import ziger
-    import sbrinz
-    import gottardo
-    import appenzeller
-    import tomme
-
     if string == "gruyere":
         return gruyere.Gruyere
     elif string == "nos":
@@ -99,14 +89,19 @@ def arg_machine_class(string):
         return ziger.Ziger
     elif string == 'sbrinz':
         return sbrinz.Sbrinz
-    elif string == 'gottardo':
-        return gottardo.Gottardo
     elif string == 'appenzeller':
         return appenzeller.Appenzeller
     elif string == 'tomme':
         return tomme.Tomme
     else:
-        raise Exception('Unknown machine')
+        import netos_machine
+        if string in netos_machine.get_list():
+            print "This is a Net OS machine"
+            return netos_machine.NetosMachine
+        else:
+            raise Exception('Unknown machine %s' % string)
+    
+
 
 
 def arg_machine(machine_name):

@@ -45,8 +45,6 @@ import ziger
 #                                [(10, 5.5), (20, 10.1), (30, 12.3)]
 #                                )
 
-#algorithms.clustering()
-
 # Number of nodes in Fibonacci tree:
 # http://xlinux.nist.gov/dads/HTML/fibonacciTree.html
 # F(i+2)-1 for Fibonacci tree of size i

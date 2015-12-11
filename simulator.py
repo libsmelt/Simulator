@@ -51,50 +51,9 @@ import gruyere
 import nos6
 import ziger
 import sbrinz
-import gottardo
 import appenzeller
 import tomme
 import rack
-
-def arg_machine_class(string):
-    """
-
-    """
-    if string == "gruyere":
-        return gruyere.Gruyere
-    elif string == "nos":
-        return nos6.Nos
-    elif string == 'ziger':
-        return ziger.Ziger
-    elif string == 'sbrinz':
-        return sbrinz.Sbrinz
-    elif string == 'gottardo':
-        return gottardo.Gottardo
-    elif string == 'appenzeller':
-        return appenzeller.Appenzeller
-    elif string == 'tomme':
-        return tomme.Tomme
-    else:
-        if string in netos_machine.get_list():
-            print "This is a Net OS machine"
-            return netos_machine.NetosMachine
-        else:
-            raise Exception('Unknown machine %s' % string)
-    
-
-def arg_machine(machine_name):
-    """
-    Return instance of the machine given as argument
-
-    """
-    machine_name = config.translate_machine_name(machine_name)
-
-    if machine_name == 'rack':
-        return rack.Rack(sbrinz.Sbrinz)
-
-    else:
-        return arg_machine_class(machine_name)
-
 
 # --------------------------------------------------
 def build_and_simulate():
@@ -144,7 +103,7 @@ def build_and_simulate():
 
     print "machine: %s, topology: %s" % (config.args.machine, config.args.overlay)
 
-    m_class = arg_machine(config.args.machine)
+    m_class = config.arg_machine(config.args.machine)
     m = m_class()
     assert m != None
     gr = m.get_graph()
@@ -271,7 +230,7 @@ def build_and_simulate():
         a = []
 
         for machine in machines:
-            mod = arg_machine(machine) 
+            mod = config.arg_machine(machine) 
             (results, sim_results) = helpers.extract_machine_results(mod, nosim=True)
 
             a.append((machine, results))#, sim_results)
