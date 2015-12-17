@@ -13,13 +13,6 @@ import config
 import model
 import helpers
 
-# Machines
-import gruyere
-import nos6
-import ziger
-import sbrinz
-import appenzeller
-
 # Overlays
 import cluster
 import ring

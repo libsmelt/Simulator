@@ -20,12 +20,6 @@ topologies = [
     "adaptivetree"
     ]
 machines = [
-# nos6
-    "ziger1",
-    "gruyere",
-    'sbrinz1',
-# 'sbrinz2',
-    'appenzeller'
     ]
 
 # Path to the machine database.
@@ -53,6 +47,7 @@ args = None
 MULTICAST_RATIO=.5 # Probability for each node to be used for the multicast.
 
 def get_ab_machine_results(machine, overlay, flounder=False, umpq=False):
+
     machine = ''.join([i for i in machine if not i.isdigit()])
 
     suffix = get_machine_result_suffix(flounder, umpq)
@@ -73,33 +68,21 @@ def get_machine_result_suffix(flounder, umpq):
 def translate_machine_name(n):
     """Remove digits from machine name unless machine is a sgs machine
     """
-    return n if n.startswith('sgs') else \
-        ''.join([i for i in n if not i.isdigit()])
+    return n
+    # return n if n.startswith('sgs') else \
+    #     ''.join([i for i in n if not i.isdigit()])
 
 
 def arg_machine_class(string):
     """
 
     """
-    if string == "gruyere":
-        return gruyere.Gruyere
-    elif string == "nos":
-        return nos6.Nos
-    elif string == 'ziger':
-        return ziger.Ziger
-    elif string == 'sbrinz':
-        return sbrinz.Sbrinz
-    elif string == 'appenzeller':
-        return appenzeller.Appenzeller
-    elif string == 'tomme':
-        return tomme.Tomme
+    import netos_machine
+    if string in netos_machine.get_list():
+        print "This is a Net OS machine"
+        return netos_machine.NetosMachine
     else:
-        import netos_machine
-        if string in netos_machine.get_list():
-            print "This is a Net OS machine"
-            return netos_machine.NetosMachine
-        else:
-            raise Exception('Unknown machine %s' % string)
+        raise Exception('Unknown machine %s' % string)
     
 
 
@@ -113,7 +96,7 @@ def arg_machine(machine_name):
     machine_name = translate_machine_name(machine_name)
 
     if machine_name == 'rack':
-        return rack.Rack(sbrinz.Sbrinz)
+        raise Exception('Racks not currently supported')
 
     else:
         return arg_machine_class(machine_name)

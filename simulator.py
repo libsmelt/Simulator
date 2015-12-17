@@ -33,7 +33,6 @@ import adaptive
 import hybrid
 
 import scheduling
-import ump
 
 import pdb
 import argparse
@@ -47,12 +46,6 @@ from config import topologies, machines
 import numa_model
 
 # Machines
-import gruyere
-import nos6
-import ziger
-import sbrinz
-import appenzeller
-import tomme
 import rack
 
 # --------------------------------------------------

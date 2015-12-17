@@ -14,10 +14,6 @@ import model
 import helpers
 import algorithms
 
-# Machines
-import gruyere
-import nos6
-
 # Overlays
 import cluster
 import ring
@@ -33,12 +29,6 @@ import argparse
 import logging
 import sys
 import os
-
-import ziger
-
-# z = ziger.Ziger()
-# print z.get_numa_information()
-
 
 # helpers.output_machine_results("testmachine", 
 #                                [(100, 5), (200, 10), (300, 15)], 
