@@ -172,24 +172,26 @@ def output_quorum_end(all_last_nodes, all_leaf_nodes, model_descriptions):
     stream = open(F_MODEL, "a")
     defstream = open(F_MODEL_DEFS, "a")
 
-    defstream.write('#define ALL_LAST_NODES ((int[]) {%s})\n' % \
-                    ', '.join([ str(i) for i in all_last_nodes]))
-    defstream.write('#define LAST_NODE ALL_LAST_NODES[get_topo_idx()]\n')
-
-    stream.write('int *topo_combined[NUM_TOPOS] = {%s};\n' % \
+    stream.write('int *_topo_combined[NUM_TOPOS] = {%s};\n' % \
                  ', '.join(['(int*) topo%i' % i for i in range(len(model_descriptions))]))
-    stream.write('const char* topo_names[NUM_TOPOS] = {%s};\n' % \
+    stream.write('int **topo_combined = (int**) _topo_combined;\n');
+    stream.write('char* _topo_names[NUM_TOPOS] = {%s};\n' % \
                  ', '.join(['"%s"' % s for s in model_descriptions]))
+    stream.write('char **topo_names = (char**) _topo_names;\n')
 
     # Leaf nodes
     for (leaf_nodes, i) in zip(all_leaf_nodes, range(len(all_leaf_nodes))):
         stream.write((('std::vector<int> leaf_nodes%d {' % i) + \
                       ','.join(map(str, leaf_nodes)) + '};\n'));
 
-    stream.write('std::vector<int> *all_leaf_nodes[NUM_TOPOS] = {' + \
+    stream.write('std::vector<int> *_all_leaf_nodes[NUM_TOPOS] = {' + \
                  ','.join([ ('&leaf_nodes%d' % i) \
                             for i in range(len(all_leaf_nodes)) ]) + \
                  '};\n');
+    stream.write('std::vector<int> **all_leaf_nodes = all_leaf_nodes;\n')
+    stream.write('std::vector<coreid_t> last_nodes = {' + \
+                 ', '.join([ str(i) for i in all_last_nodes]) + \
+                 '};\n')
     
     __c_footer(stream)
     __c_footer(defstream)
