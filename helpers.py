@@ -188,7 +188,7 @@ def output_quorum_end(all_last_nodes, all_leaf_nodes, model_descriptions):
                  ','.join([ ('&leaf_nodes%d' % i) \
                             for i in range(len(all_leaf_nodes)) ]) + \
                  '};\n');
-    stream.write('std::vector<int> **all_leaf_nodes = all_leaf_nodes;\n')
+    stream.write('std::vector<int> **all_leaf_nodes = _all_leaf_nodes;\n')
     stream.write('std::vector<coreid_t> last_nodes = {' + \
                  ', '.join([ str(i) for i in all_last_nodes]) + \
                  '};\n')
