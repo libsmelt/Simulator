@@ -73,16 +73,12 @@ def translate_machine_name(n):
     #     ''.join([i for i in n if not i.isdigit()])
 
 
-def arg_machine_class(string):
+def arg_machine_class(machine):
     """
 
     """
     import netos_machine
-    if string in netos_machine.get_list():
-        print "This is a Net OS machine"
-        return netos_machine.NetosMachine
-    else:
-        raise Exception('Unknown machine %s' % string)
+    return netos_machine.NetosMachine
     
 
 
