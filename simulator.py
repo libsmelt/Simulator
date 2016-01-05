@@ -94,6 +94,11 @@ def build_and_simulate():
     except:
         exit(1)
 
+    if config.args.debug:
+        print 'Activating debug mode'
+        import debug
+        logging.getLogger().setLevel(logging.INFO)
+        
     print "machine: %s, topology: %s" % (config.args.machine, config.args.overlay)
 
     m_class = config.arg_machine(config.args.machine)

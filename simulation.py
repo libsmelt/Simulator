@@ -40,16 +40,11 @@ def _simulation_wrapper(ol, m, gr, multicast=False):
     if multicast:
         
         # Multicast, group membership given
-        if config.args.group:
-            n = config.args.group.split(',')
+        n = config.get_mc_group()
 
-        # Multicast, group membership not given, use first half of nodes
-        else:
-            n = r.mod.get_graph().nodes()
-            l = len(n)/2
-            n = n[:l]
+        assert 0 in map(int, n) # root is likely to be 0 - so it should be part of the tree
 
-        print 'Multicast with nodes: %s' % ('-'.join(n))
+        print 'Multicast with nodes: %s' % ('-'.join(map(str,n)))
         hybmod_list = r.get_multicast_tree(map(int, n))
 
     else:

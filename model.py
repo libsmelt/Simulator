@@ -91,11 +91,25 @@ class Model(object):
 
     # --------------------------------------------------
     # Helpers
-    def get_cores(self):
+    def get_cores(self, only_active=False):
+        """Return a list of cores
+
+        @param only_active If set to true, only return nodes that
+        participate in multicast.
+
         """
-        Return a list of cores
-        """
-        return [ c for c in range(self.get_num_cores()) ]
+        n = [ c for c in range(self.get_num_cores()) ]
+        n = self.filter_active_cores(n, only_active)
+        return n
+
+
+    def filter_active_cores(self, n, only_active):
+        
+        if only_active:
+            n = [ n_ for n_ in n if n_ in map(int, config.get_mc_group()) ]
+
+        return n
+
 
     def output_graph(self):
         """ Write the graph out to disk as <machine_name>_graph

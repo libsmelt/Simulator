@@ -96,3 +96,7 @@ def arg_machine(machine_name):
 
     else:
         return arg_machine_class(machine_name)
+
+def get_mc_group():
+    assert args.group
+    return map(int, args.group.split(','))

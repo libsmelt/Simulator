@@ -159,7 +159,7 @@ class Overlay(object):
             
         import hybrid_model
 
-        self.tree = [ hybrid_model.MPTree(self._get_multicast_tree(mctree)) ]
+        self.tree = [ hybrid_model.MPTree(self._get_multicast_tree(mctree), self) ]
         return self.tree
 
     def get_coordinators(self):

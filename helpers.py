@@ -269,7 +269,7 @@ def draw_final(mod, sched, topo):
             print 'Drawing leaf %d' % c
         A.add_node(c, color='grey' if leaf else 'black')
         
-    for c in mod.get_cores():
+    for c in mod.get_cores(True):
         s =  sched.get_final_schedule(c)
         for ((_,r), i) in zip(s, range(len(s))):
             A.add_edge(c, r, label=str(i+1))

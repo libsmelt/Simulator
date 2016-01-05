@@ -93,8 +93,9 @@ class NetosMachine(model.Model):
     def get_name(self):
         return self.name
 
-    def get_cores(self):
+    def get_cores(self, only_active=False):
         c = list(itertools.chain.from_iterable(self.res['NUMA'].get()))
+        c = self.filter_active_cores(c, only_active)
         return c
     
     def _build_graph(self):

@@ -65,6 +65,12 @@ class SchedAdaptive(scheduling.Scheduling):
             # Never send to ourself
             if c == sending_node:
                 continue
+
+            # Do not consider any nodes that are not in the multicast
+            if not c in self.mod.get_cores(True):
+                continue
+
+            logging.info('Sending node from %d to %d' % (sending_node, c))
             
             # Is the target node active already?
             node_active = self._numa_domain_active(c, active_nodes)
@@ -146,12 +152,13 @@ class SchedAdaptive(scheduling.Scheduling):
             next_hop = (self.mod.get_send_cost(sending_node, next_r), next_r)
             
         else:
-            c_all = self.mod.get_numa_node(next_r)
+            # Add other cores from same node, but ONLY if they are active
+            c_all = self.mod.filter_active_cores(self.mod.get_numa_node(next_r), True)
             c_cost = [ (self.mod.get_send_cost(sending_node, r), r) \
                        for r in c_all if r != sending_node ]
             # Sort, cheapest node first
             c_cost.sort(key=lambda tup: tup[0])
-            logging.info('Other cores on that node:', str(c_cost))
+            logging.info(('Other cores on that node: %s ' % str(c_cost)))
 
             # Pick first - but list returned needs to have same length
             # as number of inactive nodes
@@ -160,7 +167,7 @@ class SchedAdaptive(scheduling.Scheduling):
         # Remember choice
         assert next_hop not in self.store[sending_node] # same node
         self.store[sending_node].append(next_hop)
-        logging.info("Targets from", sending_node, ":", self.store[sending_node])
+        logging.info(("Targets from", sending_node, ":", self.store[sending_node]))
 
         return [next_hop]
 
@@ -172,9 +179,9 @@ class SchedAdaptive(scheduling.Scheduling):
         """
         try:
             res = [(None, r) for (c, r) in self.store[sending_node]]
-            logging.info('Node', sending_node, 'is sending a message to', \
-                [ r for (_, r) in res ])
+            logging.info(('Node', sending_node, 'is sending a message to', \
+                [ r for (_, r) in res ]))
             return res
         except:
-            logging.info('Node', sending_node, 'is not sending any message')
+            logging.info(('Node', sending_node, 'is not sending any message'))
             return []
