@@ -105,7 +105,7 @@ class Model(object):
 
     def filter_active_cores(self, n, only_active):
         
-        if only_active:
+        if config.args.multicast and only_active:
             n = [ n_ for n_ in n if n_ in map(int, config.get_mc_group()) ]
 
         return n
