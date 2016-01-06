@@ -241,7 +241,6 @@ class Overlay(object):
         return r
 
 
-
     def get_leaf_nodes(self, sched):
         """Return leaf nodes in this topology
 
@@ -301,3 +300,40 @@ class Overlay(object):
 
 
         return leaf_nodes
+
+
+    def get_parents(self, sched):
+        """Return a dict with each cores parent node
+        """
+
+        assert isinstance(sched, scheduling.Scheduling)
+        parents = {}
+        
+        for x in self.tree:
+            if isinstance(x, hybrid_model.MPTree):
+
+                logging.info(("Found message passing model", str(x.graph)))
+
+                tree = x.graph
+
+                for n in tree.nodes():
+
+                    l = [ y for (x,y) in tree.edges() if x == n ]
+
+                    # For some Overlays, it seems that there are edges
+                    # in the broadcast tree that are not atually used
+                    # in the final Schedule. I saw this happening
+                    # especially because for each edge (s, r), there
+                    # is also (r, s) in the broadcast tree.
+                    l_ = [ r for r in l if r in \
+                           [ rr for (_, rr) in sched.get_final_schedule(n)] ]
+
+                    if len(l) != len(l_):
+                        helpers.warn('Overlay contains edged that are not in final schedule. This is a bug')
+                    
+                    logging.info(('Found children for', n, ' to ', str(l)))
+                    for child in l:
+                        parents[child] = n
+
+        return parents
+        

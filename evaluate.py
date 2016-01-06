@@ -38,9 +38,7 @@ class AB(Protocol):
     def set_initial_state(self, eval_context, root):
         """Evaluate cost starting at root of overlay
         """
-        eval_context.nodes_active.append(root)
-        heapq.heappush(eval_context.event_queue,
-                       (eval_context.sim_round, events.Send(root, None)))
+        eval_context.activate_node(root)
         
     
     def idle_handler(self, eval_context, core, time):
@@ -75,12 +73,9 @@ class AB(Protocol):
 
             send_compl = time + cost
 
-            # Add propagation event to the heap to signal to propagate
-            # the message after the send operation completes
-            heapq.heappush(\
-                eval_context.event_queue, \
-                    (send_compl, events.Propagate(core, dest)))
-
+            # Make receiver active
+            eval_context.activate_node(dest, send_compl, core)
+            
             # Add send event to signal that further messages can be
             # sent once the current message completed the current send
             # operation.
@@ -88,10 +83,66 @@ class AB(Protocol):
                 eval_context.event_queue, \
                     (send_compl, events.Send(core, None)))
 
-            # receiver becomes active
-            eval_context.nodes_active.append(dest)
 
+class Reduction(Protocol):
+    """Atomic broadcast protocol
+    """
 
+    # A dictionary, storing for each node how many messages have been received
+    num_msgs = {}
+    parents = {}
+    root = None
+    
+    def set_initial_state(self, eval_context, root):
+        """Evaluate cost starting at root of overlay
+        """
+        leaf_nodes = eval_context.topo.get_leaf_nodes(eval_context.schedule)
+        print 'Leaf nodes are', str(leaf_nodes)
+
+        for l in leaf_nodes:
+            eval_context.activate_node(l)
+
+        self.parents = eval_context.topo.get_parents(eval_context.schedule)
+        print 'Parent relationship: ', self.parents
+
+        self.root = root
+        
+    
+    def idle_handler(self, eval_context, core, time):
+        """Idle nodes in the atomic broadcast will send messages to nodes that
+        have not yet seen the message.
+
+        The scheduler decides where messages should be sent.
+
+        This function will be called for nodes that are idle, but
+        active.
+
+        """
+
+        # There is nothing to do for the root
+        if core == self.root:
+            return
+        
+        self.num_msgs[core] = self.num_msgs.get(core, 0) + 1
+        num = self.num_msgs[core]
+
+        num_children = len([ x for (x, p) in self.parents.items() if p == int(core) ])
+        
+        # Each core has only one parent - send a message there
+        parent = self.parents.get(core, None)
+        assert parent != None # Unless we are the root, we have a parent
+        print 'Count on', core, 'out of', num_children, 'is', num
+
+        if num >= num_children:
+            print 'Sending to parent', parent
+
+            send_compl = time + eval_context.model.get_send_cost(core, parent)
+            
+            # Note: don't have to enqueue the same core as sender again
+            eval_context.activate_node(parent, send_compl, core)
+
+        
+        
         
 
 # Evaluation is event based. We realize this using a priority heap
@@ -110,7 +161,7 @@ class NodeState(object):
 
     """
     def __init__(self):
-        self.seq_no = 0
+        self.nth = None
 
 # ==================================================
 class Result():
@@ -159,7 +210,8 @@ class Evaluate():
         
         #
         # The protocol that should be simulated
-        self.protocol = AB()
+        self.protocol = Reduction()
+#        self.protocol = AB()
         
 
     def evaluate(self, topo, root, m, sched):
@@ -187,6 +239,7 @@ class Evaluate():
         self.schedule = sched
         self.model = m
         self.sim_round = 0
+        self.topo = topo
 
         # Construct visualization instance
         visu_name = ("visu/visu_%s_%s_send_events.tex" % 
@@ -276,16 +329,6 @@ class Evaluate():
         print "Receive(%d,%s,%s) - cost %d" \
                          % (self.sim_round, str(dest), str(src), cost)
 
-        # For rings: sequence number
-        # Abort in case the message was seen before
-        if dest in self.node_state and \
-                isinstance(self.node_state[dest], NodeState) and \
-                self.node_state[dest].seq_no > 0:
-            print "Node %s Received message that was send before, aborting!" % dest
-            return
-        self.node_state[dest] = NodeState()
-        self.node_state[dest].seq_no = 1
-
         recv_cmpl = self.sim_round + cost
         heapq.heappush(self.event_queue, (recv_cmpl, events.Send(dest, None)))
 
@@ -304,4 +347,36 @@ class Evaluate():
         Return whether evaluation is termiated
         """
         return len(self.event_queue)==0
+
+
+    def activate_node(self, node, time=None, sender=-1):
+        """Make node activate and schedule send event
+
+        This can either be after receiving a message from some other
+        node, in which case the sender node and time when the message
+        will be sent (and on the "wire") have to be given as argument.
+
+        Otherwise, the node is set active without registering a parent
+        node and without simulating a propagation event. This is
+        useful to setup the inital state of the initialization
+        (i.e. some nodes should start already in active state,
+        e.g. the root in a broadcast)
+
+        """
+        if not time:
+            time = self.sim_round
+
+        if sender>=0:
+            # Node is activated after receiving node from <sender>
+            # -> propagate message first
+            ev = events.Propagate(sender, node)
+        else:
+            # Node is activated initialy
+            # -> register send directly
+            ev = events.Send(node, None)
+
+        logging.info('activate_node %d, generating event %s' % (node, str(ev)))
+        
+        heapq.heappush(self.event_queue, (time, ev))
+        self.nodes_active.append(node)
 
