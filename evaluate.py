@@ -6,6 +6,85 @@ import pdb
 import logging
 import sched_adaptive
 
+
+class Protocol(object):
+    """Represent a protocol that is executed  by the Simulator
+    """
+
+    def receive_handler(self, core, from_core):
+        """Executed when a message is received
+
+        @param core Core on which the message was received
+
+        @param from_core Sending core
+        """
+
+    def idle_handler(self, eval_context, core, time):
+        """Executed  when a core because idle
+
+        @param eval_context A reference to the evaluate instance
+        executing the Simulation.
+
+        @param core The core that has become idel
+
+        @param time The current time
+        """
+
+class AB(Protocol):
+    """Atomic broadcast protocol
+    """
+
+    def idle_handler(self, eval_context, core, time):
+        """Idle nodes in the atomic broadcast will send messages to nodes that
+        have not yet seen the message.
+
+        The scheduler decides where messages should be sent.
+
+        """
+        
+        # Get a list of neighbors from the scheduler
+        nb = eval_context.schedule.find_schedule(core, eval_context.nodes_active)
+        assert isinstance(nb, list)
+        assert isinstance(eval_context.nodes_active, list)
+
+        # Ignore all nodes that received the message already
+        nb_filtered = [ tmp for (cost, tmp) in nb if tmp not in eval_context.nodes_active ]
+
+        if len(nb_filtered) > 0:
+            dest = nb_filtered[0]
+            cost = eval_context.model.get_send_cost(core, dest)
+
+            # Adaptive models: need to add edge
+            if not eval_context.topology.has_edge((core,dest)):
+                eval_context.topology.add_edge(
+                    (core, dest),
+                    eval_context.model.graph.edge_weight((core, dest)))
+
+            eval_context.visu.send(core, dest, time, cost)
+            print 'Send(%d,%s,%s) - cost %d' % \
+                (eval_context.sim_round, str(core), str(dest), cost)
+
+            send_compl = time + cost
+
+            # Add propagation event to the heap to signal to propagate
+            # the message after the send operation completes
+            heapq.heappush(\
+                eval_context.event_queue, \
+                    (send_compl, events.Propagate(core, dest)))
+
+            # Add send event to signal that further messages can be
+            # sent once the current message completed the current send
+            # operation.
+            heapq.heappush(\
+                eval_context.event_queue, \
+                    (send_compl, events.Send(core, None)))
+
+            # receiver becomes active
+            eval_context.nodes_active.append(dest)
+
+
+        
+
 # Evaluation is event based. We realize this using a priority heap
 # with the time at which the event is happening as priority and pop
 # the top of this queue in every step.
@@ -40,7 +119,14 @@ class Result():
 
 # ==================================================
 class Evaluate():
+    """Simulates a given algorithm on a given machine
 
+    This class manages the event queue, which is used to trigger send
+    and receive operations. It also manages per-node state.
+
+    """
+
+    
     def __init__(self):
         """
         Reset state
@@ -49,16 +135,23 @@ class Evaluate():
         self.sim_round = 0
         self.event_queue = []
         self.topology = {}
+        
         # Some topologies require state (e.g. rings). We store this state
         # in a list of node states (sequence number for rings)
         self.node_state = {}
         self.last_node = -1
+        
         # Keep track of which nodes are active
         # Lists of nodes that: 
         #  -> received the message already (nodes_active)
         #  -> did _not_ yet receive the message (nodes_inactive)
         self.nodes_active = []
         self.nodes_inactive = []
+        
+        #
+        # The protocol that should be simulated
+        self.protocol = AB()
+        
 
     def evaluate(self, topo, root, m, sched):
         """
@@ -123,9 +216,17 @@ class Evaluate():
         return r
 
     def consume_event(self):
-        """
-        Consume event from event queue. This will increase the round
-        counter
+        """Consume event from event queue. This will increase the round
+        counter.
+
+        There are three types of events:
+
+        - propagate:
+
+        - send: A send should be performed. Triggers calling the
+          function send().
+
+        - receive:
 
         """
         (p, e) = heapq.heappop(self.event_queue)
@@ -183,59 +284,10 @@ class Evaluate():
         send towards nodes given in omit
 
         """
-        send_time = self.sim_round
-        if not src in self.topology.nodes():
-            import pdb
-            pdb.set_trace()
         assert src in self.topology.nodes()
-        nb = []
+        self.protocol.idle_handler(self, src, self.sim_round)
 
-        # Get a list of neighbors from the scheduler
-        nb = self.schedule.find_schedule(src, self.nodes_active)
-        assert isinstance(nb, list)
-        assert isinstance(self.nodes_active, list)
-
-        # Ignore all nodes that received the message already
-        nb_filtered = [ tmp for (cost, tmp) in nb if tmp not in self.nodes_active ]
-
-        # # Sanity checks for adaptive scheduling
-        # if isinstance(self.schedule, sched_adaptive.SchedAdaptive):
-        #     # Otherwise, state in Scheduler is inconsistent with state of evaluation
-        #     # Currently, this state is only the list of active nodes
-        #     assert len(nb_filtered) == len(nb) or pdb.set_trace()
-
-        if len(nb_filtered) > 0:
-            dest = nb_filtered[0]
-            cost = self.model.get_send_cost(src, dest)
-
-            # Adaptive models: need to add edge
-            if not self.topology.has_edge((src,dest)):
-                self.topology.add_edge(
-                    (src, dest),
-                    self.model.graph.edge_weight((src, dest)))
-
-            self.visu.send(src, dest, send_time, cost)
-            print 'Send(%d,%s,%s) - cost %d' % \
-                (self.sim_round, str(src), str(dest), cost)
-
-            send_compl = send_time + cost
-
-            # Add propagation event to the heap to signal to propagate
-            # the message after the send operation completes
-            heapq.heappush(\
-                self.event_queue, \
-                    (send_compl, events.Propagate(src, dest)))
-
-            # Add send event to signal that further messages can be
-            # sent once the current message completed the current send
-            # operation.
-            heapq.heappush(\
-                self.event_queue, \
-                    (send_compl, events.Send(src, None)))
-
-            # receiver becomes active
-            self.nodes_active.append(dest)
-
+        
     def terminate(self):
         """
         Return whether evaluation is termiated
