@@ -7,6 +7,7 @@ import config
 import helpers
 
 import hybrid_model
+import logging
  
 import random
 
@@ -261,11 +262,9 @@ class Overlay(object):
         for x in self.tree:
             if isinstance(x, hybrid_model.MPTree):
 
-                print "Found message passing model", str(x.graph)
+                logging.info(("Found message passing model", str(x.graph)))
 
                 tree = x.graph
-                print str(tree.nodes())
-                print str(tree.edges())
 
                 for n in tree.nodes():
 
@@ -297,11 +296,8 @@ class Overlay(object):
                         helpers.warn('Overlay contains edged that are not in final schedule. This is a bug')
                     
                     if len(l_)==0:
-                        print n, 'is a leaf node'
+                        logging.info((n, 'is a leaf node'))
                         leaf_nodes.append(n)
 
-                    
-
-                    
 
         return leaf_nodes

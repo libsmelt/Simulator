@@ -117,7 +117,6 @@ def output_quorum_configuration(model, hierarchies, root, sched, topo, midx):
     import shm
 
     d = core_index_dict(model.graph.nodes())
-    print d
 
     dim = model.get_num_cores()
     mat = [[0 for x in xrange(dim)] for x in xrange(dim)]
@@ -266,7 +265,7 @@ def draw_final(mod, sched, topo):
     for c in mod.get_cores():
         leaf = c in topo.get_leaf_nodes(sched)
         if leaf:
-            print 'Drawing leaf %d' % c
+            logging.info(('Drawing leaf %d' % c))
         A.add_node(c, color='grey' if leaf else 'black')
         
     for c in mod.get_cores(True):

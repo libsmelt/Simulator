@@ -50,7 +50,6 @@ class NetosMachine(model.Model):
         print 'Initializing NetOS machine %s' % self.name
         
         self.res = topology_parser.parse_machine_db(self.name)
-        print self.res
         
         # Parse pairwise send and receive costs. We need this to
         # build the graph with the pairwise measurements.
