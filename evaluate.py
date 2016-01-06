@@ -11,12 +11,13 @@ class Protocol(object):
     """Represent a protocol that is executed  by the Simulator
     """
 
-    def receive_handler(self, core, from_core):
-        """Executed when a message is received
+    def set_initial_state(self, eval_context, root):
+        """Initialize protocol execution
 
-        @param core Core on which the message was received
+        @param eval_context A reference to the evaluate instance
+        executing the Simulation.
 
-        @param from_core Sending core
+        @param root The root node of the topology
         """
 
     def idle_handler(self, eval_context, core, time):
@@ -34,6 +35,14 @@ class AB(Protocol):
     """Atomic broadcast protocol
     """
 
+    def set_initial_state(self, eval_context, root):
+        """Evaluate cost starting at root of overlay
+        """
+        eval_context.nodes_active.append(root)
+        heapq.heappush(eval_context.event_queue,
+                       (eval_context.sim_round, events.Send(root, None)))
+        
+    
     def idle_handler(self, eval_context, core, time):
         """Idle nodes in the atomic broadcast will send messages to nodes that
         have not yet seen the message.
@@ -184,10 +193,9 @@ class Evaluate():
                      (m.get_name(), topo.get_name()))
         self.visu = draw.Output(visu_name, m, topo)
 
-        # Evaluate cost starting at _root_
-        self.nodes_active.append(root)
-        heapq.heappush(self.event_queue, (self.sim_round, events.Send(root, None)))
-
+        # Set initial state
+        self.protocol.set_initial_state(self, root)
+        
         while not self.terminate():
             self.consume_event()
 
@@ -244,9 +252,12 @@ class Evaluate():
             self.send(e.src)
 
     def propagate(self, src, dest):
-        """
-        Process propagation event. This will queue a receive event on the
+        """Process propagation event. This will queue a receive event on the
         receiving side
+
+        We don't really have to make this part of the protocol logic,
+        since propagation time should be independent of the protocol
+        used.
 
         """
         w = self.topology.edge_weight((src, dest))
