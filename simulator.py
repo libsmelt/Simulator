@@ -8,45 +8,18 @@ The simulator consists of:
 
 """
 
-# Import pygraph
-from pygraph.classes.graph import graph
-from pygraph.classes.digraph import digraph
-from pygraph.algorithms.searching import breadth_first_search
-from pygraph.algorithms.minmax import shortest_path
-
 # Import own code
 import evaluate
 import config
-import model
 import helpers
 import simulation
 
-# Overlays
-import overlay
-import cluster
-import ring
-import binarytree
-import sequential
-import badtree
-import mst
-import adaptive
-import hybrid
-
-import scheduling
-
-import pdb
 import argparse
 import logging
 import sys
 import os
 import tempfile
-import traceback
-from config import topologies, machines
-
-import numa_model
-
-# Machines
-import rack
+from config import machines
 
 # --------------------------------------------------
 def build_and_simulate():
@@ -75,9 +48,6 @@ def build_and_simulate():
                         action="store_const",
                         const="evaluate-all-machines", default="simulate", 
                         help="Generate a plot comparing all topologies on all machines")
-    parser.add_argument('--ump-breakdown', dest="action", action="store_const",
-                        const="ump-breakdown", default="simulate", 
-                        help="Dump machine model instead of simulating")
     parser.add_argument('--multicast', action='store_const', default=False, 
                         const=True, help='Perfom multicast rather than broadcast')
     parser.add_argument('machine',
@@ -155,10 +125,6 @@ def build_and_simulate():
         # Generate footer
         helpers.output_quorum_end(all_last_nodes, all_leaf_nodes, \
                                   model_descriptions)
-        return 0
-
-    elif config.args.action == 'ump-breakdown':
-        ump.execute_ump_breakdown()
         return 0
 
     elif config.args.action == "evaluate":
@@ -276,7 +242,6 @@ def build_and_simulate():
 if __name__ == "__main__":
 
     import netos_machine
-    import config
 
     # Append NetOS machines
     config.machines += netos_machine.get_list()
