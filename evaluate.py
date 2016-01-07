@@ -39,6 +39,11 @@ class Protocol(object):
 class AB(Protocol):
     """Atomic broadcast protocol
     """
+    
+    # Keep track of which nodes are active
+    # Lists of nodes that: 
+    #  -> received the message already (nodes_active)
+    nodes_active = []
 
     def get_name(self):
         return 'atomic broadcast'
@@ -46,7 +51,8 @@ class AB(Protocol):
     def set_initial_state(self, eval_context, root):
         """Evaluate cost starting at root of overlay
         """
-        eval_context.activate_node(root)
+        eval_context.schedule_node(root)
+        self.nodes_active = [root]
         
     
     def idle_handler(self, eval_context, core, time):
@@ -58,12 +64,12 @@ class AB(Protocol):
         """
         
         # Get a list of neighbors from the scheduler
-        nb = eval_context.schedule.find_schedule(core, eval_context.nodes_active)
+        nb = eval_context.schedule.find_schedule(core, self.nodes_active)
         assert isinstance(nb, list)
-        assert isinstance(eval_context.nodes_active, list)
+        assert isinstance(self.nodes_active, list)
 
         # Ignore all nodes that received the message already
-        nb_filtered = [ tmp for (cost, tmp) in nb if tmp not in eval_context.nodes_active ]
+        nb_filtered = [ tmp for (cost, tmp) in nb if tmp not in self.nodes_active ]
 
         if len(nb_filtered) > 0:
             dest = nb_filtered[0]
@@ -82,7 +88,8 @@ class AB(Protocol):
             send_compl = time + cost
 
             # Make receiver active
-            eval_context.activate_node(dest, send_compl, core)
+            eval_context.schedule_node(dest, send_compl, core)
+            self.nodes_active.append(dest)
             
             # Add send event to signal that further messages can be
             # sent once the current message completed the current send
@@ -111,7 +118,7 @@ class Reduction(Protocol):
         print 'Leaf nodes are', str(leaf_nodes)
 
         for l in leaf_nodes:
-            eval_context.activate_node(l)
+            eval_context.schedule_node(l)
 
         self.parents = eval_context.topo.get_parents(eval_context.schedule)
         print 'Parent relationship: ', self.parents
@@ -150,7 +157,7 @@ class Reduction(Protocol):
             send_compl = time + eval_context.model.get_send_cost(core, parent)
             
             # Note: don't have to enqueue the same core as sender again
-            eval_context.activate_node(parent, send_compl, core)
+            eval_context.schedule_node(parent, send_compl, core)
 
         
         
@@ -227,13 +234,6 @@ class Evaluate():
         # in a list of node states (sequence number for rings)
         self.node_state = {}
         self.last_node = -1
-        
-        # Keep track of which nodes are active
-        # Lists of nodes that: 
-        #  -> received the message already (nodes_active)
-        #  -> did _not_ yet receive the message (nodes_inactive)
-        self.nodes_active = []
-        self.nodes_inactive = []
         
         #
         # The protocol that should be simulated
@@ -375,7 +375,7 @@ class Evaluate():
         return len(self.event_queue)==0
 
 
-    def activate_node(self, node, time=None, sender=-1):
+    def schedule_node(self, node, time=None, sender=-1):
         """Make node activate and schedule send event
 
         This can either be after receiving a message from some other
@@ -404,5 +404,4 @@ class Evaluate():
         logging.info('activate_node %d, generating event %s' % (node, str(ev)))
         
         heapq.heappush(self.event_queue, (time, ev))
-        self.nodes_active.append(node)
 
