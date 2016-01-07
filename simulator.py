@@ -32,28 +32,13 @@ def build_and_simulate():
         description=('Simulator for multicore machines. The default action is '
                      'to simulate the given combination of topology and machine. '
                      'Available machines: %s' % ', '.join(config.machines) ))
-    parser.add_argument('--evaluate-model', dest="action", action="store_const",
-                        const="evaluate", default="simulate", 
-                        help="Dump machine model instead of simulating")
-    parser.add_argument('--evaluate-flounder', dest="action", action="store_const",
-                        const="evaluate-flounder", default="simulate", 
-                        help="?")
-    parser.add_argument('--evaluate-ump', dest="action", action="store_const",
-                        const="evaluate-ump", default="simulate", 
-                        help="?")
-    parser.add_argument('--evaluate-umpq', dest="action", action="store_const",
-                        const="evaluate-umpq", default="simulate", 
-                        help="?")
-    parser.add_argument('--evaluate-all-machines', dest="action", 
-                        action="store_const",
-                        const="evaluate-all-machines", default="simulate", 
-                        help="Generate a plot comparing all topologies on all machines")
     parser.add_argument('--multicast', action='store_const', default=False, 
                         const=True, help='Perfom multicast rather than broadcast')
     parser.add_argument('machine',
                         help="Machine to simulate")
-    parser.add_argument('overlay', nargs='+',
-                        help="Overlay to use for atomic broadcast")
+    parser.add_argument('overlay', nargs='*', default=config.topologies,
+                        help="Overlay to use for atomic broadcast (default: %s)" %
+                        ' '.join(config.topologies))
     parser.add_argument('--group', default=None,
                         help=("Coma separated list of node IDs that should be "
                               "part of the multicast group"))
@@ -81,8 +66,10 @@ def build_and_simulate():
 
     # --------------------------------------------------
     # Switch main action
+    
     # XXX Cleanup required
-    if config.args.action == "simulate":
+    if True:
+        
         # Generate model headers
         helpers.output_quroum_start(m, len(config.args.overlay))
         all_last_nodes = []
@@ -126,94 +113,7 @@ def build_and_simulate():
         helpers.output_quorum_end(all_last_nodes, all_leaf_nodes, \
                                   model_descriptions)
         return 0
-
-    elif config.args.action == "evaluate":
-        print "Evaluating model"
-        assert len(config.args.overlay) == 1 # Currently only supported if only one overlay is given
-        helpers.parse_and_plot_measurement(
-            range(m.get_num_cores()), config.args.machine, config.args.overlay[0], 
-            config.get_ab_machine_results(config.args.machine, config.args.overlay))
-        return 0
-
-    elif config.args.action == "evaluate-ump":
-        print "Evaluate UMP measurements for given machine"
-
-        assert config.args.machine.startswith(m.get_name()) # E.g. ziger1 will be ziger, generally: machineNNN, where NNN is a number
-        (results, sim_results) = helpers.extract_machine_results(m)
-
-        # debug output
-        for ((t, v, e), (t_sim, v_sim)) in zip(results, sim_results):
-            print '%50s %7d %5d' % (t, v, v_sim)
-            
-        helpers.output_machine_results(
-            config.translate_machine_name(config.args.machine), results, sim_results)
-
-        return 0
-
-    elif config.args.action == "evaluate-flounder":
-        print "Evaluate FLOUNDER measurements for given machine"
-
-        assert config.args.machine.startswith(m.get_name()) # E.g. ziger1 will be ziger, generally: machineNNN, where NNN is a number
-        (results, sim_results) = helpers.extract_machine_results(m, nosim=True, flounder=True)
-
-        # debug output
-        for ((t, v, e), (t_sim, v_sim)) in zip(results, sim_results):
-            print '%50s %7d %5d' % (t, v, v_sim)
-            
-        helpers.output_machine_results(
-            config.translate_machine_name(config.args.machine), 
-            results, sim_results, flounder=True)
-
-        return 0
-
-    elif config.args.action == "evaluate-umpq":
-        print "Evaluate FLOUNDER measurements for given machine"
-
-        assert config.args.machine.startswith(m.get_name()) # E.g. ziger1 will be ziger, generally: machineNNN, where NNN is a number
-        (results, sim_results) = helpers.extract_machine_results(m, umpq=True)
-
-        # debug output
-        for ((t, v, e), (t_sim, v_sim)) in zip(results, sim_results):
-            print '%50s %7d %5d' % (t, v, v_sim)
-            
-        # Tables
-        helpers.output_machine_results(
-            config.translate_machine_name(config.args.machine), 
-            results, sim_results, umpq=True)
-
-        # Plot
-        helpers.plot_machine_results(
-            config.translate_machine_name(config.args.machine),
-            results, sim_results)
-        
-        return 0
-
-    elif config.args.action == "evaluate-all-machines":
-        print "Evaluate all machines"
-
-        a = []
-
-        for machine in machines:
-            mod = config.arg_machine(machine) 
-            (results, sim_results) = helpers.extract_machine_results(mod, nosim=True)
-
-            a.append((machine, results))#, sim_results)
-        
-        fname = '/tmp/multiplot.tex'
-        f = open(fname, 'w+')
-        helpers._latex_header(f)
-
-        # Generate plot including figure environment
-        helpers.do_pgf_multi_plot(f, a)
-
-        helpers._latex_footer(f)
-        helpers.run_pdflatex(fname)
-
-        return 0
-
-    else:
-        print 'Unknown action .. '
-        exit(1)
+    
 
     # --------------------------------------------------
     # Output graphs

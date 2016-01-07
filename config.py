@@ -11,13 +11,13 @@ USE_UMPQ=False
 
 topologies = [
 #    "ring",
-    "cluster",
+    "adaptivetree",
     "mst",
     "bintree",
-#    "sequential", SK: Can't predict this very closely right now due to the write-buffer
+    "cluster",
     "badtree",
     "fibonacci",
-    "adaptivetree"
+#    "sequential", SK: Can't predict this very closely right now due to the write-buffer
     ]
 machines = [
     ]
