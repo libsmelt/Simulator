@@ -31,10 +31,18 @@ class Protocol(object):
         @param time The current time
         """
 
+    def get_name(self):
+        """Representative name for the protocol
+        """
+        
+
 class AB(Protocol):
     """Atomic broadcast protocol
     """
 
+    def get_name(self):
+        return 'atomic broadcast'
+    
     def set_initial_state(self, eval_context, root):
         """Evaluate cost starting at root of overlay
         """
@@ -88,6 +96,9 @@ class Reduction(Protocol):
     """Atomic broadcast protocol
     """
 
+    def get_name(self):
+        return 'reduction'
+    
     # A dictionary, storing for each node how many messages have been received
     num_msgs = {}
     parents = {}
@@ -186,10 +197,26 @@ class Evaluate():
 
     """
 
-    
-    def __init__(self):
+    @staticmethod
+    def evaluate_all(topo, root, m, sched):
+        """Evaluate all protocols
+
         """
-        Reset state
+        res = []
+
+        for protocol in [ AB(), Reduction() ]:
+            
+            ev = Evaluate(protocol)
+            res.append((protocol.get_name(), ev.evaluate(topo, root, m, sched)))
+
+        return res 
+        
+    
+    def __init__(self, _protocol):
+        """Reset state
+
+        @param _protocol Instance of the the protocol that should be
+        evaluated
 
         """
         self.sim_round = 0
@@ -210,8 +237,7 @@ class Evaluate():
         
         #
         # The protocol that should be simulated
-        self.protocol = Reduction()
-#        self.protocol = AB()
+        self.protocol = _protocol
         
 
     def evaluate(self, topo, root, m, sched):

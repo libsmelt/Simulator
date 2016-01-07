@@ -80,7 +80,7 @@ def build_and_simulate():
         for _overlay in config.args.overlay:
 
             # type(topology) = hybrid.Hybrid | binarytree.BinaryTree -- inherited from overlay.Overlay
-            (topo, ev, root, sched, topology) = \
+            (topo, evs, root, sched, topology) = \
                 simulation._simulation_wrapper(_overlay, m, gr, config.args.multicast)
             hierarchies = topo.get_tree()
 
@@ -92,7 +92,9 @@ def build_and_simulate():
             
             model_descriptions.append(topology.get_name())
 
-            print "Cost for tree is: %d (%d), last node is %s" % (ev.time, ev.time_no_ab, ev.last_node)
+            for (label, ev) in evs:
+                print "Cost %s for tree is: %d (%d), last node is %s" % \
+                    (label, ev.time, ev.time_no_ab, ev.last_node)
             
             # Output c configuration for quorum program
             helpers.output_quorum_configuration( \

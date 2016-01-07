@@ -94,9 +94,7 @@ def _simulation_wrapper(ol, m, gr, multicast=False):
             raise Exception('XXX Do not know how to get scheduler for list of modules')
 
         # Evaluate the MP part
-        evaluation = evaluate.Evaluate()
-        ev = evaluation.evaluate(r, root, m, sched) # Fails - only evaluate MP part
-
+        ev = evaluate.Evaluate.evaluate_all(r, root, m, sched)
 
         # Return result
         if r_tmp:
