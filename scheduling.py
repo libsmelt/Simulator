@@ -49,3 +49,10 @@ class Scheduling(object):
         for dest in self.graph.neighbors(src):
             nb.append((model.edge_weight((src, dest)), dest))
         return nb
+
+    def next_eval(self):
+        """Evaluation reached next protocol.
+
+        This is important for dynamic schedulers, such as the adaptive
+        tree, to signal that the tree has been completly generated.
+        """

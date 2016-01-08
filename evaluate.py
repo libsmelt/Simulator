@@ -6,7 +6,6 @@ import pdb
 import logging
 import sched_adaptive
 
-
 class Protocol(object):
     """Represent a protocol that is executed  by the Simulator
     """
@@ -33,6 +32,12 @@ class Protocol(object):
 
     def get_name(self):
         """Representative name for the protocol
+
+        """
+        
+    def receive_handler(self, eval_context, core, from_core, time):
+        """Triggered when a message was received on <core>
+
         """
         
 
@@ -160,8 +165,151 @@ class Reduction(Protocol):
             eval_context.schedule_node(parent, send_compl, core)
 
         
+class Barrier(Protocol):
+    """Represents a barrier
+
+    """
+
+    # Constants
+    IDLE = 0
+    REDUCE = 1
+    BC = 2
+    
+    # Keep track of which nodes are active
+    # Lists of nodes that: 
+    #  -> received the message already (nodes_active)
+    nodes_active = []
+    leaf_nodes = []
+    state = {}
+
+    # A dictionary, storing for each node how many messages have been received
+    num_msgs = {}
+    parents = {}
+    root = None
+
+    def __init__(self):
+        print 'Initializing new Barrier'
+        self.state = {}
+        self.leaf_nodes = {}
+        self.nodes_active = {}
+
+        self.num_msgs = {}
+        self.parents = {}
+        self.root = None
+    
+    def get_name(self):
+        return 'barrier'
+    
+    def set_initial_state(self, eval_context, root):
+        """Evaluate cost starting at root of overlay
+        """
+        eval_context.schedule_node(root)
+        self.nodes_active = [root]
+        self.leaf_nodes = eval_context.topo.get_leaf_nodes(eval_context.schedule)
         
+        self.parents = eval_context.topo.get_parents(eval_context.schedule)
+        self.root = root
+
+    def idle_handler(self, eval_context, core, time):
+        """
+        """
+        # Get a list of neighbors from the scheduler
+        nb = eval_context.schedule.find_schedule(core, self.nodes_active)
+        assert isinstance(nb, list)
+        assert isinstance(self.nodes_active, list)
+
+        # Ignore all nodes that received the message already
+        nb_filtered = [ tmp for (cost, tmp) in nb if tmp not in self.nodes_active ]
+
+        # --------------------------------------------------
+        # Reduce state
+        if self.state.get(core, Barrier.IDLE) == Barrier.REDUCE or \
+           len(nb_filtered)==0:
+            
+            print ('Node %d is in reduce state and received a message '
+                   'or no neighbors (%d)') % (core, len(nb_filtered))
+
+            # There is nothing to do for the root
+            if core == self.root:
+                return
+
+            self.num_msgs[core] = self.num_msgs.get(core, 0) + 1
+            num = self.num_msgs[core] - 1
+            plist = eval_context.topo.get_parents(eval_context.schedule)
+            
+            num_children = len([ x for (x, p) in plist.items() \
+                                 if p == int(core) ])
+
+            # Each core has only one parent - send a message there
+            parent = eval_context.topo.get_parents(eval_context.schedule).get(core, None)
+            assert parent != None # Unless we are the root, we have a parent
+            print 'Count on', core, 'out of', num_children, 'is', num
+
+            if num >= num_children:
+                print '%d: Sending to parent %d (%d/%d)' % (core, parent, num, num_children)
+
+                cost = eval_context.model.get_send_cost(core, parent)
+                
+                print 'Send(%d,%s,%s) - NBs=%d - cost %d' % \
+                    (eval_context.sim_round, str(core), str(parent), 1, cost)
+
+                send_compl = time + cost
+
+                # Note: don't have to enqueue the same core as sender again
+                eval_context.schedule_node(parent, send_compl, core)
+
+        # --------------------------------------------------
+        # Broadcast state
+        elif len(nb_filtered) > 0:
+            
+            dest = nb_filtered[0]
+            cost = eval_context.model.get_send_cost(core, dest)
+
+            # Adaptive models: need to add edge
+            if not eval_context.topology.has_edge((core,dest)):
+                eval_context.topology.add_edge(
+                    (core, dest),
+                    eval_context.model.graph.edge_weight((core, dest)))
+
+            eval_context.visu.send(core, dest, time, cost)
+            print 'Send(%d,%s,%s) - NBs=%d - cost %d' % \
+                (eval_context.sim_round, str(core), str(dest),
+                 len(nb_filtered), cost)
+
+            send_compl = time + cost
+
+            # Make receiver active
+            eval_context.schedule_node(dest, send_compl, core)
+            self.nodes_active.append(dest)
+            
+            # Add send event to signal that further messages can be
+            # sent once the current message completed the current send
+            # operation.
+            heapq.heappush(\
+                eval_context.event_queue, \
+                    (send_compl, events.Send(core, None)))
+
+
+                
+    def receive_handler(self, eval_context, core, from_core, time):
+        """Triggered when a message was received on <core>
+
         
+        """
+        print 'Receiving message on core %d' % core
+        if self.state.get(core, Barrier.IDLE) == Barrier.IDLE:
+            self.state[core] = Barrier.BC
+            
+        elif self.state.get(core, Barrier.IDLE) == Barrier.BC:
+            self.state[core] = Barrier.REDUCE
+
+        elif self.state.get(core, Barrier.IDLE) == Barrier.REDUCE:
+            print 'Node is already in Reduces state, nothing to do here'
+            
+            
+        else:
+            raise Exception('Received unexpected message')
+       
 
 # Evaluation is event based. We realize this using a priority heap
 # with the time at which the event is happening as priority and pop
@@ -211,10 +359,15 @@ class Evaluate():
         """
         res = []
 
-        for protocol in [ AB(), Reduction() ]:
+        for protocol in [ AB(), Reduction(), Barrier() ]:
+
+            print 'Evaluating protocol %s' % \
+                protocol.get_name()
             
             ev = Evaluate(protocol)
             res.append((protocol.get_name(), ev.evaluate(topo, root, m, sched)))
+
+            sched.next_eval()
 
         return res 
         
@@ -349,12 +502,15 @@ class Evaluate():
         is the node where the message is received. Send will be called to
         trigger sending of messages to children.
         """
+        assert (dest>=0)
         self.last_node = dest
         cost = self.model.get_receive_cost(src, dest)
         self.visu.receive(dest, src, self.sim_round, cost)
         print "Receive(%d,%s,%s) - cost %d" \
                          % (self.sim_round, str(dest), str(src), cost)
 
+        self.protocol.receive_handler(self, dest, src, self.sim_round)
+        
         recv_cmpl = self.sim_round + cost
         heapq.heappush(self.event_queue, (recv_cmpl, events.Send(dest, None)))
 

@@ -22,6 +22,8 @@ class SchedAdaptive(scheduling.Scheduling):
 
     """
     store = dict()
+    num = 0
+    finished = False
 
     def __init__(self, graph, mod):
         assert isinstance(mod, model.Model)
@@ -51,6 +53,12 @@ class SchedAdaptive(scheduling.Scheduling):
         """
         assert active_nodes is not None
         assert sending_node in active_nodes
+
+        if self.finished:
+            return self.store[sending_node]
+        
+        self.num += 1
+        print 'Active nodes - %d' % self.num, len(active_nodes)
 
         # Find cores that ...
         # Principles are:
@@ -185,3 +193,7 @@ class SchedAdaptive(scheduling.Scheduling):
         except:
             logging.info(('Node', sending_node, 'is not sending any message'))
             return []
+
+    def next_eval(self):
+        self.finished = True
+        
