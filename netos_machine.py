@@ -55,19 +55,12 @@ class NetosMachine(model.Model):
         # build the graph with the pairwise measurements.
         super(NetosMachine, self)._parse_receive_result_file()
         super(NetosMachine, self)._parse_send_result_file()
+        super(NetosMachine, self)._parse_send_result_file_batch()
 
         # Build a graph model
         super(NetosMachine, self).__init__(self._build_graph())
         
 
-        
-    def get_send_cost(self, src, dest):
-        return super(NetosMachine, self)._get_send_cost(src, dest)
-
-    def get_receive_cost(self, src, dest):
-        return super(NetosMachine, self)._get_receive_cost(src, dest)
-
-    
     def get_num_numa_nodes(self):
         """Get the number of NUMA nodes
         """
@@ -85,6 +78,7 @@ class NetosMachine(model.Model):
 
     def get_numa_information(self):
         return self.res['NUMA'].get()
+
     
     def get_num_cores(self):
         return self.res['numcpus']

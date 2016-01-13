@@ -78,7 +78,7 @@ class AB(Protocol):
 
         if len(nb_filtered) > 0:
             dest = nb_filtered[0]
-            cost = eval_context.model.get_send_cost(core, dest)
+            cost = eval_context.get_send_cost(core, dest)
 
             # Adaptive models: need to add edge
             if not eval_context.topology.has_edge((core,dest)):
@@ -159,7 +159,7 @@ class Reduction(Protocol):
         if num >= num_children:
             print 'Sending to parent', parent
 
-            send_compl = time + eval_context.model.get_send_cost(core, parent)
+            send_compl = time + eval_context.get_send_cost(core, parent)
             
             # Note: don't have to enqueue the same core as sender again
             eval_context.schedule_node(parent, send_compl, core)
@@ -248,7 +248,7 @@ class Barrier(Protocol):
             if num >= num_children:
                 print '%d: Sending to parent %d (%d/%d)' % (core, parent, num, num_children)
 
-                cost = eval_context.model.get_send_cost(core, parent)
+                cost = eval_context.get_send_cost(core, parent)
                 
                 print 'Send(%d,%s,%s) - NBs=%d - cost %d' % \
                     (eval_context.sim_round, str(core), str(parent), 1, cost)
@@ -263,7 +263,7 @@ class Barrier(Protocol):
         elif len(nb_filtered) > 0:
             
             dest = nb_filtered[0]
-            cost = eval_context.model.get_send_cost(core, dest)
+            cost = eval_context.get_send_cost(core, dest)
 
             # Adaptive models: need to add edge
             if not eval_context.topology.has_edge((core,dest)):
@@ -327,7 +327,7 @@ class NodeState(object):
 
     """
     def __init__(self):
-        self.nth = None
+        self.send_batch = 0 # <<< number of sends in current batch
 
 # ==================================================
 class Result():
@@ -383,8 +383,6 @@ class Evaluate():
         self.event_queue = []
         self.topology = {}
         
-        # Some topologies require state (e.g. rings). We store this state
-        # in a list of node states (sequence number for rings)
         self.node_state = {}
         self.last_node = -1
         
@@ -419,6 +417,10 @@ class Evaluate():
         self.model = m
         self.sim_round = 0
         self.topo = topo
+
+        # Initialize per-node state
+        for core in self.model.get_cores():
+            self.node_state[core] = NodeState()
 
         # Construct visualization instance
         visu_name = ("visu/visu_%s_%s_send_events.tex" % 
@@ -494,6 +496,10 @@ class Evaluate():
         """
         w = self.topology.edge_weight((src, dest))
         heapq.heappush(self.event_queue, (self.sim_round + w, events.Receive(src, dest)))
+
+        # Node (src) has just sent a message, increment send batch size
+        self.node_state[src].send_batch += 1
+        
         print "Propagate(%d,%s,%s) - cost %d" % (self.sim_round, str(src), str(dest), w)
 
     def receive(self, src, dest):
@@ -509,6 +515,9 @@ class Evaluate():
         print "Receive(%d,%s,%s) - cost %d" \
                          % (self.sim_round, str(dest), str(src), cost)
 
+        # Node (src) has just received a mesage, reset send batch
+        self.node_state[dest].send_batch = 0
+        
         self.protocol.receive_handler(self, dest, src, self.sim_round)
         
         recv_cmpl = self.sim_round + cost
@@ -561,3 +570,16 @@ class Evaluate():
         
         heapq.heappush(self.event_queue, (time, ev))
 
+
+    def get_send_cost(self, sender, receiver):
+
+        _batchsize = self.node_state[sender].send_batch + 1
+
+        import model
+        assert isinstance (self.model, model.Model)
+        
+        logging.info(('Send: Getting send cost %d->%d for batchsize %d = %d' % \
+            (sender, receiver, _batchsize,
+             self.model.get_send_cost(sender, receiver, _batchsize)))
+                     
+        return self.model.get_send_cost(sender, receiver, batchsize=_batchsize)
