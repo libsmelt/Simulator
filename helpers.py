@@ -60,6 +60,7 @@ class bcolors:
 
 SHM_REGIONS_OFFSET=20
 SHM_SLAVE_START=50
+SHM_MASTER_START=SHM_SLAVE_START + SHM_REGIONS_OFFSET
 
 def output_clustered_graph(graph, name, clustering):
     """Will ommit edge labels
@@ -103,13 +104,16 @@ def output_graph(graph, name, algorithm='neato'):
 F_MODEL='model.h'
 F_MODEL_DEFS='model_defs.h'
 
-def output_quorum_configuration(model, hierarchies, root, sched, topo, midx):
+def output_quorum_configuration(model, hierarchies, root, sched, topo, midx,
+                                shm_clusters=None, shm_writers=None):
     """
     Output a C array representing overlay and scheduling
     @param hierarchies: List of HybridModules, each of which is responsible for
           sending messages for a group/cluster of cores
     @param topology: instanceof(overlay.Overlay)
     @param midx: index of the model currently generated
+    @param shm_clusters: list(list(int)) Shared memory clusters to be added to the model
+    @param shm_writers: list(int) Writers, one of each list
     """
     assert isinstance(model, Model)
     assert isinstance(topo, Overlay)
@@ -135,6 +139,31 @@ def output_quorum_configuration(model, hierarchies, root, sched, topo, midx):
             import pdb; pdb.set_trace()
             raise Error('Unsupported Hybrid Module')
 
+    #  Add clusters
+    if shm_clusters:
+
+        cidx = 0
+        for cluster in shm_clusters:
+
+            # Find writer
+            writer = [ c for c in cluster if c in shm_writers ]
+            assert len(writer) == 1 # each cluster has exactly one writer
+            writer = writer[0]
+
+            readers = [ c for c in cluster if c not in shm_writers ]
+
+            for reader in readers:
+                mat[writer][reader] = cidx + SHM_MASTER_START
+                mat[reader][writer] = cidx + SHM_SLAVE_START
+
+            cidx += 1
+        
+            assert cidx < SHM_REGIONS_OFFSET
+            assert cidx < SHM_REGIONS_OFFSET
+                
+                
+                
+        
     # Generate c code
     stream = open(F_MODEL, "a")
     __matrix_to_c(stream, mat, midx)
@@ -353,9 +382,9 @@ def __c_header_model_defs(stream, machine, dim):
     stream.write('#define SHM_SLAVE_MAX %d\n' %
                  (SHM_SLAVE_START + SHM_REGIONS_OFFSET - 1))
     stream.write('#define SHM_MASTER_START %d\n' %
-                 (SHM_SLAVE_START + SHM_REGIONS_OFFSET));
+                 (SHM_MASTER_START));
     stream.write('#define SHM_MASTER_MAX %d\n' %
-                 (SHM_SLAVE_START + SHM_REGIONS_OFFSET + SHM_REGIONS_OFFSET - 1));
+                 (SHM_MASTER_START + SHM_REGIONS_OFFSET - 1));
 
 def __c_header_model(stream):
     __c_header(stream, 'MULTICORE_MODEL')

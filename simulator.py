@@ -39,6 +39,8 @@ def build_and_simulate():
     parser.add_argument('overlay', nargs='*', default=config.topologies,
                         help="Overlay to use for atomic broadcast (default: %s)" %
                         ' '.join(config.topologies))
+    parser.add_argument('--hybrid', action='store_const', default=False,
+                        const=True, help='Generate hybrid model')
     parser.add_argument('--group', default=None,
                         help=("Coma separated list of node IDs that should be "
                               "part of the multicast group"))
@@ -79,6 +81,23 @@ def build_and_simulate():
         # Generate representation of each topology
         for _overlay in config.args.overlay:
 
+
+            # ------------------------------
+            # Hybrid
+            numa_nodes = None
+            shm_writers = None
+            
+            if config.args.hybrid:
+
+                # Simulate a multicast tree
+                config.args.multicast = True
+
+                numa_nodes = m.res['NUMA'].get()
+                shm_writers = [ min(x) for x in numa_nodes ]
+
+                config.args.group = ','.join(map(str, shm_writers))
+
+                
             # type(topology) = hybrid.Hybrid | binarytree.BinaryTree -- inherited from overlay.Overlay
             (topo, evs, root, sched, topology) = \
                 simulation._simulation_wrapper(_overlay, m, gr, config.args.multicast)
@@ -97,8 +116,10 @@ def build_and_simulate():
                     (label, ev.time, ev.time_no_ab, ev.last_node)
             
             # Output c configuration for quorum program
-            helpers.output_quorum_configuration( \
-                        m, hierarchies, root, sched, topology, num_models)
+            helpers.output_quorum_configuration(m, hierarchies, root, sched,
+                                                topology, num_models,
+                                                shm_clusters=numa_nodes,
+                                                shm_writers=shm_writers)
 
             # Output final graph: we have to do this here, as the
             # final topology for the adaptive tree is not known before
