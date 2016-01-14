@@ -86,6 +86,7 @@ def build_and_simulate():
             # Hybrid
             numa_nodes = None
             shm_writers = None
+            hyb_leaf_nodes = None
             
             if config.args.hybrid:
 
@@ -94,6 +95,7 @@ def build_and_simulate():
 
                 numa_nodes = m.res['NUMA'].get()
                 shm_writers = [ min(x) for x in numa_nodes ]
+                hyb_leaf_nodes = [ max(x) for x in numa_nodes ]
 
                 config.args.group = ','.join(map(str, shm_writers))
 
@@ -126,8 +128,13 @@ def build_and_simulate():
             # simulating it.
             helpers.draw_final(m, sched, topo)
 
-            # Determine last node for this model
-            all_leaf_nodes.append([d[l] for l in topo.get_leaf_nodes(sched)])
+            if config.args.hybrid:
+                # Set ONE reader of the shared memory cluster as last node
+                all_leaf_nodes.append(hyb_leaf_nodes)
+
+            else:
+                # Determine last node for this model
+                all_leaf_nodes.append([d[l] for l in topo.get_leaf_nodes(sched)])
             
             num_models += 1
 
