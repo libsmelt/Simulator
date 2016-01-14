@@ -580,6 +580,6 @@ class Evaluate():
         
         logging.info(('Send: Getting send cost %d->%d for batchsize %d = %d' % \
             (sender, receiver, _batchsize,
-             self.model.get_send_cost(sender, receiver, _batchsize)))
+             self.model.get_send_cost(sender, receiver, _batchsize))))
                      
         return self.model.get_send_cost(sender, receiver, batchsize=_batchsize)
