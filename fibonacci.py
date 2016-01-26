@@ -33,7 +33,6 @@ class Fibonacci(overlay.Overlay):
         Initialize the clustering algorithm
         """
         super(Fibonacci, self).__init__(mod)
-        self.coordinators = self.get_coordinators()
 
     def get_name(self):
         return "fibonacci"

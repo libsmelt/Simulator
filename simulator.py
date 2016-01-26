@@ -13,6 +13,7 @@ import evaluate
 import config
 import helpers
 import simulation
+import itertools
 
 import argparse
 import logging
@@ -41,6 +42,7 @@ def build_and_simulate():
                         ' '.join(config.topologies))
     parser.add_argument('--hybrid', action='store_const', default=False,
                         const=True, help='Generate hybrid model')
+    parser.add_argument('--hybrid-cluster', help='how to cluster: default: numa, one of: numa, socket')
     parser.add_argument('--group', default=None,
                         help=("Coma separated list of node IDs that should be "
                               "part of the multicast group"))
@@ -84,18 +86,27 @@ def build_and_simulate():
 
             # ------------------------------
             # Hybrid
-            numa_nodes = None
+            hyb_cluster = None
             shm_writers = None
             hyb_leaf_nodes = None
             
             if config.args.hybrid:
 
+                if config.args.hybrid_cluster == "socket":
+                    
+                    print "Clustering: Sockets"
+                    hyb_cluster = m.res['Package'].get()
+
+                else:
+
+                    print "Clustering: NUMA nodes"
+                    hyb_cluster = m.res['NUMA'].get()
+
                 # Simulate a multicast tree
                 config.args.multicast = True
 
-                numa_nodes = m.res['NUMA'].get()
-                shm_writers = [ min(x) for x in numa_nodes ]
-                hyb_leaf_nodes = [ max(x) for x in numa_nodes ]
+                shm_writers = [ min(x) for x in hyb_cluster ]
+                hyb_leaf_nodes = [ max(x) for x in hyb_cluster ]
 
                 config.args.group = ','.join(map(str, shm_writers))
 
@@ -107,34 +118,43 @@ def build_and_simulate():
 
             # Dictionary for translating core IDs
             d = helpers.core_index_dict(m.graph.nodes())
-            
-            # Determine last node for this model
-            all_last_nodes.append(d[m.evaluation.last_node])
-            
-            model_descriptions.append(topology.get_name())
 
+            tmp = topology.get_name()
+            if hyb_cluster:
+                tmp += " (hybrid)"
+            model_descriptions.append(tmp)
+
+            tmp_last_node = -1
             for (label, ev) in evs:
+                if label == 'atomic broadcast':
+                    tmp_last_node = ev.last_node
                 print "Cost %s for tree is: %d (%d), last node is %s" % \
                     (label, ev.time, ev.time_no_ab, ev.last_node)
             
             # Output c configuration for quorum program
             helpers.output_quorum_configuration(m, hierarchies, root, sched,
                                                 topology, num_models,
-                                                shm_clusters=numa_nodes,
+                                                shm_clusters=hyb_cluster,
                                                 shm_writers=shm_writers)
 
-            # Output final graph: we have to do this here, as the
-            # final topology for the adaptive tree is not known before
-            # simulating it.
-            helpers.draw_final(m, sched, topo)
 
             if config.args.hybrid:
                 # Set ONE reader of the shared memory cluster as last node
                 all_leaf_nodes.append(hyb_leaf_nodes)
 
+                all_last_nodes.append(max(hyb_leaf_nodes))
+
             else:
                 # Determine last node for this model
                 all_leaf_nodes.append([d[l] for l in topo.get_leaf_nodes(sched)])
+            
+                # Determine last node for this model
+                all_last_nodes.append(tmp_last_node)
+
+                # Output final graph: we have to do this here, as the
+                # final topology for the adaptive tree is not known before
+                # simulating it.
+                helpers.draw_final(m, sched, topo)
             
             num_models += 1
 

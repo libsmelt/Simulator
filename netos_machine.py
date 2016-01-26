@@ -124,7 +124,10 @@ class NetosMachine(model.Model):
             if core1 in n:
                 return i
             
-    
+
+    def __repr__(self):
+        return self.name
+            
         
 # --------------------------------------------------
 # Static function

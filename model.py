@@ -262,7 +262,13 @@ class Model(object):
         """
         fname = '%s/%s/pairwise_send_batch' % \
                 (config.MACHINE_DATABASE, self.get_name())
-        f = open(fname)
+        try:
+            f = open(fname)
+        except:
+            for ((src,dest), cost) in self.send_cost.items():
+                self.send_cost_batch[(src,dest,1)] = cost
+            return
+            
         assert not self.send_cost_batch
         print 'Reading batched send costs'
         for l in f.readlines():

@@ -79,8 +79,9 @@ def parse_machine_db(machine):
     for l in stream.readlines():
 
         # Find sockets
-        m = re.match('Socket (\d+): \(([0-9 ]*)\)', l)
+        m = re.match('Socket (\d+):\s+\(([0-9 ]*)\)', l)
         if m:
+            print 'Found cluster'
             res['Package'].add_cluster(m.group(2).split())
 
         # Find cache, remember level

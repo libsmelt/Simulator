@@ -51,3 +51,15 @@ class Sequential(overlay.Overlay):
         helpers.output_graph(sequential, 'sequential', 'dot')
 
         return sequential
+
+    
+    def _get_multicast_tree(self, graph):
+        """
+        Return the broadcast tree as a graph
+        """
+
+        # Run binary tree algorithm
+        print 'Building sequential multicast', graph.nodes()
+        sequential = algorithms.sequential(graph, graph.nodes(), 0)
+
+        return sequential

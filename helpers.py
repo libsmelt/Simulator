@@ -81,6 +81,7 @@ def output_clustered_graph(graph, name, clustering):
         i += 1
 
     name = 'graphs/%s.png' % name
+    A.write(name + '.dot')
     A.draw(name, prog="dot")
 
 
@@ -177,7 +178,7 @@ def output_quroum_start(model, num_models):
     stream = open(F_MODEL, "w")
     defstream = open(F_MODEL_DEFS, "w")
     __c_header_model_defs(defstream,
-                          type(model),
+                          str(model),
                           model.get_num_cores())
     __c_header_model(stream)
 

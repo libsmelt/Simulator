@@ -34,7 +34,6 @@ class Cluster(overlay.Overlay):
         Initialize the clustering algorithm
         """
         super(Cluster, self).__init__(mod)
-        self.coordinators = self.get_coordinators()
         
     def get_name(self):
         return "cluster"
@@ -48,13 +47,13 @@ class Cluster(overlay.Overlay):
 
         """
 
-        coords = [ c for c in self.coordinators if c in g.nodes() ]
+        coords = [ c for c in self.get_coordinators() if c in g.nodes() ]
 
         # Build NUMA node graph with weights first
         g_numa = digraph()
         for c in coords:
             g_numa.add_node(c)
-            for co in self.coordinators:
+            for co in self.get_coordinators():
                 if co<c:
                     weight = self.mod.get_graph().edge_weight((c, co))
                     g_numa.add_edge((c, co), weight)
@@ -90,7 +89,7 @@ class Cluster(overlay.Overlay):
 
         g_outer = binary_tree(g_numa)
         
-        for c in self.coordinators:
+        for c in self.get_coordinators():
             numa_node = [ n for n in self.mod.get_numa_node(c) if n in g.nodes() ]
             g_simple = sequential(self.mod.get_graph(), numa_node, c)
             g_outer = merge_graphs(g_simple, g_outer)
