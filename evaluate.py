@@ -5,6 +5,17 @@ import config
 import pdb
 import logging
 import sched_adaptive
+import copy # for heapq
+
+class bcolors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
 
 class Protocol(object):
     """Represent a protocol that is executed  by the Simulator
@@ -39,6 +50,7 @@ class Protocol(object):
         """Triggered when a message was received on <core>
 
         """
+        return True
         
 
 class AB(Protocol):
@@ -129,6 +141,22 @@ class Reduction(Protocol):
         print 'Parent relationship: ', self.parents
 
         self.root = root
+
+
+    def receive_handler(self, eval_context, core, from_core, time):
+
+        self.num_msgs[core] = self.num_msgs.get(core, 0) + 1
+        num = self.num_msgs[core]
+
+        num_children = len([ x for (x, p) in self.parents.items() if p == int(core) ])
+
+        print bcolors.OKBLUE + \
+            ('%d: Core %d receiving message %d/%d' %
+             (time, core, num, num_children)) + \
+            bcolors.ENDC
+
+        assert num<=num_children
+        return num>=num_children
         
     
     def idle_handler(self, eval_context, core, time):
@@ -297,6 +325,7 @@ class Barrier(Protocol):
         
         """
         print 'Receiving message on core %d' % core
+        
         if self.state.get(core, Barrier.IDLE) == Barrier.IDLE:
             self.state[core] = Barrier.BC
             
@@ -475,6 +504,15 @@ class Evaluate():
         assert(p>=self.sim_round)
         self.sim_round = p
 
+        d = int(e.dest) if e.dest != None else -1
+        s = int(e.src) if e.src != None else -1
+        
+        print bcolors.OKGREEN + \
+            ('%d: event %s -- Core %d -> Core %d' %
+             (self.sim_round, e.get_type(), s, d)) + \
+            bcolors.ENDC
+        
+
         if isinstance(e, events.Propagate):
             self.propagate(e.src, e.dest)
 
@@ -485,6 +523,9 @@ class Evaluate():
             assert e.dest is None
             self.send(e.src)
 
+        if isinstance(e, events.Receiving):
+            print 'Receiving done'
+
     def propagate(self, src, dest):
         """Process propagation event. This will queue a receive event on the
         receiving side
@@ -494,34 +535,126 @@ class Evaluate():
         used.
 
         """
+
+        enqueue_at = self.sim_round
+        
+        # Check if the receiver is already sending.
+        for he in self.event_queue:
+            (ts, ev) = he
+
+            if ev.dest == dest:
+                print bcolors.BOLD + \
+                    ('%d: Core %d propagete, found existing event %s at %d %d -> %d - ' %
+                     (self.sim_round, dest, ev.get_type(), ts, ev.src, ev.dest)) + \
+                    bcolors.ENDC
+
+                if isinstance(ev, events.Receiving):
+
+                    _new = max(enqueue_at, ts)
+                    
+                    print bcolors.BOLD + bcolors.FAIL + \
+                        ('%d: Core %d is already receiving %d -> %d' %
+                         (self.sim_round, dest, enqueue_at, _new)) + bcolors.ENDC
+
+                    assert ts >= enqueue_at
+                    enqueue_at = _new
+        
         w = self.topology.edge_weight((src, dest))
-        heapq.heappush(self.event_queue, (self.sim_round + w, events.Receive(src, dest)))
+        heapq.heappush(self.event_queue, (enqueue_at + w, events.Receive(src, dest)))
 
         # Node (src) has just sent a message, increment send batch size
         self.node_state[src].send_batch += 1
-        
-        print "Propagate(%d,%s,%s) - cost %d" % (self.sim_round, str(src), str(dest), w)
+
+        print "Propagate(%d,%s->%s) - cost %d" % (self.sim_round, str(src), str(dest), w)
 
     def receive(self, src, dest):
-        """
-        Receive a message on dest XXX This is a bit of a misnomer. _dest_
+        """Receive a message on dest XXX This is a bit of a misnomer. _dest_
         is the node where the message is received. Send will be called to
         trigger sending of messages to children.
+
+        XXX The problem here is that a core cannot concurrently
+        receive elements. So in here, we need to check the queue and
+        update all other's receive events to at least (self.sim_round + receive_cost)
+
         """
         assert (dest>=0)
         self.last_node = dest
+        
+        # Get receive cost
         cost = self.model.get_receive_cost(src, dest)
         self.visu.receive(dest, src, self.sim_round, cost)
-        print "Receive(%d,%s,%s) - cost %d" \
-                         % (self.sim_round, str(dest), str(src), cost)
+        print "Receive(%d,%s->%s) Core %d- cost %d" \
+                         % (self.sim_round, str(src), str(dest), dest, cost)
 
         # Node (src) has just received a mesage, reset send batch
         self.node_state[dest].send_batch = 0
         
-        self.protocol.receive_handler(self, dest, src, self.sim_round)
+        schedule_send = self.protocol.receive_handler( \
+            self, dest, src, self.sim_round)
+
+        # It's possible that there is another event scheduled for the
+        # receiving node. In that case, we need to update the
+        # timestamp accordingly.
+
+        _heap = []
         
-        recv_cmpl = self.sim_round + cost
-        heapq.heappush(self.event_queue, (recv_cmpl, events.Send(dest, None)))
+        for he in self.event_queue:
+            (ts, ev) = he
+            
+            if ev.dest == dest or ev.src == dest:
+                
+                print bcolors.WARNING + \
+                    ('%d: Core %d found another event %s at %d %d -> %d - ' %
+                     (self.sim_round, dest, ev.get_type(), ts, ev.src, ev.dest)) + \
+                    bcolors.ENDC
+
+            if ev.dest == dest and isinstance(ev, events.Receive):
+
+                assert (ev.src != src) # this should be from a different source
+                
+                print bcolors.WARNING + \
+                    ('%d: Core %d found another event %s at %d from %d - '
+                     'cost: %d - new ts %d' %
+                     (self.sim_round, dest, ev.get_type(), ts, ev.src,
+                      cost, ts + cost)) + \
+                    bcolors.ENDC
+                # assert (ts>=self.sim_round) # otherwise, we'd have an
+                #                             # event on the queue that
+                #                             # should have been
+                #                             # executed BEFORE the
+                #                             # current time.
+                # active_event = max(active_event, ts)
+                _heap.append((ts + cost, ev))
+                
+            else:
+                _heap.append(he)
+
+        self.event_queue = _heap
+        heapq.heapify(self.event_queue)
+
+        print [ (ts, ev.src) for (ts, ev) in self.event_queue if \
+                ev.dest == dest and isinstance(ev, events.Receive) ]
+
+        # Schedule a send? after the receive is complete
+        if schedule_send:
+            
+            recv_cmpl = self.sim_round + cost
+            print bcolors.OKGREEN + \
+                ('%d: Core %d is scheduling a send operation %d at %d' %
+                 (self.sim_round, dest, src, recv_cmpl)) + \
+                 bcolors.ENDC
+
+            heapq.heappush(self.event_queue, (recv_cmpl, events.Send(dest, None)))
+
+        else:
+
+            recv_cmpl = self.sim_round + cost
+            print bcolors.OKGREEN + \
+                ('%d: Core %d is scheduling a DUMMY operation %d at %d' %
+                 (self.sim_round, dest, src, recv_cmpl)) + \
+                 bcolors.ENDC
+
+            heapq.heappush(self.event_queue, (recv_cmpl, events.Receiving(src, dest)))
 
     def send(self, src):
         """
