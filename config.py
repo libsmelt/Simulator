@@ -17,7 +17,7 @@ topologies = [
     "cluster",
     "badtree",
     "fibonacci",
-#    "sequential", SK: Can't predict this very closely right now due to the write-buffer
+    "sequential",
     ]
 machines = [
     ]
