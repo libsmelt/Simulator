@@ -7,6 +7,7 @@ to be fed into the Barrelfish's Quorum program.
 
 - python-networkx
 - python-pygraphviz
+- libgv-python
 
 # Machines
 
