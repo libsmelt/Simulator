@@ -14,25 +14,34 @@ from pygraph.classes.digraph import digraph
 # --------------------------------------------------
 class Model(object):
 
-    evaluation = None
-    send_cost = {}
-    send_cost_batch = {}
-    recv_cost = {}
-
-    def __init__(self, graph):
+    def __init__(self, graph=None):
         """
         We initialize models with the graph
         """
-        assert (len(graph.nodes())>0)
-        self.graph = graph
+
+        print 'Initializing Model()'
+
+        self.evaluation = None
+        self.send_cost = {}
+        self.send_cost_batch = {}
+        self.recv_cost = {}
+
+        assert graph == None
+        
         try:
-            print 'Looking for measurements/coresenum_print_%s' % \
-                self.get_name()
             self.machine_topology = topology_parser.parse_machine_db(self.get_name())
         except:
-            print 'Warning, did not find coresenum data for machine'
-            self.machine_topology = None
+            print 'Warning: topology parser did not find machine data'
+            self.machine_topology = {}
             pass
+
+        # Parse pairwise send and receive costs. We need this to
+        # build the graph with the pairwise measurements.
+        self._parse_receive_result_file()
+        self._parse_send_result_file()
+        self._parse_send_result_file_batch()
+
+        self.graph = self._build_graph()
 
 
     # --------------------------------------------------
@@ -282,8 +291,8 @@ class Model(object):
                                                         float(m.group(5)))
                 assert (src, dest, batchsize) not in self.send_cost_batch
                 self.send_cost_batch[(src, dest, batchsize)] = cost
-                print 'Adding %d -> %d - batchsize %d - cost %d' % \
-                    (src, dest, batchsize, cost)
+                logging.info(('Adding %d -> %d - batchsize %d - cost %d' % \
+                    (src, dest, batchsize, cost)))
 
 
     def _get_receive_cost(self, src, dest):

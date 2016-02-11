@@ -49,22 +49,14 @@ class NetosMachine(model.Model):
         self.name = config.args.machine
         print 'Initializing NetOS machine %s' % self.name
         
-        self.res = topology_parser.parse_machine_db(self.name)
-        
-        # Parse pairwise send and receive costs. We need this to
-        # build the graph with the pairwise measurements.
-        super(NetosMachine, self)._parse_receive_result_file()
-        super(NetosMachine, self)._parse_send_result_file()
-        super(NetosMachine, self)._parse_send_result_file_batch()
-
         # Build a graph model
-        super(NetosMachine, self).__init__(self._build_graph())
+        super(NetosMachine, self).__init__()
         
 
     def get_num_numa_nodes(self):
         """Get the number of NUMA nodes
         """
-        return len(self.res['NUMA'].get())
+        return len(self.machine_topology['NUMA'].get())
 
     def get_cores_per_node(self):
         """Deprecated: This should ONLY be used for visualization purposes,
@@ -74,20 +66,20 @@ class NetosMachine(model.Model):
 
         Assumptions: All NUMA nodes have the same number of cores.
         """
-        return len(self.res['NUMA'].get()[0])
+        return len(self.machine_topology['NUMA'].get()[0])
 
     def get_numa_information(self):
-        return self.res['NUMA'].get()
+        return self.machine_topology['NUMA'].get()
 
     
     def get_num_cores(self):
-        return self.res['numcpus']
+        return self.machine_topology['numcpus']
 
     def get_name(self):
         return self.name
 
     def get_cores(self, only_active=False):
-        c = list(itertools.chain.from_iterable(self.res['NUMA'].get()))
+        c = list(itertools.chain.from_iterable(self.machine_topology['NUMA'].get()))
         c = self.filter_active_cores(c, only_active)
         return c
     
@@ -119,7 +111,7 @@ class NetosMachine(model.Model):
     def get_numa_id(self, core1):
         """Determine ID of the NUMA node <core1> resides on.
         """
-        nodes = self.res['NUMA'].get()
+        nodes = self.machine_topology['NUMA'].get()
         for (n, i) in zip(nodes, range(len(nodes))):
             if core1 in n:
                 return i

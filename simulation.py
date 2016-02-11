@@ -53,7 +53,7 @@ def _simulation_wrapper(ol, m, gr, multicast=False):
 
     # --------------------------------------------------
     # Output graphs
-    helpers.output_graph(gr, '%s_full_mesh' % m.get_name())
+#    helpers.output_graph(gr, '%s_full_mesh' % m.get_name())
 
     assert isinstance(hybmod_list, list)
 

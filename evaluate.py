@@ -56,11 +56,11 @@ class Protocol(object):
 class AB(Protocol):
     """Atomic broadcast protocol
     """
-    
-    # Keep track of which nodes are active
-    # Lists of nodes that: 
-    #  -> received the message already (nodes_active)
-    nodes_active = []
+    def __init__(self):
+        # Keep track of which nodes are active
+        # Lists of nodes that: 
+        #  -> received the message already (nodes_active)
+        nodes_active = []
 
     def get_name(self):
         return 'atomic broadcast'
@@ -123,10 +123,14 @@ class Reduction(Protocol):
     def get_name(self):
         return 'reduction'
     
-    # A dictionary, storing for each node how many messages have been received
-    num_msgs = {}
-    parents = {}
-    root = None
+
+    def __init__(self):
+        
+        # A dictionary, storing for each node how many messages have been received
+        self.num_msgs = {}
+        self.parents = {}
+        self.root = None
+
     
     def set_initial_state(self, eval_context, root):
         """Evaluate cost starting at root of overlay
@@ -202,25 +206,17 @@ class Barrier(Protocol):
     IDLE = 0
     REDUCE = 1
     BC = 2
-    
-    # Keep track of which nodes are active
-    # Lists of nodes that: 
-    #  -> received the message already (nodes_active)
-    nodes_active = []
-    leaf_nodes = []
-    state = {}
-
-    # A dictionary, storing for each node how many messages have been received
-    num_msgs = {}
-    parents = {}
-    root = None
 
     def __init__(self):
         print 'Initializing new Barrier'
         self.state = {}
         self.leaf_nodes = {}
+        # Keep track of which nodes are active
+        # Lists of nodes that: 
+        #  -> received the message already (nodes_active)
         self.nodes_active = {}
 
+        # A dictionary, storing for each node how many messages have been received
         self.num_msgs = {}
         self.parents = {}
         self.root = None

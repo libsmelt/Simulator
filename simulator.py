@@ -20,52 +20,26 @@ import logging
 import sys
 import os
 import tempfile
+import server
 from config import machines
 
-# --------------------------------------------------
-def build_and_simulate():
-    """
-    Build a tree model and simulate sending a message along it
 
-    """
-    # XXX The arguments are totally broken. Fix them!
-    parser = argparse.ArgumentParser(
-        description=('Simulator for multicore machines. The default action is '
-                     'to simulate the given combination of topology and machine. '
-                     'Available machines: %s' % ', '.join(config.machines) ))
-    parser.add_argument('--multicast', action='store_const', default=False, 
-                        const=True, help='Perfom multicast rather than broadcast')
-    parser.add_argument('machine',
-                        help="Machine to simulate")
-    parser.add_argument('overlay', nargs='*', default=config.topologies,
-                        help="Overlay to use for atomic broadcast (default: %s)" %
-                        ' '.join(config.topologies))
-    parser.add_argument('--hybrid', action='store_const', default=False,
-                        const=True, help='Generate hybrid model')
-    parser.add_argument('--hybrid-cluster', help='how to cluster: default: numa, one of: numa, socket')
-    parser.add_argument('--group', default=None,
-                        help=("Coma separated list of node IDs that should be "
-                              "part of the multicast group"))
-    parser.add_argument('--debug', action='store_const', default=False, const=True)
+def simulate(args):
 
-    try:
-        config.args = parser.parse_args()
-    except:
-        exit(1)
+    print args
+    
+    machine = args.machine
+    config.args.machine = args.machine
+    config.args.group = args.group
+    
+    print "machine: %s, topology: %s" % (machine, args.overlay)
 
-    if config.args.debug:
-        print 'Activating debug mode'
-        import debug
-        logging.getLogger().setLevel(logging.INFO)
-        
-    print "machine: %s, topology: %s" % (config.args.machine, config.args.overlay)
-
-    m_class = config.arg_machine(config.args.machine)
+    m_class = config.arg_machine(machine)
     m = m_class()
     assert m != None
     gr = m.get_graph()
 
-    if config.args.multicast:
+    if args.multicast:
         print "Building a multicast"
 
     # --------------------------------------------------
@@ -75,13 +49,13 @@ def build_and_simulate():
     if True:
         
         # Generate model headers
-        helpers.output_quroum_start(m, len(config.args.overlay))
+        helpers.output_quroum_start(m, len(args.overlay))
         all_last_nodes = []
         all_leaf_nodes = []
         model_descriptions = []
         num_models = 0
         # Generate representation of each topology
-        for _overlay in config.args.overlay:
+        for _overlay in args.overlay:
 
 
             # ------------------------------
@@ -90,9 +64,9 @@ def build_and_simulate():
             shm_writers = None
             hyb_leaf_nodes = None
             
-            if config.args.hybrid:
+            if args.hybrid:
 
-                if config.args.hybrid_cluster == "socket":
+                if args.hybrid_cluster == "socket":
                     
                     print "Clustering: Sockets"
                     hyb_cluster = m.res['Package'].get()
@@ -103,17 +77,17 @@ def build_and_simulate():
                     hyb_cluster = m.res['NUMA'].get()
 
                 # Simulate a multicast tree
-                config.args.multicast = True
+                args.multicast = True
 
                 shm_writers = [ min(x) for x in hyb_cluster ]
                 hyb_leaf_nodes = [ max(x) for x in hyb_cluster ]
 
-                config.args.group = ','.join(map(str, shm_writers))
+                args.group = ','.join(map(str, shm_writers))
 
                 
             # type(topology) = hybrid.Hybrid | binarytree.BinaryTree -- inherited from overlay.Overlay
             (topo, evs, root, sched, topology) = \
-                simulation._simulation_wrapper(_overlay, m, gr, config.args.multicast)
+                simulation._simulation_wrapper(_overlay, m, gr, args.multicast)
             hierarchies = topo.get_tree()
 
             # Dictionary for translating core IDs
@@ -138,7 +112,7 @@ def build_and_simulate():
                                                 shm_writers=shm_writers)
 
 
-            if config.args.hybrid:
+            if args.hybrid:
                 # Set ONE reader of the shared memory cluster as last node
                 all_leaf_nodes.append(hyb_leaf_nodes)
 
@@ -162,7 +136,58 @@ def build_and_simulate():
         # Generate footer
         helpers.output_quorum_end(all_last_nodes, all_leaf_nodes, \
                                   model_descriptions)
-        return 0
+        
+        return (all_last_nodes, all_leaf_nodes)    
+
+# --------------------------------------------------
+def build_and_simulate():
+    """
+    Build a tree model and simulate sending a message along it
+
+    """
+    # XXX The arguments are totally broken. Fix them!
+    parser = argparse.ArgumentParser(
+        description=('Simulator for multicore machines. The default action is '
+                     'to simulate the given combination of topology and machine. '
+                     'Available machines: %s' % ', '.join(config.machines) ))
+    parser.add_argument('--multicast', action='store_const', default=False, 
+                        const=True, help='Perfom multicast rather than broadcast')
+    parser.add_argument('machine', default=None, nargs='?',
+                        help="Machine to simulate")
+    parser.add_argument('overlay', nargs='*', default=config.topologies,
+                        help="Overlay to use for atomic broadcast (default: %s)" %
+                        ' '.join(config.topologies))
+    parser.add_argument('--hybrid', action='store_const', default=False,
+                        const=True, help='Generate hybrid model')
+    parser.add_argument('--hybrid-cluster', help='how to cluster: default: numa, one of: numa, socket')
+    parser.add_argument('--group', default=None,
+                        help=("Coma separated list of node IDs that should be "
+                              "part of the multicast group"))
+    parser.add_argument('--debug', action='store_const', default=False, const=True)
+    parser.add_argument('--server', action='store_const', default=False, const=True)
+
+    try:
+        config.args = parser.parse_args()
+    except:
+        exit(1)
+
+    if config.args.debug:
+        print 'Activating debug mode'
+        import debug
+        logging.getLogger().setLevel(logging.INFO)
+        
+
+    if config.args.server:
+        from server import server_loop
+        server_loop()
+    
+
+    if config.args.group:
+        config.args.group = map(int, args.group.split(','))
+
+    simulate()
+
+    return 0
     
 
     # --------------------------------------------------

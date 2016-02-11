@@ -20,6 +20,8 @@ import general
 import overlay
 
 from config import topologies, machines, get_ab_machine_results, get_machine_result_suffix
+import config
+
 from general import _pgf_header, \
     _pgf_plot_header, \
     _pgf_plot_footer, \
@@ -169,6 +171,10 @@ def output_quorum_configuration(model, hierarchies, root, sched, topo, midx,
     stream = open(F_MODEL, "a")
     __matrix_to_c(stream, mat, midx)
 
+    # Add this model to the list of models in config
+    config.models.append(mat)
+    
+
 def output_quroum_start(model, num_models):
     """Output the header of the model files
 
@@ -183,6 +189,8 @@ def output_quroum_start(model, num_models):
     __c_header_model(stream)
 
     defstream.write('#define NUM_TOPOS %d\n' % num_models)
+
+    config.models = []
 
 
 def output_quorum_end(all_last_nodes, all_leaf_nodes, model_descriptions):

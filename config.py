@@ -22,6 +22,12 @@ topologies = [
 machines = [
     ]
 
+
+# List of models that have been generated - this is needed (currently)
+# to make generated models available for sending back to the
+# requesting client when acting as a RPC server.
+models = []
+
 # Path to the machine database.
 MACHINE_DATABASE=os.getenv('HOME') + '/projects/netos-machine-hardware-information'
 
@@ -99,4 +105,4 @@ def arg_machine(machine_name):
 
 def get_mc_group():
     assert args.group
-    return map(int, args.group.split(','))
+    return args.group
