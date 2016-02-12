@@ -5,9 +5,13 @@ to be fed into the Barrelfish's Quorum program.
 
 # Setup
 
-- python-networkx
-- python-pygraphviz
-- libgv-python
+Install the following packages (on Ubuntu LTS).
+
+```apt-get install python-networkx python-pygraphviz libgv-python python-numpy python-pygraph```
+
+Then, you have to manually create directories:
+
+```mkdir graphs/ visu/```.
 
 # Machines
 
@@ -23,13 +27,16 @@ that information for each machine that is defined in the database.
 We enrich this with a set of low-level benchmarks; currently, this is
 only our pairwise UMP send/receive benchmark.
 
-## Python class
+## Static machine information
 
-Most of the ETH machines should be represented by either one of the
-classes in this project (such as `gruyere.py`).
+``lscpu > lscpu.txt```
 
-This is deprecated, and should probably be replaced by the information
-retrieved in the machine database.
+There is a version of likwid ready to go at `/mnt/scratch/skaestle/software/likwid-likwid-4.0.1/`.
+If this does not work out of the box, try recompiling: `make clean && make && make local`.
+
+Ideally, you have to call only:
+```(cd /mnt/scratch/skaestle/software/likwid-likwid-4.0.1/; LD_LIBRARY_PATH=.:./ext/lua/:./ext/hwloc/ ./likwid-topology ) > likwid.txt```
+
 
 ## Pairwise
 

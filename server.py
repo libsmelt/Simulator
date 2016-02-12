@@ -12,9 +12,9 @@ PORT=25041
 class SimArgs:
     """This is for passing arguments to the simulate function
 
-    In none-server-mode, this is extracted from the arguments 
+    In none-server-mode, this is extracted from the arguments
     parsed with argparse"""
-    
+
     multicast = True
     hybrid = False
     machine = None
@@ -28,7 +28,7 @@ def handle_request(r):
     print "handle_request executed .. "
     print r
 
-    # Parse request .. 
+    # Parse request ..
     config = SimArgs()
     config.machine = r[u'machine']
     config.overlay = [r[u'topology']] # List of topologies - just one
@@ -49,10 +49,10 @@ def handle_request(r):
     print 'Responding with >>>'
     print json.dumps(res)
     print '<<<'
-    
+
     return json.dumps(res)
-        
-    
+
+
 
 def server_loop():
     print 'Starting server'
@@ -60,15 +60,15 @@ def server_loop():
     # Create a TCP/IP socket
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    
-    server_address = ('localhost', PORT)
+
+    server_address = ('', PORT) # empty string = accept from all addresses
     print >>sys.stderr, 'starting up on %s port %s' % server_address
     sock.bind(server_address)
 
     sock.listen(1)
 
     try:
-    
+
         while True:
                 # Wait for a connection
                 print >>sys.stderr, 'waiting for a connection'
