@@ -51,10 +51,6 @@ def _simulation_wrapper(ol, m, gr, multicast=False):
         print 'Getting broadcast tree for ', str(r)
         hybmod_list = r.get_broadcast_tree()
 
-    # --------------------------------------------------
-    # Output graphs
-#    helpers.output_graph(gr, '%s_full_mesh' % m.get_name())
-
     assert isinstance(hybmod_list, list)
 
     r_tmp = None

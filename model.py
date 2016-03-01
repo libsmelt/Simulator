@@ -33,7 +33,8 @@ class Model(object):
         except:
             print 'Warning: topology parser did not find machine data'
             self.machine_topology = {}
-            pass
+            raise
+#            pass
 
         # Parse pairwise send and receive costs. We need this to
         # build the graph with the pairwise measurements.

@@ -183,9 +183,9 @@ def build_and_simulate():
     
 
     if config.args.group:
-        config.args.group = map(int, args.group.split(','))
+        config.args.group = map(int, config.args.group.split(','))
 
-    simulate()
+    simulate(config.args)
 
     return 0
     
