@@ -297,6 +297,9 @@ def draw_final(mod, sched, topo):
     assert isinstance(sched, scheduling.Scheduling)
     assert isinstance(topo, overlay.Overlay)
 
+    print 'Name of machine is:', mod.get_name()
+    print 'Name of topology is:', topo.get_name()
+    
     import pygraphviz as pgv
     A = pgv.AGraph()
 
@@ -318,7 +321,8 @@ def draw_final(mod, sched, topo):
         A.add_subgraph(c, name='cluster_%d' % i, color=clist[i % len(clist)])
         i += 1
 
-    A.draw('graphs/final-clustered.png', prog='dot')
+    A.draw('graphs/final_%s-%s.png' % (mod.get_name(), topo.get_name()),
+           prog='dot')
         
 
 def fill_matrix(s, children, parent, mat, sched, core_dict, cost_dict=None):
