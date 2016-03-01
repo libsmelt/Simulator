@@ -105,13 +105,19 @@ def parse_machine_db(machine):
         # Find NUMA node
         m = re.match('^NUMA node\d+ CPU\(s\):\s+([0-9,\-]*)', l)
         if m:
+            _cluster = []
             cores = m.group(1)
-            if '-' in cores:
-                (s, e) = cores.split('-')
-                res['NUMA'].add_cluster(range(int(s), int(e)+1))
-            else:
-                c = cores.split(',')
-                res['NUMA'].add_cluster(c)
+            print cores
+            for c in cores.split(','):
+                
+                if '-' in c:
+                    (s, e) = c.split('-')
+                    _cluster += range(int(s), int(e)+1)
+                else:
+                    _cluster.append(c)
+
+            print _cluster
+            res['NUMA'].add_cluster(_cluster)
             
     for r in res.values():
         r.pr()
