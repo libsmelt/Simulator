@@ -27,11 +27,12 @@ from config import machines
 def simulate(args):
 
     print args
-    
+
     machine = args.machine
     config.args.machine = args.machine
     config.args.group = args.group
-    
+    config.args.multicast = args.multicast
+
     print "machine: %s, topology: %s" % (machine, args.overlay)
 
     m_class = config.arg_machine(machine)
@@ -44,10 +45,10 @@ def simulate(args):
 
     # --------------------------------------------------
     # Switch main action
-    
+
     # XXX Cleanup required
     if True:
-        
+
         # Generate model headers
         helpers.output_quroum_start(m, len(args.overlay))
         all_last_nodes = []
@@ -63,11 +64,11 @@ def simulate(args):
             hyb_cluster = None
             shm_writers = None
             hyb_leaf_nodes = None
-            
+
             if args.hybrid:
 
                 if args.hybrid_cluster == "socket":
-                    
+
                     print "Clustering: Sockets"
                     hyb_cluster = m.res['Package'].get()
 
@@ -84,7 +85,7 @@ def simulate(args):
 
                 args.group = ','.join(map(str, shm_writers))
 
-                
+
             # type(topology) = hybrid.Hybrid | binarytree.BinaryTree -- inherited from overlay.Overlay
             (topo, evs, root, sched, topology) = \
                 simulation._simulation_wrapper(_overlay, m, gr, args.multicast)
@@ -104,7 +105,7 @@ def simulate(args):
                     tmp_last_node = ev.last_node
                 print "Cost %s for tree is: %d (%d), last node is %s" % \
                     (label, ev.time, ev.time_no_ab, ev.last_node)
-            
+
             # Output c configuration for quorum program
             helpers.output_quorum_configuration(m, hierarchies, root, sched,
                                                 topology, num_models,
@@ -121,7 +122,7 @@ def simulate(args):
             else:
                 # Determine last node for this model
                 all_leaf_nodes.append([d[l] for l in topo.get_leaf_nodes(sched)])
-            
+
                 # Determine last node for this model
                 all_last_nodes.append(tmp_last_node)
 
@@ -129,15 +130,15 @@ def simulate(args):
                 # final topology for the adaptive tree is not known before
                 # simulating it.
                 helpers.draw_final(m, sched, topo)
-            
+
             num_models += 1
 
-            
+
         # Generate footer
         helpers.output_quorum_end(all_last_nodes, all_leaf_nodes, \
                                   model_descriptions)
-        
-        return (all_last_nodes, all_leaf_nodes)    
+
+        return (all_last_nodes, all_leaf_nodes)
 
 # --------------------------------------------------
 def build_and_simulate():
@@ -150,7 +151,7 @@ def build_and_simulate():
         description=('Simulator for multicore machines. The default action is '
                      'to simulate the given combination of topology and machine. '
                      'Available machines: %s' % ', '.join(config.machines) ))
-    parser.add_argument('--multicast', action='store_const', default=False, 
+    parser.add_argument('--multicast', action='store_const', default=False,
                         const=True, help='Perfom multicast rather than broadcast')
     parser.add_argument('machine', default=None, nargs='?',
                         help="Machine to simulate")
@@ -175,12 +176,12 @@ def build_and_simulate():
         print 'Activating debug mode'
         import debug
         logging.getLogger().setLevel(logging.INFO)
-        
+
 
     if config.args.server:
         from server import server_loop
         server_loop()
-    
+
 
     if config.args.group:
         config.args.group = map(int, config.args.group.split(','))
@@ -188,7 +189,7 @@ def build_and_simulate():
     simulate(config.args)
 
     return 0
-    
+
 
     # --------------------------------------------------
     # Output graphs
@@ -200,7 +201,7 @@ def build_and_simulate():
     # --------------------------------------------------
     # Evaluate
     evaluation = evaluate.Evaluate()
-    ev = evaluation.evaluate(topo, root, m, sched) 
+    ev = evaluation.evaluate(topo, root, m, sched)
 
     if config.args.debug:
         (fid, fname) = tempfile.mkstemp(suffix='.tex')
@@ -220,6 +221,6 @@ if __name__ == "__main__":
 
     # Append NetOS machines
     config.machines += netos_machine.get_list()
-    
+
     sys.excepthook = helpers.info
     build_and_simulate()
