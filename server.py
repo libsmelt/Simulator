@@ -34,6 +34,8 @@ def handle_request(r):
     config.overlay = [r[u'topology']] # List of topologies - just one
     config.group = r[u'cores']
 
+    c = config
+
     from simulator import simulate
     (last_nodes, leaf_nodes) = simulate(config)
 
@@ -50,8 +52,31 @@ def handle_request(r):
     print json.dumps(res)
     print '<<<'
 
+    write_statistics(c.machine)
+
     return json.dumps(res)
 
+
+STAT_FILE = 'statistics.json'
+def write_statistics(machine):
+
+    # Read
+    try:
+        with open(STAT_FILE, 'r') as f:
+            stat = json.loads(f.read())
+            f.close()
+    except Exception:
+        stat = {}
+        raise
+
+    # Update
+    stat['num_served'] = stat.get('num_served', 0) + 1
+    stat['num_served_%s' % machine] = stat.get('num_served_%s' % machine, 0) + 1
+
+
+    # Write
+    f = open(STAT_FILE, 'w')
+    json.dump(stat, f)
 
 
 def server_loop():
