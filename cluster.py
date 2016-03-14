@@ -46,8 +46,7 @@ class Cluster(overlay.Overlay):
         :param graph g: Graph for which to build the cluster tree.
 
         """
-
-        coords = [ c for c in self.get_coordinators() if c in g.nodes() ]
+        coords = self.get_coordinators()
 
         # Build NUMA node graph with weights first
         g_numa = digraph()

@@ -175,6 +175,8 @@ class Overlay(object):
                     new_coordinator = False
             if new_coordinator:
                 coordinators.append(core)
+
+        coordinators = self.mod.filter_active_cores(coordinators, True)
         print "Coordinator nodes are: %s" % str(coordinators)
         return coordinators
 
