@@ -114,7 +114,7 @@ def parse_machine_db(machine):
                     (s, e) = c.split('-')
                     _cluster += range(int(s), int(e)+1)
                 else:
-                    _cluster.append(c)
+                    _cluster.append(int(c))
 
             print _cluster
             res['NUMA'].add_cluster(_cluster)

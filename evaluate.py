@@ -7,6 +7,11 @@ import logging
 import sched_adaptive
 import copy # for heapq
 
+
+# We assume that the propagation time is zero. The cost for
+# transporting messages is captured in t_send and t_receive.
+T_PROPAGATE = 0
+
 class bcolors:
     HEADER = '\033[95m'
     OKBLUE = '\033[94m'
@@ -448,8 +453,9 @@ class Evaluate():
             self.node_state[core] = NodeState()
 
         # Construct visualization instance
-        visu_name = ("visu/visu_%s_%s_send_events.tex" % 
-                     (m.get_name(), topo.get_name()))
+        visu_name = ("visu/visu_%s_%s_%s.tex" % 
+                     (m.get_name(), topo.get_name(),
+                      self.protocol.get_name().replace(' ', '_')))
         self.visu = draw.Output(visu_name, m, topo)
 
         # Set initial state
@@ -462,6 +468,7 @@ class Evaluate():
         # evaluate the cost of the protocol in real hardware starting
         # at the last node
         # * Send cost
+        final_time = self.sim_round
         r = Result(self.sim_round, self.last_node, visu_name)
         print "Terminating(%d,%s,%s) - cost %d for last_node -> root" % \
             (self.sim_round, str(self.last_node), str(root), 
@@ -470,7 +477,7 @@ class Evaluate():
              self.model.get_receive_cost(self.last_node, root))
         self.sim_round += self.model.get_send_cost(self.last_node, root);
         # * Propagation
-        self.sim_round += self.topology.edge_weight((self.last_node, root))
+        self.sim_round += T_PROPAGATE
         # * Receive cost
         self.sim_round += self.model.get_receive_cost(self.last_node, root);
         r.time = self.sim_round
@@ -478,7 +485,7 @@ class Evaluate():
         # XXX Check if this includes the receive cost on the last node (it should)
         self.model.set_evaluation_result(r)
 
-        self.visu.finalize()
+        self.visu.finalize(int(final_time))
 
         return r
 
@@ -555,7 +562,7 @@ class Evaluate():
                     assert ts >= enqueue_at
                     enqueue_at = _new
         
-        w = self.topology.edge_weight((src, dest))
+        w = T_PROPAGATE
         heapq.heappush(self.event_queue, (enqueue_at + w, events.Receive(src, dest)))
 
         # Node (src) has just sent a message, increment send batch size

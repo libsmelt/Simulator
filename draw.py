@@ -9,7 +9,7 @@ class Output():
     height_per_core = 5
     obj_per_node = dict()
     obj = []
-    scale_x = .4
+    scale_x = .05
     last_node = None
 
     "Wrapper to enable visualization output to file"
@@ -25,7 +25,7 @@ class Output():
             # Label
             node_name = 'core_%s_label' % c
             self.__add_object(c, node_name)
-            self.f.write("\\node (%s) at (0mm,%dmm) {core %5s};\n" % \
+            self.f.write("\\node (%s) at (0mm,%dmm) {%5s};\n" % \
                              (node_name, self._y_coord_for_core(c), c))
 
     def __add_object(self, core, label):
@@ -57,7 +57,7 @@ class Output():
         return cost * self.scale_x
 
     def _scale_height(self, size):
-        return size*.3
+        return size*.4
 
     def send(self, core, to, time, cost):
         "Visualize send operation"
@@ -70,8 +70,13 @@ class Output():
                               self._y_coord_for_core(core)))
         self.__add_object(core, name)
 
+        
     def receive(self, core, sender, time, cost):
         "Visualize receive operation"
+
+        print "Adding receive events at %d -- %d <- %d, cost %d" % \
+            (time, core, sender, cost)
+        
         # Box indicating receive operation
         name = 'r_%s_%s' % (sender, core)
         self.f.write("\\node[draw,fill=blue!20,minimum width=%dmm, minimum height=%dmm,anchor=west] "\
@@ -93,7 +98,7 @@ class Output():
         self.f.write("\\draw[->%s] ($(s_%s_%s.east)-(1mm,0mm)$) -- ($(r_%s_%s.west)+(1mm,0mm)$); \n" % \
                          (','.join(settings), sender, core, sender, core))
 
-    def finalize(self):
+    def finalize(self, final_time):
         # header
         self.f.write("\\begin{pgfonlayer}{background}\n")
         # grey background box spanning all objects
@@ -113,7 +118,9 @@ class Output():
         for i in range(self.model.get_num_numa_nodes()):
             cidx = i % int(len(self.color_map))
             color = self.color_map[cidx]
-            self.obj_per_node[i].append('numa_axis_%d.west' % (i * self.model.get_cores_per_node()))
+            coreid = self.model.get_numa_node_by_id(i)[0]
+                
+            self.obj_per_node[i].append('numa_axis_%d.west' % (coreid))
             nn = [ '(%s)' % x for x in self.obj_per_node[i] ]
             self.f.write("\\node [yscale=0.85,draw=%s!50,fill=%s!10,fit=%s,rounded corners] {};\n" \
                              % (color, color, ' '.join(nn)))
@@ -129,6 +136,10 @@ class Output():
                 self.topo.get_name()
                 ))
 
+        for xaxis_label in range(0, final_time, 500):
+            self.f.write("\\node at (%dmm,-5mm) { %d };\n" % \
+                         (self._scale_time(xaxis_label), xaxis_label))
+        
         # footer
         self.f.write("\\end{pgfonlayer}\n")
         

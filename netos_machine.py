@@ -71,6 +71,23 @@ class NetosMachine(model.Model):
     def get_numa_information(self):
         return self.machine_topology['NUMA'].get()
 
+
+    def get_numa_node_by_id(self, nidx):
+        """Get all cores on the given NUMA node
+        """
+        return self.machine_topology['NUMA'].get()[nidx]
+    
+    
+    def get_numa_id(self, c):
+        """ Return the ID of the NUMA node of core c
+        """
+
+        nidx = -1
+        for nodes in self.machine_topology['NUMA']:
+            nidx += 1
+            if c in nodes:
+               return nidx
+    
     
     def get_num_cores(self):
         return self.machine_topology['numcpus']

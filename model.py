@@ -153,8 +153,10 @@ class Model(object):
         return None
 
     def get_numa_node(self, core1):
-        """
-        Return all cores that are on the same NUMA node then the given core
+        """Return all cores that are on the same NUMA node then the given core.
+
+        This works as long as get_numa_information is implemented
+        correctly for a given machine.
         """
         numa_node = []
         for node in self.graph.nodes():

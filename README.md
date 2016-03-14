@@ -43,8 +43,7 @@ Ideally, you have to call only:
 Furthermore, pairwise send and receive cost of all combinations of
 cores need to be provided for each machine.
 
-The procedure for generating these is explained in the machine
-database repository in README.md
+The procedure for generating these is explained in Smelt's repository in README.md
 
 
 ## Machine hierarchy
