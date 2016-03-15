@@ -1,4 +1,3 @@
-%\documentclass[portrait]{a0poster}
 \documentclass[a4wide]{article}
 \usepackage{url,color,xspace,verbatim,subfig,ctable,multirow,listings}
 \usepackage[utf8]{inputenc}
@@ -25,11 +24,15 @@
 % configuration
 \usetikzlibrary{shapes,positioning,calc,snakes,arrows,shapes,fit,backgrounds}
 
+%
+\usepgfplotslibrary{external}
+\tikzexternalize
+
 \begin{document}
 
 \begin{tikzpicture}[scale=.75]
   % Insert visualization
-  \input{input}
+  \input{{%file%}}
 \end{tikzpicture}
 
 \end{document}

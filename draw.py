@@ -1,6 +1,9 @@
 # Draw result of evaluation
 
 import helpers
+import config
+import subprocess
+import shlex
 
 class Output():
 
@@ -142,8 +145,36 @@ class Output():
         
         # footer
         self.f.write("\\end{pgfonlayer}\n")
+        self.f.close()
+
+
+        # Generate a PNG? Currently, this works only for atomic broadcasts
+        if config.args.visu and 'atomic_broadcast' in self.name:
+            self.__generate_image()
+        
         
     def __core_label_to_y_index(self):
         return helpers.core_index_dict(self.model.get_graph().nodes())
 
+
+
+    def __generate_image(self):
+
+        with open('test.tex', 'w') as f:
+
+            _out = self.name.replace('.tex', '.png')
+            print 'Generating visualization .. '
+
+            for line in open('template.tex', 'r'):
+                f.write(line.replace('{%file%}', self.name))
+                
+            f.close()
         
+            try:
+                print subprocess.check_output(shlex.split('rm -f test-figure0.pdf'))
+                print subprocess.check_output(shlex.split('pdflatex -shell-escape -interaction nonstopmode test'))
+                print subprocess.check_output(shlex.split('convert -verbose -density 300 test-figure0.pdf %s' % _out))
+
+            except Exception as e:
+                print 'Generating visualization failed, aborting'
+                raise e

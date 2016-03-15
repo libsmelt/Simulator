@@ -163,7 +163,10 @@ def build_and_simulate():
     parser.add_argument('--group', default=None,
                         help=("Coma separated list of node IDs that should be "
                               "part of the multicast group"))
-    parser.add_argument('--debug', action='store_const', default=False, const=True)
+    parser.add_argument('--visu', help='Visualize generated graph',
+                        action='store_const', default=False, const=True)
+    parser.add_argument('--debug',
+                        action='store_const', default=False, const=True)
     parser.add_argument('--server', action='store_const', default=False, const=True)
 
     try:
