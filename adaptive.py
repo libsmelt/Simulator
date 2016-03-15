@@ -4,6 +4,7 @@ from pygraph.classes.digraph import digraph
 
 import sched_adaptive
 import overlay
+import logging
 
 class AdapativeTree(overlay.Overlay):
     """
@@ -13,9 +14,6 @@ class AdapativeTree(overlay.Overlay):
     
     def __init__(self, mod):
         """
-        Initialize the clustering algorithm
-        XXX Do we actually need this?
-
         """
         super(AdapativeTree, self).__init__(mod)
         
@@ -25,6 +23,27 @@ class AdapativeTree(overlay.Overlay):
     def get_scheduler(self, final_graph):
         return sched_adaptive.SchedAdaptive(final_graph, self.mod)
 
+    def get_root_node(self):
+
+        _c_snd_cost = {}
+        cores = self.mod.get_cores()
+        for c in cores:
+            _sum = 0
+            for r in cores:
+                if (r!=c):
+                    _sum += self.mod.get_send_cost(c, r)
+            _c_snd_cost[c] = _sum
+
+            logging.info(('%d: sum of send %d' % (c, _sum)))
+
+        c_snd_cost = sorted(_c_snd_cost.items(), key=lambda x: x[1])
+        (root, cost) = c_snd_cost[0]
+        
+        print 'Choosing node %d as root with cost %d' % \
+            (root, cost)
+        
+        return root
+    
     def _build_tree(self, g):
         """
         Will return a empty broadcast tree that has to be build later
