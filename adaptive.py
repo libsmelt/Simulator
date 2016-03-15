@@ -26,7 +26,7 @@ class AdapativeTree(overlay.Overlay):
     def get_root_node(self):
 
         _c_snd_cost = {}
-        cores = self.mod.get_cores()
+        cores = self.mod.get_cores(True)
         for c in cores:
             _sum = 0
             for r in cores:
