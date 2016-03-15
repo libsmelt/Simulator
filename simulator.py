@@ -137,8 +137,7 @@ def simulate(args):
         # Generate footer
         helpers.output_quorum_end(all_last_nodes, all_leaf_nodes, \
                                   model_descriptions)
-
-        return (all_last_nodes, all_leaf_nodes)
+        return (all_last_nodes, all_leaf_nodes, root)    
 
 # --------------------------------------------------
 def build_and_simulate():

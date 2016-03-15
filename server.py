@@ -37,13 +37,14 @@ def handle_request(r):
     c = config
 
     from simulator import simulate
-    (last_nodes, leaf_nodes) = simulate(config)
+    (last_nodes, leaf_nodes, root) = simulate(config)
 
     # Generate response to be sent back to client
     import config
     assert len(config.models)==1 # Exactly one model has been generated
 
     res = {}
+    res['root'] = root 
     res['model'] = config.models[0]
     res['last_node'] = last_nodes[0]
     res['leaf_nodes'] = leaf_nodes[0]
