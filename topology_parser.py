@@ -32,7 +32,7 @@ class Resource(object):
     def add_cluster(self, cluster):
         """Add a single cluster to the list of avialable clusters"""
         self.all.append(map(int, cluster))
-        
+
     def add_clusters(self, clusters):
         """Add the cluster given by as a list of lists, where each inner list
         represents a cluster.
@@ -41,7 +41,7 @@ class Resource(object):
         for c in clusters:
             c_ = c.replace('(', '').replace(')', '')
             self.add_cluster(''.join(c_).split())
-        
+
     def add_core(self, core):
         self.cluster.append(core)
 
@@ -51,7 +51,7 @@ class Resource(object):
     def get(self):
         return self.all
 
-    
+
 def _parse_line(cpuid, match):
     """Search a line with the content <match>: <value> in the given
     StringIO instance and return <value>
@@ -75,6 +75,7 @@ def parse_machine_db(machine):
     curr_res = None # Current resource
 
     stream = open('%s/%s/likwid.txt' % (config.MACHINE_DATABASE, machine))
+    res['CPU'] = 'unknown'
 
     for l in stream.readlines():
 
@@ -94,6 +95,16 @@ def parse_machine_db(machine):
         if m:
             res[curr_res].add_clusters(m.group(1).split(') ('))
 
+        # Find CPU
+        m = re.match('CPU name:\s*(.+)', l)
+        if m:
+            res['CPU'] = m.group(1)
+        m = re.match('CPU type:\s*(.+)', l)
+        # don't overwrite information from CPU name, but set in case it's not yet there
+        if m and res['CPU'] == 'unknown':
+            res['CPU'] = m.group(1)
+
+
     stream.close()
 
     stream = open('%s/%s/lscpu.txt' % (config.MACHINE_DATABASE, machine))
@@ -109,7 +120,7 @@ def parse_machine_db(machine):
             cores = m.group(1)
             print cores
             for c in cores.split(','):
-                
+
                 if '-' in c:
                     (s, e) = c.split('-')
                     _cluster += range(int(s), int(e)+1)
@@ -118,11 +129,13 @@ def parse_machine_db(machine):
 
             print _cluster
             res['NUMA'].add_cluster(_cluster)
-            
+
     for r in res.values():
-        r.pr()
+        if isinstance(r, Resource):
+            r.pr()
+
 
     res['numcpus'] = int(_parse_line(lscpu, 'CPU\(s\)')[1])
-            
+
     return res
 
