@@ -160,20 +160,20 @@ def output_quorum_configuration(model, hierarchies, root, sched, topo, midx,
                 mat[reader][writer] = cidx + SHM_SLAVE_START
 
             cidx += 1
-        
+
             assert cidx < SHM_REGIONS_OFFSET
             assert cidx < SHM_REGIONS_OFFSET
-                
-                
-                
-        
+
+
+
+
     # Generate c code
     stream = open(F_MODEL, "a")
     __matrix_to_c(stream, mat, midx)
 
     # Add this model to the list of models in config
     config.models.append(mat)
-    
+
 
 def output_quroum_start(model, num_models):
     """Output the header of the model files
@@ -229,7 +229,7 @@ def output_quorum_end(all_last_nodes, all_leaf_nodes, model_descriptions):
     stream.write('std::vector<coreid_t> last_nodes = {' + \
                  ', '.join([ str(i) for i in all_last_nodes]) + \
                  '};\n')
-    
+
     __c_footer(stream)
     __c_footer(defstream)
 
@@ -292,27 +292,29 @@ def draw_final(mod, sched, topo):
 
     import model
     import scheduling
-    
+
     assert isinstance(mod, model.Model)
     assert isinstance(sched, scheduling.Scheduling)
     assert isinstance(topo, overlay.Overlay)
 
     print 'Name of machine is:', mod.get_name()
     print 'Name of topology is:', topo.get_name()
-    
+
     import pygraphviz as pgv
     A = pgv.AGraph()
 
-    for c in mod.get_cores():
+    for c in mod.get_cores(True):
         leaf = c in topo.get_leaf_nodes(sched)
         if leaf:
             logging.info(('Drawing leaf %d' % c))
         A.add_node(c, color='grey' if leaf else 'black')
-        
+
     for c in mod.get_cores(True):
         s =  sched.get_final_schedule(c)
         for ((_,r), i) in zip(s, range(len(s))):
             A.add_edge(c, r, label=str(i+1))
+
+    mc = (len(mod.get_cores()) != len(mod.get_cores(True)))
 
     clist = [ 'red', 'green', 'blue', 'orange', 'grey', 'yellow', 'black', 'pink' ]
 
@@ -321,9 +323,18 @@ def draw_final(mod, sched, topo):
         A.add_subgraph(c, name='cluster_%d' % i, color=clist[i % len(clist)])
         i += 1
 
-    A.draw('graphs/final_%s-%s.png' % (mod.get_name(), topo.get_name()),
-           prog='dot')
-        
+    desc = 'mc' if mc else 'full'
+
+    try:
+        A.draw('graphs/final_%s-%s-%s.png' % (mod.get_name(), topo.get_name(), desc),
+               prog='dot')
+        A.draw('graphs/last.png', prog='dot')
+        A.draw('graphs/last_%s.png' % mod.get_name(), prog='dot')
+
+    except Exception as e:
+        print 'Generating PNGs for graph topologies faield, continuing'
+        print e
+
 
 def fill_matrix(s, children, parent, mat, sched, core_dict, cost_dict=None):
     """
@@ -354,7 +365,7 @@ def fill_matrix(s, children, parent, mat, sched, core_dict, cost_dict=None):
         if r in children:
             mat[core_dict[s]][core_dict[r]] = i
             i += 1
-            
+
     if not parent == None:
         assert len(children)<90 # ?
         mat[core_dict[s]][core_dict[parent]] = 99
@@ -584,7 +595,7 @@ class bcolors:
     ENDC = '\033[0m'
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
-    
+
 def warn(msg):
     print bcolors.WARNING + msg + bcolors.ENDC
-    
+

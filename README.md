@@ -90,3 +90,8 @@ benchmarking due to fewer machine reboots, but could also be useful
 for reconfigurable hardware. An example is:
 
 ```./simulator.py gruyere shm hybrid_bintree bintree adaptivetree cluster```
+
+
+# Run the Simulator as a service
+
+```while [[ 1 ]]; do ./simulator.py --server; sleep 2; done```
