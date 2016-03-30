@@ -473,7 +473,7 @@ class Evaluate():
         print "Terminating(%d,%s,%s) - cost %d for last_node -> root" % \
             (self.sim_round, str(self.last_node), str(root), 
              self.model.get_send_cost(self.last_node, root) + 
-             self.topology.edge_weight((self.last_node, root)) +
+#             self.topology.edge_weight((self.last_node, root)) +
              self.model.get_receive_cost(self.last_node, root))
         self.sim_round += self.model.get_send_cost(self.last_node, root);
         # * Propagation
