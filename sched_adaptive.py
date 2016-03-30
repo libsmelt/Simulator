@@ -43,22 +43,22 @@ class SchedAdaptive(scheduling.Scheduling):
         return False
 
 
-    def find_schedule(self, sending_node, active_nodes=None):
+    def find_schedule(self, sending_node, cores_active=None):
         """
         Find a schedule for the given node.
 
         @param sending_node Sending node for which to determine scheduling
-        @param active_nodes List of active nodes
+        @param cores_active List of active nodes
         @return A list containing all inactive nodes sorted by cost.
         """
-        assert active_nodes is not None
-        assert sending_node in active_nodes
+        assert cores_active is not None
+        assert sending_node in cores_active
 
         if self.finished:
             return self.store[sending_node]
         
         self.num += 1
-        print 'Active nodes - %d' % self.num, len(active_nodes)
+        print 'Active nodes - %d' % self.num, len(cores_active)
 
         # Find cores that ...
         # Principles are:
@@ -81,7 +81,7 @@ class SchedAdaptive(scheduling.Scheduling):
             logging.info('Sending node from %d to %d' % (sending_node, c))
             
             # Is the target node active already?
-            node_active = self._numa_domain_active(c, active_nodes)
+            node_active = self._numa_domain_active(c, cores_active)
 
             # Is the target core on the sender's local node?
             # but we did not yet send it there before
@@ -108,14 +108,14 @@ class SchedAdaptive(scheduling.Scheduling):
 
                 # Check if node is already active (e.g. the root,
                 # which no one sent a message to already
-                if c in active_nodes:
+                if c in cores_active:
                     logging.info('Not considering %d, already active' % c)
                     consider = False
 
                         
             # If we consider this core, it's node is inactive, which
             # means that c is inactive itself.
-            assert not consider or not c in active_nodes
+            assert not consider or not c in cores_active
             
             if consider:
                 # build (cost, core) tuple

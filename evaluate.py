@@ -64,8 +64,8 @@ class AB(Protocol):
     def __init__(self):
         # Keep track of which nodes are active
         # Lists of nodes that: 
-        #  -> received the message already (nodes_active)
-        nodes_active = []
+        #  -> received the message already (cores_active)
+        cores_active = []
 
     def get_name(self):
         return 'atomic broadcast'
@@ -74,7 +74,7 @@ class AB(Protocol):
         """Evaluate cost starting at root of overlay
         """
         eval_context.schedule_node(root)
-        self.nodes_active = [root]
+        self.cores_active = [root]
         
     
     def idle_handler(self, eval_context, core, time):
@@ -86,12 +86,12 @@ class AB(Protocol):
         """
         
         # Get a list of neighbors from the scheduler
-        nb = eval_context.schedule.find_schedule(core, self.nodes_active)
+        nb = eval_context.schedule.find_schedule(core, self.cores_active)
         assert isinstance(nb, list)
-        assert isinstance(self.nodes_active, list)
+        assert isinstance(self.cores_active, list)
 
         # Ignore all nodes that received the message already
-        nb_filtered = [ tmp for (cost, tmp) in nb if tmp not in self.nodes_active ]
+        nb_filtered = [ tmp for (cost, tmp) in nb if tmp not in self.cores_active ]
 
         if len(nb_filtered) > 0:
             dest = nb_filtered[0]
@@ -111,7 +111,7 @@ class AB(Protocol):
 
             # Make receiver active
             eval_context.schedule_node(dest, send_compl, core)
-            self.nodes_active.append(dest)
+            self.cores_active.append(dest)
             
             # Add send event to signal that further messages can be
             # sent once the current message completed the current send
@@ -218,8 +218,8 @@ class Barrier(Protocol):
         self.leaf_nodes = {}
         # Keep track of which nodes are active
         # Lists of nodes that: 
-        #  -> received the message already (nodes_active)
-        self.nodes_active = {}
+        #  -> received the message already (cores_active)
+        self.cores_active = {}
 
         # A dictionary, storing for each node how many messages have been received
         self.num_msgs = {}
@@ -233,7 +233,7 @@ class Barrier(Protocol):
         """Evaluate cost starting at root of overlay
         """
         eval_context.schedule_node(root)
-        self.nodes_active = [root]
+        self.cores_active = [root]
         self.leaf_nodes = eval_context.topo.get_leaf_nodes(eval_context.schedule)
         
         self.parents = eval_context.topo.get_parents(eval_context.schedule)
@@ -243,12 +243,12 @@ class Barrier(Protocol):
         """
         """
         # Get a list of neighbors from the scheduler
-        nb = eval_context.schedule.find_schedule(core, self.nodes_active)
+        nb = eval_context.schedule.find_schedule(core, self.cores_active)
         assert isinstance(nb, list)
-        assert isinstance(self.nodes_active, list)
+        assert isinstance(self.cores_active, list)
 
         # Ignore all nodes that received the message already
-        nb_filtered = [ tmp for (cost, tmp) in nb if tmp not in self.nodes_active ]
+        nb_filtered = [ tmp for (cost, tmp) in nb if tmp not in self.cores_active ]
 
         # --------------------------------------------------
         # Reduce state
@@ -309,7 +309,7 @@ class Barrier(Protocol):
 
             # Make receiver active
             eval_context.schedule_node(dest, send_compl, core)
-            self.nodes_active.append(dest)
+            self.cores_active.append(dest)
             
             # Add send event to signal that further messages can be
             # sent once the current message completed the current send
