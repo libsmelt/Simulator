@@ -11,6 +11,10 @@ from pygraph.algorithms.minmax import shortest_path
 from pygraph.classes.graph import graph
 from pygraph.classes.digraph import digraph
 
+# Number of messages to send to a remote NUMA node before stopping to
+# do so
+NUM_STOP_REMOTE=1
+
 # --------------------------------------------------
 class SchedAdaptive(scheduling.Scheduling):
     """Scheduler supporting dynamic creation of broadcast tree
@@ -22,6 +26,7 @@ class SchedAdaptive(scheduling.Scheduling):
 
     """
     store = dict()
+    
     num = 0
     finished = False
 
@@ -37,10 +42,11 @@ class SchedAdaptive(scheduling.Scheduling):
         domain is active
 
         """
+        num = 0
         for c in self.mod.get_numa_node(core):
             if c in nodes_active:
-                return True
-        return False
+                num += 1
+        return num >= NUM_STOP_REMOTE
 
 
     def find_schedule(self, sending_node, cores_active=None):
@@ -97,7 +103,7 @@ class SchedAdaptive(scheduling.Scheduling):
             #
             # What remains to be checked is whether any of the other
             # cores on the same node already sent a message.
-            if same_node:
+            if same_node or True:
 
                 # Check if somebody else sent a message there already
                 for othercores in self.mod.get_numa_node(sending_node):
@@ -160,8 +166,10 @@ class SchedAdaptive(scheduling.Scheduling):
             next_hop = (self.mod.get_send_cost(sending_node, next_r), next_r)
             
         else:
-            # Add other cores from same node, but ONLY if they are active
+            # Add other cores from same node, but ONLY if they are
+            # multicast members
             c_all = self.mod.filter_active_cores(self.mod.get_numa_node(next_r), True)
+            c_all = [ c for c in c_all if not c in cores_active ]
             c_cost = [ (self.mod.get_send_cost(sending_node, r), r) \
                        for r in c_all if r != sending_node ]
             # Sort, cheapest node first
@@ -173,7 +181,9 @@ class SchedAdaptive(scheduling.Scheduling):
             next_hop = (c_cost[0][0], c_cost[0][1])
 
         # Remember choice
-        assert next_hop not in self.store[sending_node] # same node
+        assert next_hop not in self.store[sending_node] 
+        # Otherwise, we already sent a message to the same core
+        
         self.store[sending_node].append(next_hop)
         logging.info(("Targets from", sending_node, ":", self.store[sending_node]))
 
