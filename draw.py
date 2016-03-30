@@ -4,13 +4,12 @@ import helpers
 import config
 import subprocess
 import shlex
+import logging
 
 class Output():
 
-    # XXX Why are these static?
     color_map = [ "red", "green", "blue", "orange" ]
     height_per_core = 5
-    obj_per_node = dict()
     obj = []
     scale_x = .05
     last_node = None
@@ -20,6 +19,8 @@ class Output():
         self.name = name
         self.model = model
         self.topo =  topo
+        self.obj_per_node = dict()
+        self.obj_per_core = dict()
         self.f = open(name, 'w')
 
         self.cores = self.__core_label_to_y_index()
@@ -38,10 +39,10 @@ class Output():
         """
         self.obj.append(label)
         cidx = int(self.model.get_numa_id(core))
-        if not cidx in self.obj_per_node:
-            self.obj_per_node[cidx] = [ label ]
-        else:
-            self.obj_per_node[cidx].append(label)
+
+        self.obj_per_node[cidx] = self.obj_per_node.get(cidx, []) + [label]
+        self.obj_per_core[core] = self.obj_per_core.get(core, []) + [label]
+        
         self.last_node = label
 
     def _y_coord_for_core(self, core):
@@ -117,16 +118,36 @@ class Output():
             self.f.write("\\draw let \\p1 = (allobjects.east) in node[] (%s) at (\\x1,%dmm) {};\n" % \
                              (numa_name, self._y_coord_for_core(c)))
 
-        # colored background box for each numa domain
-        for i in range(self.model.get_num_numa_nodes()):
-            cidx = i % int(len(self.color_map))
-            color = self.color_map[cidx]
-            coreid = self.model.get_numa_node_by_id(i)[0]
-                
-            self.obj_per_node[i].append('numa_axis_%d.west' % (coreid))
-            nn = [ '(%s)' % x for x in self.obj_per_node[i] ]
-            self.f.write("\\node [yscale=0.85,draw=%s!50,fill=%s!10,fit=%s,rounded corners] {};\n" \
-                             % (color, color, ' '.join(nn)))
+        # Are cores "packed" on nodes?
+        packed = True
+        assert self.model.get_num_numa_nodes()>0 # at least one node
+        _cores_on_node = self.model.get_numa_node_by_id(0)
+        for i in range(len(_cores_on_node)-1):
+            packed = packed and _cores_on_node[i] == _cores_on_node[i]+1
+        logging.info(('Visualization: packed display %d' % packed))
+
+        # Individual core by core, no merging of neighboring cores in one box
+        if not packed:
+            print self.obj_per_core
+            for c in self.model.get_cores(True):
+                cidx = self.model.get_numa_id(c)
+                color = self.color_map[cidx]
+                self.obj_per_core[c] = self.obj_per_core.get(c, []) + ['numa_axis_%d.west' % (c)]
+                nn = [ '(%s)' % x for x in self.obj_per_core[c] ]
+                self.f.write("\\node [yscale=0.85,draw=%s!50,fill=%s!10,fit=%s,rounded corners] {};\n" \
+                                 % (color, color, ' '.join(nn)))
+
+        # colored background box for each numa domain - merging nodes
+        else:
+            for i in range(self.model.get_num_numa_nodes()):
+                cidx = i % int(len(self.color_map))
+                color = self.color_map[cidx]
+                coreid = self.model.get_numa_node_by_id(i)[0]
+
+                self.obj_per_node[i].append('numa_axis_%d.west' % (coreid))
+                nn = [ '(%s)' % x for x in self.obj_per_node[i] ]
+                self.f.write("\\node [yscale=0.85,draw=%s!50,fill=%s!10,fit=%s,rounded corners] {};\n" \
+                                 % (color, color, ' '.join(nn)))
 
         # X-axes
         for c in self.model.get_graph().nodes():
