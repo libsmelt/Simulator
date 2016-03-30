@@ -130,7 +130,7 @@ class Output():
         if not packed:
             print self.obj_per_core
             for c in self.model.get_cores(True):
-                cidx = self.model.get_numa_id(c)
+                cidx = self.model.get_numa_id(c) % int(len(self.color_map))
                 color = self.color_map[cidx]
                 self.obj_per_core[c] = self.obj_per_core.get(c, []) + ['numa_axis_%d.west' % (c)]
                 nn = [ '(%s)' % x for x in self.obj_per_core[c] ]
