@@ -95,3 +95,19 @@ for reconfigurable hardware. An example is:
 # Run the Simulator as a service
 
 ```while [[ 1 ]]; do ./simulator.py --server; sleep 2; done```
+
+Note: If the Simulator is running as a service within the ETH network,
+access from the outside world (`pluton`) and the Barrelfish rack cannot
+directly access it. Instead, on these machines, you have to setup a
+SSH tunnel to `emmentaler`.
+
+This is how you setup the tunnel (directly on the machine where you
+want to execute Smelt).
+
+```ssh -L 25041:sgv-skaestle-01:25041 skaestle@10.110.4.4 -p8006 -N```
+
+`10.110.4.4` here is the local IP address of emmentaler as seen from
+within the Barrelfish rack. From the outside world, use
+`emmentaler1.ethz.ch` instead.
+
+In order for this to work, `export SMLT_HOSTNAME=localhost`.
