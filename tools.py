@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import sys
 import re
 import os
 import subprocess
@@ -20,7 +21,7 @@ def parse_sk_m(line):
     @return None, in case the lines is not an sk_m, a tuple (core, title, idx, tscdiff) otherwise
 
     """
-    m = re.match('sk_m_print\((\d+),(\S+)\)\s+idx=\s*(\d+)\s+tscdiff=\s*(\d+)', line)
+    m = re.match('sk_m_print\((\d+),([^\)]+)\)\s+idx=\s*(\d+)\s+tscdiff=\s*(\d+)', line)
     if m:
         core = int(m.group(1))
         title = m.group(2)
@@ -31,14 +32,20 @@ def parse_sk_m(line):
     else:
         return None
 
-def parse_sk_m_input(stream):
-    """
-    Read all lines from given handle and execute parse_sk_m on all of them.
+def parse_sk_m_input(stream=sys.stdin):
+    """Read all lines from given handle and execute parse_sk_m on all of
+    them. The stream from which to read data is given as argument
+    stream. The default is to read from stdin.
+
+    @return: A dict (core, title) -> [values .. ]
 
     """
     d = {}
 
-    for l in stream.readlines():
+    for l in stream:
+        if len(l)<1:
+            break
+        
         o = parse_sk_m(l)
         if not o:
             continue
@@ -48,14 +55,14 @@ def parse_sk_m_input(stream):
         else:
             d[(core,title)].append(tscdiff)
 
-    return d.items()
+    return d
 
     
 def statistics_cropped(l, r=.1):
     """
     Print statistics for the given list of integers
     @param r Crop ratio. .1 corresponds to dropping the 10% highest values
-    @return A tuple (mean, stderr, min, max)
+    @return A tuple (mean, stderr, min, max, median)
     """
     if not isinstance(l, list) or len(l)<1:
         return None
@@ -63,7 +70,7 @@ def statistics_cropped(l, r=.1):
     crop = int(len(l)*r)
     m = 0
     for i in range(crop):
-        m = 0
+        m = -sys.maxint-1
         for e in l:
             m = max(m, e)
         l.remove(m)
@@ -190,3 +197,12 @@ def run_pdflatex(fname, openFile=True):
         if openFile:
             subprocess.call(['okular', fname.replace('.tex', '.pdf')])
 
+
+def dump_stdin_no_colors():
+    import fileinput
+    for line in fileinput.input('-'):
+        print remove_ascii(line)
+
+def remove_ascii(line):        
+    ansi_escape = re.compile(r'\x1b[^m]*m')
+    return ansi_escape.sub('', line.rstrip())
