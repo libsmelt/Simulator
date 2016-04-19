@@ -57,7 +57,7 @@ class Protocol(object):
         """
         return True
 
-    def is_terminated(self):
+    def is_terminated(self, eval_context):
         """Indicate if the protocol is terminated
 
         Normally, this can be determined by the execution process
@@ -272,8 +272,7 @@ class Barrier(Protocol):
 
         # --------------------------------------------------
         # Reduce state
-        if self.state.get(core, Barrier.IDLE) == Barrier.REDUCE or \
-           len(nb_filtered)==0:
+        if self.state.get(core, Barrier.IDLE) == Barrier.REDUCE:
             
             print ('Node %d is in reduce state and received a message '
                    'or no neighbors (%d)') % (core, len(nb_filtered))
@@ -310,7 +309,8 @@ class Barrier(Protocol):
         # --------------------------------------------------
         # Broadcast state
         elif len(nb_filtered) > 0:
-            
+
+            assert self.state[core] == Barrier.BC
             print 'Node %d is in broadcast state and received a message ' % core
            
             dest = nb_filtered[0]
@@ -375,8 +375,13 @@ class Barrier(Protocol):
             return True
 
         elif curr_core_state == Barrier.BC:
-            print 'Node is already in Reduces state, nothing to do here'
-            assert not "How can this happen?"
+            # For the root, where we _manually_ set change the state
+            # to BC, it is normal to see this spurious state
+            # change. Otherwise, it should not happen.
+            if core == self.root:
+                return True
+                
+            assert not "Node is already in Reduces state - how can this happen?"
             
         else:
             raise Exception('Received unexpected message')
@@ -385,17 +390,39 @@ class Barrier(Protocol):
 
 
 
-    def is_terminated(self):
+    def is_terminated(self, eval_context):
         """Indicate if the protocol is terminated
 
         The barrier is finished after each node is in .. state
         """
 
         print 'Checking if Barrier is terminated - %d' % len(self.state)
+
+        reduce_done = True
+        finished = True
         for (core, state) in self.state.items():
-            print core, '->', state
+            if state != Barrier.BC:
+                finished = False
+            if state != Barrier.REDUCE:
+                reduce_done = False
+
+        if reduce_done:
             
-        import pdb; pdb.set_trace()
+            print '------------------------------'
+            print 'REDUCE --> BROADCAST (from %d)' % self.root
+            print '------------------------------'
+
+            import debug
+            
+            # Activate BC for root
+            self.state[self.root] = Barrier.BC
+            
+            # Reset state of all cores + schedule root
+            eval_context.schedule_node(self.root)
+            self.cores_active = [self.root]
+
+            
+        return finished
 
         
 
@@ -723,6 +750,7 @@ class Evaluate():
                  bcolors.ENDC
 
             heapq.heappush(self.event_queue, (recv_cmpl, events.Receiving(src, dest)))
+            
 
     def send(self, src):
         """
@@ -738,7 +766,7 @@ class Evaluate():
         """
         Return whether evaluation is termiated
         """
-        return len(self.event_queue)==0 and self.protocol.is_terminated()
+        return len(self.event_queue)==0 and self.protocol.is_terminated(self)
 
 
     def schedule_node(self, node, time=None, sender=-1):
