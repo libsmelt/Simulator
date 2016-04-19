@@ -56,6 +56,15 @@ class Protocol(object):
 
         """
         return True
+
+    def is_terminated(self):
+        """Indicate if the protocol is terminated
+
+        Normally, this can be determined by the execution process
+        directly. Otherwise, it can be configured here
+
+        """
+        return True
         
 
 class AB(Protocol):
@@ -65,7 +74,7 @@ class AB(Protocol):
         # Keep track of which nodes are active
         # Lists of nodes that: 
         #  -> received the message already (cores_active)
-        cores_active = []
+        self.cores_active = []
 
     def get_name(self):
         return 'atomic broadcast'
@@ -219,25 +228,36 @@ class Barrier(Protocol):
         # Keep track of which nodes are active
         # Lists of nodes that: 
         #  -> received the message already (cores_active)
-        self.cores_active = {}
+        self.cores_active = []
 
         # A dictionary, storing for each node how many messages have been received
         self.num_msgs = {}
         self.parents = {}
+        self.num_msgs = {} # For reduce: how many messages have been received
         self.root = None
+        self.msg_log = {}
     
     def get_name(self):
         return 'barrier'
     
     def set_initial_state(self, eval_context, root):
-        """Evaluate cost starting at root of overlay
+        """Barriers start with a reduction, so initially, all leaf nodes are
+        active.
+
         """
-        eval_context.schedule_node(root)
-        self.cores_active = [root]
-        self.leaf_nodes = eval_context.topo.get_leaf_nodes(eval_context.schedule)
-        
+        leaf_nodes = eval_context.topo.get_leaf_nodes(eval_context.schedule)
+        print 'Leaf nodes are', str(leaf_nodes)
+
+        for l in leaf_nodes:
+            self.state[l] = Barrier.REDUCE
+            eval_context.schedule_node(l)
+
         self.parents = eval_context.topo.get_parents(eval_context.schedule)
+        print 'Parent relationship: ', self.parents
+
         self.root = root
+
+        
 
     def idle_handler(self, eval_context, core, time):
         """
@@ -279,7 +299,7 @@ class Barrier(Protocol):
 
                 cost = eval_context.get_send_cost(core, parent)
                 
-                print 'Send(%d,%s,%s) - NBs=%d - cost %d' % \
+                print 'Send(%d,%s,%s) - Barrier - Reduce - NBs=%d - cost %d' % \
                     (eval_context.sim_round, str(core), str(parent), 1, cost)
 
                 send_compl = time + cost
@@ -291,6 +311,8 @@ class Barrier(Protocol):
         # Broadcast state
         elif len(nb_filtered) > 0:
             
+            print 'Node %d is in broadcast state and received a message ' % core
+           
             dest = nb_filtered[0]
             cost = eval_context.get_send_cost(core, dest)
 
@@ -301,7 +323,7 @@ class Barrier(Protocol):
                     eval_context.model.graph.edge_weight((core, dest)))
 
             eval_context.visu.send(core, dest, time, cost)
-            print 'Send(%d,%s,%s) - NBs=%d - cost %d' % \
+            print 'Send(%d,%s,%s) - Barrier - BC - NBs=%d - cost %d' % \
                 (eval_context.sim_round, str(core), str(dest),
                  len(nb_filtered), cost)
 
@@ -323,23 +345,59 @@ class Barrier(Protocol):
     def receive_handler(self, eval_context, core, from_core, time):
         """Triggered when a message was received on <core>
 
-        
+        State diagram.
         """
         print 'Receiving message on core %d' % core
-        
-        if self.state.get(core, Barrier.IDLE) == Barrier.IDLE:
-            self.state[core] = Barrier.BC
-            
-        elif self.state.get(core, Barrier.IDLE) == Barrier.BC:
-            self.state[core] = Barrier.REDUCE
 
-        elif self.state.get(core, Barrier.IDLE) == Barrier.REDUCE:
-            print 'Node is already in Reduces state, nothing to do here'
+        curr_core_state = self.state.get(core, Barrier.IDLE)
+
+        # Record state for debugging purposes
+        self.msg_log[core] = self.msg_log.get(core, []) + [
+            (core, from_core, curr_core_state)]
+        
+        if curr_core_state == Barrier.IDLE:
+            # Trigger send unless as soon as we have received a message from
+            # all children - compare with Reduction.receive_handler
+            self.num_msgs[core] = self.num_msgs.get(core, 0) + 1
+            num_children = len([x for (x, p) in self.parents.items() if p == int(core) ])
+            assert self.num_msgs[core]<=num_children
+            start_bc = (self.num_msgs[core]==num_children)
             
+            if start_bc:
+                # Change state to REDUCE
+                self.state[core] = Barrier.REDUCE
+
+            return start_bc
+                    
+        elif curr_core_state == Barrier.REDUCE:
+            # Change state to BROADCAST, trigger sending a message
+            self.state[core] = Barrier.BC
+            return True
+
+        elif curr_core_state == Barrier.BC:
+            print 'Node is already in Reduces state, nothing to do here'
+            assert not "How can this happen?"
             
         else:
             raise Exception('Received unexpected message')
-       
+
+        assert not "We could never be here, but return in one of the if-clauses"
+
+
+
+    def is_terminated(self):
+        """Indicate if the protocol is terminated
+
+        The barrier is finished after each node is in .. state
+        """
+
+        print 'Checking if Barrier is terminated - %d' % len(self.state)
+        for (core, state) in self.state.items():
+            print core, '->', state
+            
+        import pdb; pdb.set_trace()
+
+        
 
 # Evaluation is event based. We realize this using a priority heap
 # with the time at which the event is happening as priority and pop
@@ -501,6 +559,13 @@ class Evaluate():
           function send().
 
         - receive:
+
+        - receiving: This seems to be some kind of DUMMY operation,
+          related to the problem of having several receives on the
+          same core (e.g. Reduction). In that case, overlapping
+          Receive operations have to re-arranged.
+
+        What the fuck is the difference between receive and receiving?
 
         """
         (p, e) = heapq.heappop(self.event_queue)
@@ -673,7 +738,7 @@ class Evaluate():
         """
         Return whether evaluation is termiated
         """
-        return len(self.event_queue)==0
+        return len(self.event_queue)==0 and self.protocol.is_terminated()
 
 
     def schedule_node(self, node, time=None, sender=-1):
