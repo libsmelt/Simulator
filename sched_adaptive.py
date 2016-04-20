@@ -57,11 +57,11 @@ class SchedAdaptive(scheduling.Scheduling):
         @param cores_active List of active nodes
         @return A list containing all inactive nodes sorted by cost.
         """
-        assert cores_active is not None
-        assert sending_node in cores_active
-
         if self.finished:
             return self.store[sending_node]
+
+        assert cores_active is not None
+        assert sending_node in cores_active
         
         self.num += 1
         print 'Active nodes - %d' % self.num, len(cores_active)
@@ -129,7 +129,7 @@ class SchedAdaptive(scheduling.Scheduling):
                 # looking for a metric that estimates the total cost of
                 # sending a message across - not just from the perspective
                 # if the sender
-                inactive_nodes.append((self.mod.get_send_cost(sending_node, c)+\
+                inactive_nodes.append((self.mod.query_send_cost(sending_node, c)+\
                                        self.mod.get_receive_cost(sending_node, c), c))
 
             logging.info('%s %d -> %d, as node_active=%d and same_node=%d' % \
@@ -163,14 +163,14 @@ class SchedAdaptive(scheduling.Scheduling):
         # spent on the sender
 
         if self.mod.on_same_numa_node(next_r, sending_node):
-            next_hop = (self.mod.get_send_cost(sending_node, next_r), next_r)
+            next_hop = (self.mod.query_send_cost(sending_node, next_r), next_r)
             
         else:
             # Add other cores from same node, but ONLY if they are
             # multicast members
             c_all = self.mod.filter_active_cores(self.mod.get_numa_node(next_r), True)
             c_all = [ c for c in c_all if not c in cores_active ]
-            c_cost = [ (self.mod.get_send_cost(sending_node, r), r) \
+            c_cost = [ (self.mod.query_send_cost(sending_node, r), r) \
                        for r in c_all if r != sending_node ]
             # Sort, cheapest node first
             c_cost.sort(key=lambda tup: tup[0])

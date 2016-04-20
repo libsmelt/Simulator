@@ -31,7 +31,7 @@ class AdapativeTree(overlay.Overlay):
             _sum = 0
             for r in cores:
                 if (r!=c):
-                    _sum += self.mod.get_send_cost(c, r)
+                    _sum += self.mod.query_send_cost(c, r)
             _c_snd_cost[c] = _sum
 
             logging.info(('%d: sum of send %d' % (c, _sum)))

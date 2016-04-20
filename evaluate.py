@@ -489,10 +489,11 @@ class Evaluate():
             
             res.append((protocol.get_name(), ev.evaluate(topo, root, m, sched)))
 
+            # Mark the schedule as finished, relevant for the adaptive
+            sched.next_eval()
+            
             # Reset send history
             m.reset()
-            
-            sched.next_eval()
 
         return res 
         
