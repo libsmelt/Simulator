@@ -7,6 +7,8 @@ import model
 import config
 import topology_parser
 import itertools
+import gzip
+from multimessage import MultiMessage 
 
 from pygraph.classes.digraph import digraph
 
@@ -51,8 +53,26 @@ class NetosMachine(model.Model):
         
         # Build a graph model
         super(NetosMachine, self).__init__()
-        
 
+        # Read multimessage data
+        fname = '%s/%s/multimessage.gz' % \
+                (config.MACHINE_DATABASE, self.get_name())
+        
+        self.mm = None
+        with gzip.open(fname, 'r') as f:
+            self.mm = MultiMessage(f)
+
+        self.send_history = {}
+        self.reset()
+        
+    def reset(self):
+        ## XXX Also need to reset send history on an individual node
+        ## for barriers etc, when reverting from reduction to ab
+        if self.send_history:
+            print 'Resetting send history', self.send_history
+        self.send_history = {}
+
+        
     def get_num_numa_nodes(self):
         """Get the number of NUMA nodes
         """
@@ -132,8 +152,37 @@ class NetosMachine(model.Model):
         for (n, i) in zip(nodes, range(len(nodes))):
             if core1 in n:
                 return i
-            
 
+
+    def query_send_cost(self, src, dest, batchsize=1):
+        """In difference to get_send_cost, query_send_cost just retrieves the
+        send cost without adding the message to the history.
+
+        """
+        return self._get_send_cost(src, dest, batchsize)
+    
+            
+    def get_send_cost(self, src, dest, batchsize=1):
+
+        """
+        The cost of the send operation (e.g. to work to done on the
+        sending node) when sending a message to core dest
+        """
+        l = self.get_numa_id(src) == self.get_numa_id(dest)
+        _send_history = self.send_history.get(src, [])
+        num_l = len([ b for b in _send_history if b ])
+        num_r = len([ b for b in _send_history if not b ])
+
+        _factor = 1.0
+        if self.mm:
+            _factor = self.mm.get_factor(num_r, num_l, l)
+
+        print 'Factor is', _factor
+            
+        self.send_history[src] = _send_history + [l]
+        return self._get_send_cost(src, dest, batchsize)*_factor
+
+    
     def __repr__(self):
         return self.name
             

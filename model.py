@@ -44,7 +44,13 @@ class Model(object):
 
         self.graph = self._build_graph()
 
+    def reset(self):
+        """Reset the model: 
+        - history of sends
 
+        """
+        return 
+        
     # --------------------------------------------------
     # Characteritics of model
     def get_name(self):
@@ -85,6 +91,15 @@ class Model(object):
         """
         return self._get_receive_cost(src, dest)
 
+    
+    def query_send_cost(self, src, dest, batchsize=1):
+        """In difference to get_send_cost, query_send_cost just retrieves the
+        send cost without adding the message to the history.
+
+        """
+        return self._get_send_cost(src, dest, batchsize)
+
+    
     def get_send_cost(self, src, dest, batchsize=1):
         """
         The cost of the send operation (e.g. to work to done on the

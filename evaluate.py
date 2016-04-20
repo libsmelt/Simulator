@@ -474,14 +474,24 @@ class Evaluate():
         """
         res = []
 
+        # Reset send history
+        m.reset()
+            
         for protocol in [ AB(), Reduction(), Barrier() ]:
 
             print 'Evaluating protocol %s' % \
                 protocol.get_name()
             
             ev = Evaluate(protocol)
+            # import cProfile
+            # cProfile.run('ev = Evaluate(protocol)')
+            # return None
+            
             res.append((protocol.get_name(), ev.evaluate(topo, root, m, sched)))
 
+            # Reset send history
+            m.reset()
+            
             sched.next_eval()
 
         return res 
@@ -555,12 +565,12 @@ class Evaluate():
         # * Send cost
         final_time = self.sim_round
         r = Result(self.sim_round, self.last_node, visu_name)
+        send_feedback = self.model.query_send_cost(self.last_node, root)
+
         print "Terminating(%d,%s,%s) - cost %d for last_node -> root" % \
-            (self.sim_round, str(self.last_node), str(root), 
-             self.model.get_send_cost(self.last_node, root) + 
-#             self.topology.edge_weight((self.last_node, root)) +
-             self.model.get_receive_cost(self.last_node, root))
-        self.sim_round += self.model.get_send_cost(self.last_node, root);
+            (self.sim_round, str(self.last_node), str(root),
+             send_feedback + self.model.get_receive_cost(self.last_node, root))
+        self.sim_round += send_feedback
         # * Propagation
         self.sim_round += T_PROPAGATE
         # * Receive cost
@@ -806,9 +816,10 @@ class Evaluate():
 
         import model
         assert isinstance (self.model, model.Model)
+
+        cost = self.model.get_send_cost(sender, receiver, batchsize=_batchsize)
         
         logging.info(('Send: Getting send cost %d->%d for batchsize %d = %d' % \
-            (sender, receiver, _batchsize,
-             self.model.get_send_cost(sender, receiver, _batchsize))))
+            (sender, receiver, _batchsize, cost)))
                      
-        return self.model.get_send_cost(sender, receiver, batchsize=_batchsize)
+        return cost
