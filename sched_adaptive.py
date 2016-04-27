@@ -26,7 +26,7 @@ class SchedAdaptive(scheduling.Scheduling):
 
     """
     store = dict()
-    
+
     num = 0
     finished = False
 
@@ -49,7 +49,27 @@ class SchedAdaptive(scheduling.Scheduling):
         return num >= NUM_STOP_REMOTE
 
 
+    def replace(self, sender, receiver):
+        """Updates the adaptive tree
+
+        Remove (x, receiver) and add (sender, receiver) instead.
+        """
+        print 'ADAPTIVE before' + str(self.store)
+
+
+        # Find previous sender
+        for (s, l_receivers) in self.store.items():
+            print 'ADAPTIVE', 'looking for ', receiver, 'in', l_receivers
+            self.store[s] = [ (cost, r) for (cost, r) in l_receivers if \
+                              r != receiver ]
+
+        # Add new pair
+        self.store[sender].append((0, receiver))
+
+        print 'ADAPTIVE after' + str(self.store)
+
     def find_schedule(self, sending_node, cores_active=None):
+
         """
         Find a schedule for the given node.
 

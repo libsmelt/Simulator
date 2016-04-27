@@ -76,6 +76,14 @@ class AB(Protocol):
         #  -> received the message already (cores_active)
         self.cores_active = []
 
+        # list of (time, core) tuples indicating the order in which
+        # cores become active (e.g. receive the message first)
+        self.log_first_message = []
+
+        # list of (time, core) tuples indicating the order in which
+        # cores become idle (e.g. are done sending)
+        self.log_idle = []
+
     def get_name(self):
         return 'atomic broadcast'
 
@@ -128,6 +136,54 @@ class AB(Protocol):
             heapq.heappush(\
                 eval_context.event_queue, \
                     (send_compl, events.Send(core, None)))
+
+        else:
+            self.log_idle.append((core, time))
+
+
+    def receive_handler(self, eval_context, core, from_core, time):
+        """Triggered when a message was received on <core>
+
+        """
+        time += eval_context.model.get_receive_cost(from_core, core)
+        self.log_first_message.append((core, time))
+        return True
+
+
+    def is_terminated(self, eval_context):
+        """Protocol is terminated, output core timing
+
+        """
+
+        # These are the ones that we want to optimize, that's the time
+        # at which cores first receive a message
+        _first = sorted(self.log_first_message, key=lambda x: x[1], reverse=True)
+        for (core, time) in _first:
+            print 'first seen: %2d %8.2f' % (core, time)
+
+
+        # That's the time at which a core is done sending a
+        # messages. Cores that finish early have some slack to send to others
+        for (core, time) in self.log_idle:
+            print 'idle: %2d %8.2f' % (core, time)
+
+        for ((first, f_time), (last, l_time)) in zip(_first, self.log_idle):
+            # Check if (first->last) would optimize the tree
+            slack = (f_time-l_time)
+            cost_direct = eval_context.model.get_send_cost(first, last) + \
+                          eval_context.model.get_receive_cost(first, last)
+
+            optimize = 'no'
+            if cost_direct <= slack:
+
+                eval_context.schedule.replace(last, first)
+                optimize = 'yes'
+
+            print 'slack: %2d %2d %10.2f %10.2f %5s' % \
+                (first, last, slack, cost_direct, optimize)
+
+
+        return True
 
 
 class Reduction(Protocol):
@@ -475,7 +531,8 @@ class Evaluate():
         # Reset send history
         m.reset()
 
-        for protocol in [ AB(), Reduction(), Barrier() ]:
+        # AB twice for adaptive tree
+        for protocol in [ AB(), AB(), Reduction(), Barrier() ]:
 
             print 'Evaluating protocol %s' % \
                 protocol.get_name()
@@ -700,6 +757,9 @@ class Evaluate():
         # receiving node. In that case, we need to update the
         # timestamp accordingly.
 
+        # Start updating the heap
+        # --------------------------------------------------
+
         _heap = []
 
         for he in self.event_queue:
@@ -732,6 +792,9 @@ class Evaluate():
 
             else:
                 _heap.append(he)
+
+        # End updating the heap
+        # --------------------------------------------------
 
         self.event_queue = _heap
         heapq.heapify(self.event_queue)
