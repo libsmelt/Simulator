@@ -8,7 +8,7 @@ import config
 import topology_parser
 import itertools
 import gzip
-from multimessage import MultiMessage 
+from multimessage import MultiMessage
 
 from pygraph.classes.digraph import digraph
 
@@ -38,7 +38,7 @@ class NetosMachine(model.Model):
 
     # Machine name
     name = None
-        
+
     def __init__(self):
         """Initialize the Simulator for a NetOS machine.
 
@@ -50,21 +50,27 @@ class NetosMachine(model.Model):
         """
         self.name = config.args.machine
         print 'Initializing NetOS machine %s' % self.name
-        
+
         # Build a graph model
         super(NetosMachine, self).__init__()
 
         # Read multimessage data
         fname = '%s/%s/multimessage.gz' % \
                 (config.MACHINE_DATABASE, self.get_name())
-        
+
         self.mm = None
-        with gzip.open(fname, 'r') as f:
+        try:
+            f = gzip.open(fname, 'r')
             self.mm = MultiMessage(f)
+            f.close()
+        except IOError:
+            print 'No multimessage data for this machine'
+        except:
+            raise
 
         self.send_history = {}
         self.reset()
-        
+
     def reset(self):
         ## XXX Also need to reset send history on an individual node
         ## for barriers etc, when reverting from reduction to ab
@@ -72,7 +78,7 @@ class NetosMachine(model.Model):
             print 'Resetting send history', self.send_history
         self.send_history = {}
 
-        
+
     def get_num_numa_nodes(self):
         """Get the number of NUMA nodes
         """
@@ -96,8 +102,8 @@ class NetosMachine(model.Model):
         """Get all cores on the given NUMA node
         """
         return self.machine_topology['NUMA'].get()[nidx]
-    
-    
+
+
     def get_numa_id(self, c):
         """ Return the ID of the NUMA node of core c
         """
@@ -107,8 +113,8 @@ class NetosMachine(model.Model):
             nidx += 1
             if c in nodes:
                return nidx
-    
-    
+
+
     def get_num_cores(self):
         return self.machine_topology['numcpus']
 
@@ -119,7 +125,7 @@ class NetosMachine(model.Model):
         c = list(itertools.chain.from_iterable(self.machine_topology['NUMA'].get()))
         c = self.filter_active_cores(c, only_active)
         return c
-    
+
     def _build_graph(self):
         """Build a graph representing the communication cost within that
         machine.
@@ -130,11 +136,11 @@ class NetosMachine(model.Model):
         """
 
         _c_list = self.get_cores()
-        
+
         # Add all cores to the graph
         gr = digraph()
         gr.add_nodes(_c_list)
-        
+
         for snd in _c_list:
             for rcv in _c_list:
                 if snd!=rcv:
@@ -160,8 +166,8 @@ class NetosMachine(model.Model):
 
         """
         return self._get_send_cost(src, dest, batchsize)
-    
-            
+
+
     def get_send_cost(self, src, dest, batchsize=1):
 
         """
@@ -178,15 +184,15 @@ class NetosMachine(model.Model):
             _factor = self.mm.get_factor(num_r, num_l, l)
 
         print 'Factor is', _factor
-            
+
         self.send_history[src] = _send_history + [l]
         return self._get_send_cost(src, dest, batchsize)*_factor
 
-    
+
     def __repr__(self):
         return self.name
-            
-        
+
+
 # --------------------------------------------------
 # Static function
 def get_list():
@@ -197,6 +203,3 @@ def get_list():
     from machineinfo import machines
 
     return [ s for (s, _, _) in machines ]
-
-
-    
