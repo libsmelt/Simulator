@@ -10,9 +10,7 @@ class Output():
 
     color_map = [ "red", "green", "blue", "orange" ]
     height_per_core = 5
-    obj = []
     scale_x = .05
-    last_node = None
 
     "Wrapper to enable visualization output to file"
     def __init__(self, name, model, topo):
@@ -22,6 +20,9 @@ class Output():
         self.obj_per_node = dict()
         self.obj_per_core = dict()
         self.f = open(name, 'w')
+
+        self.obj = []
+        self.last_node = None
 
         self.cores = self.__core_label_to_y_index()
 
@@ -42,7 +43,7 @@ class Output():
 
         self.obj_per_node[cidx] = self.obj_per_node.get(cidx, []) + [label]
         self.obj_per_core[core] = self.obj_per_core.get(core, []) + [label]
-        
+
         self.last_node = label
 
     def _y_coord_for_core(self, core):
@@ -74,13 +75,13 @@ class Output():
                               self._y_coord_for_core(core)))
         self.__add_object(core, name)
 
-        
+
     def receive(self, core, sender, time, cost):
         "Visualize receive operation"
 
         print "Adding receive events at %d -- %d <- %d, cost %d" % \
             (time, core, sender, cost)
-        
+
         # Box indicating receive operation
         name = 'r_%s_%s' % (sender, core)
         self.f.write("\\node[draw,fill=blue!20,minimum width=%dmm, minimum height=%dmm,anchor=west] "\
@@ -163,7 +164,7 @@ class Output():
         for xaxis_label in range(0, final_time, 500):
             self.f.write("\\node at (%dmm,-5mm) { %d };\n" % \
                          (self._scale_time(xaxis_label), xaxis_label))
-        
+
         # footer
         self.f.write("\\end{pgfonlayer}\n")
         self.f.close()
@@ -172,8 +173,8 @@ class Output():
         # Generate a PNG? Currently, this works only for atomic broadcasts
         if config.args.visu and 'atomic_broadcast' in self.name:
             self.__generate_image()
-        
-        
+
+
     def __core_label_to_y_index(self):
         return helpers.core_index_dict(self.model.get_graph().nodes())
 
@@ -188,9 +189,9 @@ class Output():
 
             for line in open('template.tex', 'r'):
                 f.write(line.replace('{%file%}', self.name))
-                
+
             f.close()
-        
+
             try:
                 print subprocess.check_output(shlex.split('rm -f test-figure0.pdf'))
                 print subprocess.check_output(shlex.split('pdflatex -shell-escape -interaction nonstopmode test'))
