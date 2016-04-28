@@ -12,6 +12,9 @@ import copy # for heapq
 # transporting messages is captured in t_send and t_receive.
 T_PROPAGATE = 0
 
+assert T_PROPAGATE == 0 # Otherwise sched_adaptive's
+                        # optimize_scheduling needs an update
+
 class bcolors:
     HEADER = '\033[95m'
     OKBLUE = '\033[94m'
@@ -78,6 +81,8 @@ class AB(Protocol):
 
         # dictionary of core -> time tuples indicating the order in which
         # cores become active (e.g. receive the message first)
+        #
+        # This is AFTER receiving the initial message
         self.log_first_message = {}
 
         # dictionary of core -> time tuples indicating the order in which
@@ -225,8 +230,12 @@ class AB(Protocol):
                 print 'slack: %2d %2d %10.2f %10.2f %5s' % \
                     (first, last, slack, cost_direct, 'yes' if optimize else 'no')
 
-                eval_context.schedule.optimize_scheduling()
-                optimize = False # Current code should work for only one optimization
+                # Optimize the send order within each node!
+                _log_idle, _log_fist_message = eval_context.schedule.optimize_scheduling()
+
+                # I'm already scared of this!
+                self.log_idle = _log_idle
+                self.log_first_message = _log_fist_message
 
             else:
                 optimize = False

@@ -87,6 +87,9 @@ class SchedAdaptive(scheduling.Scheduling):
         # the receive from parent
         cost = {}
 
+        # We also have to determine the root
+        root = None
+
         while not q.empty():
             c = q.get() # caluclate next core
 
@@ -94,6 +97,8 @@ class SchedAdaptive(scheduling.Scheduling):
             # repeatedly from several children
             if c in cost:
                 continue
+
+            root = c
 
             print 'Looking at core', c
 
@@ -154,6 +159,48 @@ class SchedAdaptive(scheduling.Scheduling):
             self.store[core] = [ (0, c) for (c, _) in children_sorted ]
             print 'Storing new send order', self.store[core]
 
+        # --------------------------------------------------
+        # RECALCULATE - when do cores first receive a message
+        # --------------------------------------------------
+
+        log_first_message = {}
+        log_idle = {}
+
+        ac = Queue.Queue()
+        ac.put((root, 0))
+
+        while not ac.empty():
+
+            c, time = ac.get()
+            log_first_message[c] = time
+
+            for _, child in self.store[c]:
+
+                # global time, increases with each child
+                time += self.mod.query_send_cost(c, child)
+
+                # XXX propagate here
+
+                # happens asynchronously, so we don't update the time
+                cost = self.mod.get_receive_cost(c, child)
+
+                # append new event
+                ac.put((child, time + cost))
+
+            # this core is idle now
+            log_idle[c] = time
+
+
+        print "log idle"
+        print log_idle
+
+        print "log first message"
+        print log_first_message
+
+        assert len(log_idle) == len(self.store)
+        assert len(log_first_message) == len(self.store)
+
+        return log_idle, log_first_message
 
     def replace(self, sender, receiver):
         """Updates the adaptive tree
