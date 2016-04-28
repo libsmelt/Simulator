@@ -208,15 +208,18 @@ class AB(Protocol):
                 eval_context.topology.add_edge((last, first),
                                                eval_context.model.graph.edge_weight((last, first)))
 
-                # Replace in output graph
-       #         eval_context.topology.
-
                 # the first core now is busy for longer
                 self.log_idle[last] = l_time + t_send
 
                 # the receiving core is done earlier
                 _first_new = l_time + t_send + t_receive + T_PROPAGATE
-                assert self.log_first_message[first] - (slack-cost_direct) == _first_new
+
+                # Floating point comparison - make sure the two ways
+                # of calculating are (approximately) the same
+                c1 = self.log_first_message[first] - (slack-cost_direct)
+                c2 = _first_new
+                assert abs(c1-c2) < 1.0
+
                 self.log_first_message[first] = _first_new
 
                 print 'slack: %2d %2d %10.2f %10.2f %5s' % \
