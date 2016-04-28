@@ -33,8 +33,18 @@ class Overlay(object):
         assert isinstance(mod, model.Model)
         self.mod = mod
         self.tree = None
+        self.options = {}
+
+    def set_arguments(self, args):
+        """Used to pass arguments to the overlay. Arguments are given like
+        this: adaptivetree-optimized
+
+        @param args list of strings
+        """
+        return
 
     def _get_broadcast_tree(self):
+
         """
         Return the broadcast tree as a graph
 
@@ -230,16 +240,23 @@ class Overlay(object):
         """
         import hybrid
 
+        overlay = overlay_name.split('-')
+        overlay_name = overlay[0]
+        overlay_args = overlay[1:]
+
         if overlay_name == 'shm':
             r = hybrid.Hybrid(topo, None)
         elif overlay_name.startswith('hybrid_'):
             e = overlay_name.split('_')
             print 'Detected hybrid model with base class', e[1]
             r_mp_class = Overlay.get_overlay_class(e[1])
+            assert len(overlay_args) == 0 # Don't know how to pass the
+                                          # arguments for Hybrids
             r = hybrid.Hybrid(topo, r_mp_class)
         else:
             o = Overlay.get_overlay_class(overlay_name)
             r = o(topo)
+            r.set_arguments(overlay_args)
         return r
 
 

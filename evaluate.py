@@ -158,6 +158,9 @@ class AB(Protocol):
 
         """
 
+        if not eval_context.topo.options.get('optimized', False):
+            return True
+
         # We reshuffle until as long as we still optimize the tree
         optimize = True
 
@@ -572,7 +575,12 @@ class Evaluate():
         m.reset()
 
         # AB twice for adaptive tree
-        for protocol in [ AB(), AB() ]: #, AB(), Reduction(), Barrier() ]:
+        prots = [ AB(), Reduction(), Barrier() ]
+
+        if topo.options.get('optimized', False):
+            prots = [ AB() ] + prots
+
+        for protocol in prots:
 
             print 'Evaluating protocol %s' % \
                 protocol.get_name()

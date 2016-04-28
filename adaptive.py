@@ -6,19 +6,28 @@ import sched_adaptive
 import overlay
 import logging
 
+import tools
+
 class AdapativeTree(overlay.Overlay):
     """
     Build a cluster topology for a model.
 
     """
-    
+
     def __init__(self, mod):
         """
         """
         super(AdapativeTree, self).__init__(mod)
-        
+
     def get_name(self):
         return "adaptivetree"
+
+    def set_arguments(self, args):
+        for a in args:
+            if a == 'optimized':
+                self.options['optimized'] = True
+            else:
+                raise Exception('Onrecognized argument %s' % a)
 
     def get_scheduler(self, final_graph):
         return sched_adaptive.SchedAdaptive(final_graph, self.mod)
