@@ -68,6 +68,8 @@ class NetosMachine(model.Model):
         except:
             raise
 
+        self.mm = None # Disable MultiMessage bench XXXX DO NOT COMMIT --------------------------------------------------
+
         self.send_history = {}
         self.reset()
 
