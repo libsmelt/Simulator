@@ -59,9 +59,9 @@ def _parse_line(cpuid, match):
     """
     cpuid.seek(0)
     for l in cpuid.readlines():
-        m = re.match('^(%s.*):\s+(\S+)' % match, l)
+        m = re.match('^(%s.*):\s+(.+)' % match, l)
         if m:
-            return (m.group(1), m.group(2))
+            return (m.group(1), m.group(2).rstrip())
 
     return (None, None)
 
@@ -82,7 +82,6 @@ def parse_machine_db(machine):
         # Find sockets
         m = re.match('Socket (\d+):\s+\(([0-9 ]*)\)', l)
         if m:
-            print 'Found cluster'
             res['Package'].add_cluster(m.group(2).split())
 
         # Find cache, remember level
@@ -118,7 +117,6 @@ def parse_machine_db(machine):
         if m:
             _cluster = []
             cores = m.group(1)
-            print cores
             for c in cores.split(','):
 
                 if '-' in c:
@@ -127,15 +125,17 @@ def parse_machine_db(machine):
                 else:
                     _cluster.append(int(c))
 
-            print _cluster
             res['NUMA'].add_cluster(_cluster)
 
-    for r in res.values():
-        if isinstance(r, Resource):
-            r.pr()
-
+    stream = open('%s/%s/proc_cpuinfo.txt' % (config.MACHINE_DATABASE, machine))
+    cpuinfo = StringIO.StringIO(stream.read())
+    stream.close()
 
     res['numcpus'] = int(_parse_line(lscpu, 'CPU\(s\)')[1])
+    res['cpuspeed'] = float(_parse_line(lscpu, 'CPU MHz')[1])
+    res['L1d'] = (_parse_line(lscpu, 'L1d')[1])
+    res['L2'] = (_parse_line(lscpu, 'L2')[1])
+    res['L3'] = (_parse_line(lscpu, 'L3')[1])
+    res['cpuname'] = _parse_line(cpuinfo, 'model name')[1]
 
     return res
-
