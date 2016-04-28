@@ -6,6 +6,7 @@ import pdb
 import logging
 import random
 import model
+import Queue
 
 from pygraph.algorithms.minmax import shortest_path
 from pygraph.classes.graph import graph
@@ -47,6 +48,111 @@ class SchedAdaptive(scheduling.Scheduling):
             if c in nodes_active:
                 num += 1
         return num >= NUM_STOP_REMOTE
+
+
+    def optimize_scheduling(self):
+        """Optimizes the current scheduling.
+
+        Instead of sending on the most expensive link first, we should
+        send to the most expensive subtree first"""
+
+        for core, children in self.store.items():
+            print core, '->', [ core for (_, core) in children ]
+
+        # Determine leaf nodes
+        leafs = [ s for s, children in self.store.items() if len(children)==0 ]
+        print 'LEAFS are', leafs
+
+        # This does not work with results from the multi-message bench yet
+        assert self.mod.mm == None
+
+        # Determine parent relationship
+        parent = {}
+        for s, children in self.store.items():
+            for (_, child) in children:
+                assert not child in parent # Each core has only one parent
+                print 'Found parent of', child, 'to be', s
+                parent[child] = s
+
+        # --------------------------------------------------
+        # COST - determine the cost of each subtree
+        # --------------------------------------------------
+
+        # Calculate cost of subtree
+        q = Queue.Queue()
+        for l in leafs:
+            q.put(l)
+
+        # Directonary core c -> cost of subtree of core c including
+        # the receive from parent
+        cost = {}
+
+        while not q.empty():
+            c = q.get() # caluclate next core
+
+            # It is possible that the same core is added to the queue
+            # repeatedly from several children
+            if c in cost:
+                continue
+
+            print 'Looking at core', c
+
+            # Determine parent node
+            c_parent = parent[c] if c in parent else None
+
+            # Receive from parent
+            c_cost = self.mod.get_receive_cost(c_parent, c) if c_parent else 0
+
+            # Add cost of all children's subtrees, if available
+            all_children = True
+            for _, child in self.store[c]:
+                if not child in cost:
+                    print 'Warning', child, 'not yet in queue'
+                    all_children = False
+                    break
+                c_cost += self.mod.query_send_cost(c, child)
+                c_cost += cost[child]
+
+                # Note: core c will not be in the FIFO queue any
+                # longer, but added again later by the at least one
+                # remaining child
+
+            if all_children:
+                # Store cost of now compete subtree
+                assert not c in cost
+                cost[c] = c_cost
+
+                # Put parent into FIFO queue
+                if c_parent:
+                    q.put(c_parent)
+                else:
+                    print 'Core', c, 'does not have a parent'
+
+
+        assert (len(cost)==len(self.store))
+        print cost
+
+        # --------------------------------------------------
+        # REORDER - for each core, reorder messages
+        #           most expensive subgraph first
+        # --------------------------------------------------
+
+        old_store = self.store.items()
+
+        for core, _children in old_store:
+
+            # Determin children of a node
+            children = [ c for (_, c) in _children ]
+
+            # Get cost of each child's subtree
+            children_cost = [ cost[c] for c in children ]
+
+            # Sort, most expensive first
+            children_sorted = sorted(zip(children, children_cost), \
+                                     key=lambda x: x[1], reverse=True)
+
+            self.store[core] = [ (0, c) for (c, _) in children_sorted ]
+            print 'Storing new send order', self.store[core]
 
 
     def replace(self, sender, receiver):
@@ -211,12 +317,15 @@ class SchedAdaptive(scheduling.Scheduling):
 
 
     def get_final_schedule(self, sending_node, active_nodes=None):
-        """
-        Return schedule previously found by iterative find_schedule calls.
+        """Return schedule previously found by iterative find_schedule calls.
+
+        Note: the final schedule does NOT need the cost! Also,
+        reordering does NOT need the cost. The cost here is what was
+        previously stored in self.store
 
         """
         try:
-            res = [(None, r) for (c, r) in self.store[sending_node]]
+            res = [(None, r) for (_, r) in self.store[sending_node]]
             logging.info(('Node', sending_node, 'is sending a message to', \
                 [ r for (_, r) in res ]))
             return res
@@ -225,5 +334,7 @@ class SchedAdaptive(scheduling.Scheduling):
             return []
 
     def next_eval(self):
+        print '--------------------------------------------------'
+        print 'FINISHED'
+        print '--------------------------------------------------'
         self.finished = True
-        

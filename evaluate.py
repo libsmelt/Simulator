@@ -108,7 +108,7 @@ class AB(Protocol):
         assert isinstance(self.cores_active, list)
 
         # Ignore all nodes that received the message already
-        nb_filtered = [ tmp for (cost, tmp) in nb if tmp not in self.cores_active ]
+        nb_filtered = [ tmp for (_, tmp) in nb if tmp not in self.cores_active ]
 
         if len(nb_filtered) > 0:
             dest = nb_filtered[0]
@@ -224,6 +224,9 @@ class AB(Protocol):
 
                 print 'slack: %2d %2d %10.2f %10.2f %5s' % \
                     (first, last, slack, cost_direct, 'yes' if optimize else 'no')
+
+                eval_context.schedule.optimize_scheduling()
+                optimize = False # Current code should work for only one optimization
 
             else:
                 optimize = False
@@ -370,7 +373,7 @@ class Barrier(Protocol):
         assert isinstance(self.cores_active, list)
 
         # Ignore all nodes that received the message already
-        nb_filtered = [ tmp for (cost, tmp) in nb if tmp not in self.cores_active ]
+        nb_filtered = [ tmp for (_, tmp) in nb if tmp not in self.cores_active ]
 
         # --------------------------------------------------
         # Reduce state
