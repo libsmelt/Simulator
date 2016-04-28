@@ -27,9 +27,9 @@ def main():
                     e = l.split(':')[1].split()
                     res.append(int(e[0]))
 
-            bla = (s, res[0], res[1], res[2])
+            bla = (s, res[0], res[1], float(res[1])/res[0]) #, res[2])
             out.append(bla)
-            print '%-30s %6d %6d %6d' % bla
+            print '%-30s %6d %6d %5.2f' % bla
 
         except subprocess.CalledProcessError:
             print s, 'failed'

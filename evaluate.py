@@ -76,13 +76,13 @@ class AB(Protocol):
         #  -> received the message already (cores_active)
         self.cores_active = []
 
-        # list of (time, core) tuples indicating the order in which
+        # dictionary of core -> time tuples indicating the order in which
         # cores become active (e.g. receive the message first)
-        self.log_first_message = []
+        self.log_first_message = {}
 
-        # list of (time, core) tuples indicating the order in which
+        # dictionary of core -> time tuples indicating the order in which
         # cores become idle (e.g. are done sending)
-        self.log_idle = []
+        self.log_idle = {}
 
     def get_name(self):
         return 'atomic broadcast'
@@ -138,7 +138,8 @@ class AB(Protocol):
                     (send_compl, events.Send(core, None)))
 
         else:
-            self.log_idle.append((core, time))
+            assert not core in self.log_idle
+            self.log_idle[core] = time
 
 
     def receive_handler(self, eval_context, core, from_core, time):
@@ -146,7 +147,9 @@ class AB(Protocol):
 
         """
         time += eval_context.model.get_receive_cost(from_core, core)
-        self.log_first_message.append((core, time))
+
+        assert not core in self.log_first_message
+        self.log_first_message[core] = time
         return True
 
 
@@ -155,32 +158,69 @@ class AB(Protocol):
 
         """
 
-        # These are the ones that we want to optimize, that's the time
-        # at which cores first receive a message
-        _first = sorted(self.log_first_message, key=lambda x: x[1], reverse=True)
-        for (core, time) in _first:
-            print 'first seen: %2d %8.2f' % (core, time)
+        # We reshuffle until as long as we still optimize the tree
+        optimize = True
+
+        while optimize:
+
+            # These are the ones that we want to optimize, that's the time
+            # at which cores first receive a message
+            _first = sorted(self.log_first_message.items(), key=lambda x: x[1], reverse=True)
+            for (core, time) in _first:
+                print 'first seen: %2d %8.2f' % (core, time)
 
 
-        # That's the time at which a core is done sending a
-        # messages. Cores that finish early have some slack to send to others
-        for (core, time) in self.log_idle:
-            print 'idle: %2d %8.2f' % (core, time)
+            # That's the time at which a core is done sending a
+            # messages. Cores that finish early have some slack to send to others
+            _log_idle = sorted(self.log_idle.items(), key=lambda x: x[1])
+            for (core, time) in _log_idle:
+                print 'idle: %2d %8.2f' % (core, time)
 
-        for ((first, f_time), (last, l_time)) in zip(_first, self.log_idle):
+            ((first, f_time), (last, l_time)) = (_first[0], _log_idle[0])
+
             # Check if (first->last) would optimize the tree
             slack = (f_time-l_time)
-            cost_direct = eval_context.model.get_send_cost(first, last) + \
-                          eval_context.model.get_receive_cost(first, last)
 
-            optimize = 'no'
+            t_send = eval_context.model.get_send_cost(first, last)
+            t_receive = eval_context.model.get_receive_cost(first, last)
+
+            cost_direct =  t_send + t_receive
+
             if cost_direct <= slack:
 
-                eval_context.schedule.replace(last, first)
-                optimize = 'yes'
+                optimize = True
+                print 'schedule: replacing', last, first
 
-            print 'slack: %2d %2d %10.2f %10.2f %5s' % \
-                (first, last, slack, cost_direct, optimize)
+                # Replace in schedule
+                eval_context.schedule.replace(last, first)
+
+                # Remove exising edges from topology
+                num = 0
+                for c in eval_context.model.get_cores():
+                    if eval_context.topology.has_edge((c, first)):
+                        eval_context.topology.del_edge((c, first))
+                        num += 1
+                assert num == 1
+                # Add new one
+                eval_context.topology.add_edge((last, first),
+                                               eval_context.model.graph.edge_weight((last, first)))
+
+                # Replace in output graph
+       #         eval_context.topology.
+
+                # the first core now is busy for longer
+                self.log_idle[last] = l_time + t_send
+
+                # the receiving core is done earlier
+                _first_new = l_time + t_send + t_receive + T_PROPAGATE
+                assert self.log_first_message[first] - (slack-cost_direct) == _first_new
+                self.log_first_message[first] = _first_new
+
+                print 'slack: %2d %2d %10.2f %10.2f %5s' % \
+                    (first, last, slack, cost_direct, 'yes' if optimize else 'no')
+
+            else:
+                optimize = False
 
 
         return True
@@ -532,7 +572,7 @@ class Evaluate():
         m.reset()
 
         # AB twice for adaptive tree
-        for protocol in [ AB(), AB(), Reduction(), Barrier() ]:
+        for protocol in [ AB(), AB() ]: #, AB(), Reduction(), Barrier() ]:
 
             print 'Evaluating protocol %s' % \
                 protocol.get_name()
