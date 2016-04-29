@@ -345,3 +345,27 @@ class Model(object):
                 
             assert (src, dest, batchsize) in self.send_cost_batch
             return self.send_cost_batch[(src, dest, batchsize)]/batchsize
+
+        
+    def get_receive_send_ratio(self):
+        """Get ratio of receive and send costs
+
+        """
+
+        import tools
+        
+        cmax = self.get_num_cores()
+        
+        sends = []
+        recvs = []
+        
+        for s in range(cmax):
+            for r in range(cmax):
+                sends.append(self.query_send_cost(s, r))
+                recvs.append(self.get_receive_cost(s, r))
+
+        (s_avg, _, _, s_min, s_max) = tools.statistics(sends)
+        (r_avg, _, _, r_min, r_max) = tools.statistics(recvs)
+
+
+        return s_avg/r_avg, s_max/r_max, s_min/r_min

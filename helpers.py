@@ -47,7 +47,6 @@ from pygraph.algorithms.minmax import shortest_path
 # For printing clusters
 import networkx as nx
 
-from model import Model
 from overlay import Overlay
 
 class bcolors:
@@ -118,6 +117,7 @@ def output_quorum_configuration(model, hierarchies, root, sched, topo, midx,
     @param shm_clusters: list(list(int)) Shared memory clusters to be added to the model
     @param shm_writers: list(int) Writers, one of each list
     """
+    from model import Model
     assert isinstance(model, Model)
     assert isinstance(topo, Overlay)
 
@@ -293,6 +293,7 @@ def draw_final(mod, sched, topo):
     import model
     import scheduling
 
+    from model import Model
     assert isinstance(mod, model.Model)
     assert isinstance(sched, scheduling.Scheduling)
     assert isinstance(topo, overlay.Overlay)
