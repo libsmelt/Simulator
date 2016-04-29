@@ -14,7 +14,7 @@ class AdapativeTree(overlay.Overlay):
 
     """
 
-    supported_args = [ "shuffle", "sort" ]
+    supported_args = [ "shuffle", "sort", "min" ]
     
     def __init__(self, mod):
         """
@@ -33,7 +33,7 @@ class AdapativeTree(overlay.Overlay):
                 
 
     def get_scheduler(self, final_graph):
-        return sched_adaptive.SchedAdaptive(final_graph, self.mod)
+        return sched_adaptive.SchedAdaptive(final_graph, self.mod, self)
 
     def get_root_node(self):
 

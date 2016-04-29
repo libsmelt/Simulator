@@ -31,9 +31,10 @@ class SchedAdaptive(scheduling.Scheduling):
     num = 0
     finished = False
 
-    def __init__(self, graph, mod):
+    def __init__(self, graph, mod, overlay):
         assert isinstance(mod, model.Model)
         self.mod = mod
+        self.overlay = overlay
         self.store = {key: [] for key in range(self.mod.get_num_cores())}
         super(SchedAdaptive, self).__init__(graph)
 
@@ -279,6 +280,8 @@ class SchedAdaptive(scheduling.Scheduling):
 
         assert cores_active is not None
         assert sending_node in cores_active
+
+        cheap_first = self.overlay.options.get('min', False)
         
         self.num += 1
         print 'Active nodes - %d' % self.num, len(cores_active)
@@ -311,8 +314,12 @@ class SchedAdaptive(scheduling.Scheduling):
             same_node = self.mod.on_same_numa_node(sending_node, c)
 
             # Shoulds this node be considered for sending?
-            # Yes, if receiver is on inactive node, or on local node
-            consider = not node_active or same_node
+            if cheap_first:
+                # Consider all cores to which we are not sending a message yet
+                consider = not c in cores_active
+            else:
+                # Yes, if receiver is on inactive node, or on local node
+                consider = not node_active or same_node
 
             # Do not resent messages to local cores. The local node is
             # already active at that point, so remove nodes will not
@@ -358,7 +365,8 @@ class SchedAdaptive(scheduling.Scheduling):
             (sending_node, inactive_nodes))
 
         # Prefer expensive links
-        inactive_nodes.sort(key=lambda tup: tup[0], reverse=True)
+        should_reverse = False if cheap_first else True
+        inactive_nodes.sort(key=lambda tup: tup[0], reverse=should_reverse)
         logging.info("   sorted: %s" % (inactive_nodes))
 
         if len(inactive_nodes)==0:
