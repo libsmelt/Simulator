@@ -163,7 +163,7 @@ class AB(Protocol):
 
         """
 
-        if not eval_context.topo.options.get('optimized', False):
+        if not eval_context.topo.options.get('shuffle', False):
             return True
 
         # We reshuffle until as long as we still optimize the tree
@@ -230,12 +230,15 @@ class AB(Protocol):
                 print 'slack: %2d %2d %10.2f %10.2f %5s' % \
                     (first, last, slack, cost_direct, 'yes' if optimize else 'no')
 
-                # Optimize the send order within each node!
-                _log_idle, _log_fist_message = eval_context.schedule.optimize_scheduling()
 
-                # I'm already scared of this!
-                self.log_idle = _log_idle
-                self.log_first_message = _log_fist_message
+                if eval_context.topo.options.get('sort', False):
+                
+                    # Optimize the send order within each node!
+                    _log_idle, _log_fist_message = eval_context.schedule.optimize_scheduling()
+
+                    # I'm already scared of this!
+                    self.log_idle = _log_idle
+                    self.log_first_message = _log_fist_message
 
             else:
                 optimize = False
@@ -592,7 +595,7 @@ class Evaluate():
         # AB twice for adaptive tree
         prots = [ AB(), Reduction(), Barrier() ]
 
-        if topo.options.get('optimized', False):
+        if topo.options.get('shuffle', False):
             prots = [ AB() ] + prots
 
         for protocol in prots:

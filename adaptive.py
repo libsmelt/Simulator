@@ -14,6 +14,8 @@ class AdapativeTree(overlay.Overlay):
 
     """
 
+    supported_args = [ "shuffle", "sort" ]
+    
     def __init__(self, mod):
         """
         """
@@ -24,10 +26,11 @@ class AdapativeTree(overlay.Overlay):
 
     def set_arguments(self, args):
         for a in args:
-            if a == 'optimized':
-                self.options['optimized'] = True
+            if not a in self.supported_args:
+                raise Exception(('Onrecognized argument %s' % a))
             else:
-                raise Exception('Onrecognized argument %s' % a)
+                self.options[a] = True
+                
 
     def get_scheduler(self, final_graph):
         return sched_adaptive.SchedAdaptive(final_graph, self.mod)
