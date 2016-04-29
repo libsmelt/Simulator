@@ -77,7 +77,7 @@ class SchedAdaptive(scheduling.Scheduling):
         for s, children in self.store.items():
             if not s in parent:
                 return s
-        return None
+        raise Exception('Could not find root')
 
     
     def cost_subtree(self):
@@ -137,13 +137,14 @@ class SchedAdaptive(scheduling.Scheduling):
                 cost[c] = c_cost
 
                 # Put parent into FIFO queue
-                if c_parent:
+                if c_parent != None:
                     q.put(c_parent)
                 else:
                     print 'Core', c, 'does not have a parent'
 
 
-        assert (len(cost)==len(self.store))
+
+        assert (len(cost)==len(self.store)) # Otherwise tree is not connected
         print cost
         
         return cost
@@ -186,6 +187,9 @@ class SchedAdaptive(scheduling.Scheduling):
         Instead of sending on the most expensive link first, we should
         send to the most expensive subtree first"""
 
+        assert (len(self.store) == sum([len(c) for (s, c) in self.store.items()])+1)
+
+        print 'root is', self.get_root()
         for core, children in self.store.items():
             print core, '->', [ core for (_, core) in children ]
 

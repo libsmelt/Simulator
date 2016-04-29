@@ -16,7 +16,7 @@ def main():
     out = []
 
     for s in [ s for (s, _, _) in machines ]:
-        cmd = ['./simulator.py', s, 'adaptivetree-optimized'] #, '--visu']
+        cmd = ['./simulator.py', s, 'adaptivetree-shuffle-sort'] #, '--visu']
 
         res = []
 
