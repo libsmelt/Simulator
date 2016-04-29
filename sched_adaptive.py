@@ -49,35 +49,49 @@ class SchedAdaptive(scheduling.Scheduling):
                 num += 1
         return num >= NUM_STOP_REMOTE
 
+    def get_leafs(self):
+        """Return a list of all leaf nodes in the current tree
 
-    def optimize_scheduling(self):
-        """Optimizes the current scheduling.
+        """
+        _l = [ s for s, children in self.store.items() if len(children)==0 ]
+        return _l
 
-        Instead of sending on the most expensive link first, we should
-        send to the most expensive subtree first"""
+    def get_parents(self):
+        """Return a dictionary core -> parent identifying each core's parent
+        in the current tree.
 
-        for core, children in self.store.items():
-            print core, '->', [ core for (_, core) in children ]
-
-        # Determine leaf nodes
-        leafs = [ s for s, children in self.store.items() if len(children)==0 ]
-        print 'LEAFS are', leafs
-
-        # This does not work with results from the multi-message bench yet
-        assert self.mod.mm == None
-
-        # Determine parent relationship
-        parent = {}
+        """
+        _p = {}
         for s, children in self.store.items():
             for (_, child) in children:
-                assert not child in parent # Each core has only one parent
+                assert not child in _p # Each core has only one parent
                 print 'Found parent of', child, 'to be', s
-                parent[child] = s
+                _p[child] = s
+        return _p
 
-        # --------------------------------------------------
-        # COST - determine the cost of each subtree
-        # --------------------------------------------------
+    def get_root(self):
+        """Returns the root of the current tree
 
+        """
+        parent = self.get_parents()
+        for s, children in self.store.items():
+            if not s in parent:
+                return s
+        return None
+
+    
+    def cost_subtree(self):
+        """Determine the cost of each node as the cost of the entire subtree
+        starting in that node.
+
+
+        Returns the cost as a dictionary core -> cost at subtree.
+
+        """
+
+        leafs = self.get_leafs()
+        parent = self.get_parents()
+        
         # Calculate cost of subtree
         q = Queue.Queue()
         for l in leafs:
@@ -87,9 +101,6 @@ class SchedAdaptive(scheduling.Scheduling):
         # the receive from parent
         cost = {}
 
-        # We also have to determine the root
-        root = None
-
         while not q.empty():
             c = q.get() # caluclate next core
 
@@ -97,8 +108,6 @@ class SchedAdaptive(scheduling.Scheduling):
             # repeatedly from several children
             if c in cost:
                 continue
-
-            root = c
 
             print 'Looking at core', c
 
@@ -136,12 +145,22 @@ class SchedAdaptive(scheduling.Scheduling):
 
         assert (len(cost)==len(self.store))
         print cost
+        
+        return cost
+        
+    
+    def reorder(self):
 
-        # --------------------------------------------------
-        # REORDER - for each core, reorder messages
-        #           most expensive subgraph first
-        # --------------------------------------------------
+        """Optimize the current schedule.
 
+        This does NOT change the topology, but only the send order in
+        each node. Rather than sending on the most expensive _link_
+        first, as generated in the initial unoptimized adaptive tree,
+        we here changed the schedule to send to the most expensive
+        _subtree_ of each child first
+        """
+
+        cost = self.cost_subtree()
         old_store = self.store.items()
 
         for core, _children in old_store:
@@ -158,7 +177,28 @@ class SchedAdaptive(scheduling.Scheduling):
 
             self.store[core] = [ (0, c) for (c, _) in children_sorted ]
             print 'Storing new send order', self.store[core]
+        
+    
+    def optimize_scheduling(self):
 
+        """Optimizes the current scheduling.
+
+        Instead of sending on the most expensive link first, we should
+        send to the most expensive subtree first"""
+
+        for core, children in self.store.items():
+            print core, '->', [ core for (_, core) in children ]
+
+        # This does not work with results from the multi-message bench yet
+        assert self.mod.mm == None
+
+        # --------------------------------------------------
+        # REORDER - for each core, reorder messages
+        #           most expensive subgraph first
+        # --------------------------------------------------
+
+        self.reorder()
+        
         # --------------------------------------------------
         # RECALCULATE - when do cores first receive a message
         # --------------------------------------------------
@@ -167,7 +207,7 @@ class SchedAdaptive(scheduling.Scheduling):
         log_idle = {}
 
         ac = Queue.Queue()
-        ac.put((root, 0))
+        ac.put((self.get_root(), 0))
 
         while not ac.empty():
 
