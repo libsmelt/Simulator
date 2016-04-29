@@ -171,6 +171,29 @@ class AB(Protocol):
 
         while optimize:
 
+            # --------------------------------------------------
+            # Reorder tree FIRST
+            # --------------------------------------------------
+            
+            if eval_context.topo.options.get('sort', False):
+
+                # Optimize the send order within each node!
+                _log_idle, _log_fist_message = eval_context.schedule.optimize_scheduling()
+
+                # Make sure new Schedule is _actually_ better
+                _slowest_old = sorted(self.log_first_message.items(), key=lambda x: x[1], reverse=True)
+                _slowest_new = sorted(_log_fist_message.items(), key=lambda x: x[1], reverse=True)
+                
+                # Only reorder in case the new schedule is faster:
+                # this is a bit weird, I though we would _always_ be
+                # faster with this.
+                if abs(_slowest_new[0][1]-_slowest_old[0][1])<1 or True:
+                
+                    # I'm already scared of this!
+                    self.log_idle = _log_idle
+                    self.log_first_message = _log_fist_message
+
+            
             # These are the ones that we want to optimize, that's the time
             # at which cores first receive a message
             _first = sorted(self.log_first_message.items(), key=lambda x: x[1], reverse=True)
@@ -234,16 +257,6 @@ class AB(Protocol):
 
                 print 'slack: %2d %2d %10.2f %10.2f %5s' % \
                     (first, last, slack, cost_direct, 'yes' if optimize else 'no')
-
-
-                if eval_context.topo.options.get('sort', False):
-                
-                    # Optimize the send order within each node!
-                    _log_idle, _log_fist_message = eval_context.schedule.optimize_scheduling()
-
-                    # I'm already scared of this!
-                    self.log_idle = _log_idle
-                    self.log_first_message = _log_fist_message
 
             else:
                 optimize = False
