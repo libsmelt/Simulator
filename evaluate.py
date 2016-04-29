@@ -194,7 +194,12 @@ class AB(Protocol):
 
             cost_direct =  t_send + t_receive
 
-            if cost_direct <= slack:
+            # Replace if:
+            # 1) we have enough slack for an additonal message and
+            # 2) the additional message is not already part of the schedule
+            #
+            if cost_direct <= slack and \
+               not eval_context.topology.has_edge((last, first)): 
 
                 optimize = True
                 print 'schedule: replacing', last, first
