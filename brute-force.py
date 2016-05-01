@@ -11,10 +11,22 @@ import copy
 import argparse
 import Queue
 import math
+import thread
+import threading
+import time
 from datetime import datetime
 
 import config
 from server import SimArgs
+
+USE_THREADS=False
+
+class bfThread(threading.Thread):
+    def __init__(self, args):
+        threading.Thread.__init__(self)
+        self.args = args
+    def run(self):
+        brute_force(*self.args)
 
 num_evaluated = 0
 
@@ -23,8 +35,10 @@ T_RECEIVE=50
 
 # C*(n-1)!
 
+threadLock = threading.Lock()
 g_max = 0
 g_min = type(sys.maxsize)
+
 m = None
 
 def send(s, r):
@@ -78,8 +92,6 @@ def evaluate(a, root):
 
     """
 
-    global g_max, g_min
-
     q = Queue.Queue()
     q.put((root, 0))
 
@@ -105,24 +117,42 @@ def evaluate(a, root):
 
     assert n_nodes == len(a)
 
-    # Compare with global max/min
-    if t_max < g_min:
-        # Found a new minimum:
-        g_min = t_max
-        output_tree(a, root, t_max)
-
-    if t_max > g_max:
-        # Found a new maximum:
-        g_max = t_max
-        output_tree(a, root, t_max)
+    global g_max, g_min, num_evaluated
 
 
-    global num_evaluated
-    num_evaluated += 1
+    if t_max < g_min or t_max > g_max:
+
+        if USE_THREADS:
+            threadLock.acquire()
+
+        # Compare with global max/min
+        if t_max < g_min:
+            # Found a new minimum:
+            g_min = t_max
+            output_tree(a, root, t_max)
+
+        if t_max > g_max:
+            # Found a new maximum:
+            g_max = t_max
+            output_tree(a, root, t_max)
+
+        if USE_THREADS:
+            threadLock.release()
+
+    # num_evaluated += 1 # < Python does not seem to have an atomic
+    #                    # increment, CAS or similar
+
+
+
 
 
 def brute_force(N, unused_nodes, used_nodes, tree, root):
     """Brute-force a model of given size N
+
+    This algorithm will generate the same tree in many cases. E.g. it
+    can decide to attach node i followd by node j and then the other
+    way round in a non-conflicting way, such that the trees are
+    actually the same.
 
     """
 
@@ -136,6 +166,8 @@ def brute_force(N, unused_nodes, used_nodes, tree, root):
     if (N==0):
         evaluate(tree, root)
 
+    use_threads = False
+
     # Sanity check
     assert len(unused_nodes) == N
 
@@ -147,10 +179,16 @@ def brute_force(N, unused_nodes, used_nodes, tree, root):
 
         if len(used_nodes) == 0:
 
-            # XXX this might be a good place to parallelize
+            if USE_THREADS:
 
-            # No root added to the graph yet
-            brute_force(N-1, unused_new, [nxt], tree, nxt)
+                t = bfThread((N-1, unused_new, [nxt], tree, nxt))
+                t.setDaemon(True)
+                t.start()
+
+                use_threads = True
+
+            else:
+                brute_force(N-1, unused_new, [nxt], tree, nxt)
 
         # We can choose where we would like to attach the node, too
         for attach_at in used_nodes:
@@ -161,6 +199,15 @@ def brute_force(N, unused_nodes, used_nodes, tree, root):
 
             brute_force(N-1, unused_new, used_nodes + [nxt], _tree, root)
 
+    if not USE_THREADS:
+        num_evaluated += 1
+
+    if use_threads:
+        # We have been swaning threads in this execution of brute_force
+        print 'Waiting for threads to finish'
+        while threading.active_count() > 1:
+            time.sleep(0.1)
+        print 'Done'
 
 
 def main():
@@ -202,6 +249,7 @@ def main():
         # evaluate(tree, 0)
 
 if __name__ == "__main__":
+    print threading.active_count()
     main()
 
 
@@ -222,5 +270,8 @@ if __name__ == "__main__":
 ## 5 -> 6
 ## 6 ->
 ## Evaluated 3628800 models
+## Evaluated 3628800 models, time=300 [s]
 ##
 ## That's only 8% from the optimal
+
+# Parallized: Evaluated 0 models, time=1349 [s]
