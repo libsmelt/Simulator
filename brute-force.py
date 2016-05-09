@@ -40,18 +40,19 @@ g_max = 0
 g_min = type(sys.maxsize)
 
 m = None
+c_mapping = None
 
 def send(s, r):
     if not m:
         return T_SEND
     else:
-        return m.query_send_cost(s, r)
+        return m.query_send_cost(c_mapping[s], c_mapping[r])
 
 def receive(s, r):
     if not m:
         return T_RECEIVE
     else:
-        return m.get_receive_cost(s, r)
+        return m.get_receive_cost(c_mapping[s], c_mapping[r])
 
 def catalan_rec(n):
     """Calculate the Catalan number for n
@@ -83,7 +84,9 @@ def output_tree(a, root, cost):
     print '--------------------------------------------------'
     print '%d nodes' % len(a), 'root', root, 'cost', cost
     for i, v in enumerate(a):
-        print '%d -> %s' % (i, ','.join(map(str, v)))
+        print '%d (%d)-> %s (%s)' % (i, c_mapping[i],
+                                     ','.join(map(str, v)),
+                                     ','.join([ str(c_mapping[x]) for x in v]))
 
 
 
@@ -160,7 +163,9 @@ def brute_force(N, unused_nodes, used_nodes, tree, root):
 
         # Initialize data structures
         used_nodes = []
-        unused_nodes = range(N)
+        if (unused_nodes==None):
+            global c_mapping
+            c_mapping, unused_nodes = enumerate(range(N))
         tree = [ [] for i in range(N) ]
 
     if (N==0):
@@ -200,6 +205,7 @@ def brute_force(N, unused_nodes, used_nodes, tree, root):
             brute_force(N-1, unused_new, used_nodes + [nxt], _tree, root)
 
     if not USE_THREADS:
+        global num_evaluated
         num_evaluated += 1
 
     if use_threads:
@@ -216,6 +222,7 @@ def main():
     parser.add_argument('num', type=int, help='Size of the model')
     parser.add_argument('machine', help='Name of the machine for t_send and t_receive')
     parser.add_argument('--complexity', action='store_const', default=False, const=True)
+    parser.add_argument('--cores', help='Coma separated list to evaluate')
     args = parser.parse_args()
 
     config.args = SimArgs()
@@ -236,8 +243,15 @@ def main():
         #             7207200 <- upper bound prediction
 
 
+        unused_nodes = None
+        if args.cores:
+            global c_mapping
+            print 'Using the following cores:', args.cores
+            c_mapping = map(int, args.cores.split(','))
+            unused_nodes = range(len(c_mapping))
+
         t1 = datetime.now()
-        brute_force(args.num, None, None, None, None)
+        brute_force(args.num, unused_nodes, None, None, None)
         t2 = datetime.now()
         delta = t2 - t1
         print 'Evaluated %d models, time=%d [s]' % \
