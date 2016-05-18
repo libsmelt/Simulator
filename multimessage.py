@@ -49,8 +49,6 @@ class MultiMessage(object):
                 self.max_remote = max(self.max_remote, rem)
                 num_read += 1
 
-        print 'multimessage: read', num_read, 'elements
-
     def get_factor(self, num_remote, num_local, local=True):
         """@param local Whether the message to be sent now (and who's cost to
         look up) is local
