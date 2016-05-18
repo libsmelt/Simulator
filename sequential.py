@@ -2,10 +2,6 @@
 
 # Import graphviz
 import sys
-sys.path.append('..')
-sys.path.append('/usr/lib/graphviz/python/')
-sys.path.append('/usr/lib64/graphviz/python/')
-import gv
 import logging
 
 # Import pygraph
@@ -27,13 +23,13 @@ class Sequential(overlay.Overlay):
     """
     Build a cluster topology for a model
     """
-    
+
     def __init__(self, mod):
         """
         Initialize the clustering algorithm
         """
         super(Sequential, self).__init__(mod)
-        
+
     def get_name(self):
         return "sequential"
 
@@ -52,7 +48,7 @@ class Sequential(overlay.Overlay):
 
         return sequential
 
-    
+
     def _get_multicast_tree(self, graph):
         """
         Return the broadcast tree as a graph
