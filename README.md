@@ -9,6 +9,10 @@ Install the following packages (on Ubuntu LTS).
 
 ```apt-get install python-networkx python-pygraphviz libgv-python python-numpy python-pygraph```
 
+I had to do some manual config to make it work:
+/usr/lib/python2.7/dist-packages$ sudo ln -s libgv_python27.x86_64-linux-gnu.so _gv.so
+
+
 Then, you have to manually create directories:
 
 ```mkdir graphs/ visu/```.
