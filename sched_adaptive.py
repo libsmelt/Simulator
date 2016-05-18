@@ -80,7 +80,7 @@ class SchedAdaptive(scheduling.Scheduling):
                 return s
         raise Exception('Could not find root')
 
-    
+
     def cost_subtree(self):
         """Determine the cost of each node as the cost of the entire subtree
         starting in that node.
@@ -92,7 +92,7 @@ class SchedAdaptive(scheduling.Scheduling):
 
         leafs = self.get_leafs()
         parent = self.get_parents()
-        
+
         # Calculate cost of subtree
         q = Queue.Queue()
         for l in leafs:
@@ -147,10 +147,10 @@ class SchedAdaptive(scheduling.Scheduling):
 
         assert (len(cost)==len(self.store)) # Otherwise tree is not connected
         print cost
-        
+
         return cost
-        
-    
+
+
     def reorder(self):
 
         """Optimize the current schedule.
@@ -179,8 +179,8 @@ class SchedAdaptive(scheduling.Scheduling):
 
             self.store[core] = [ (0, c) for (c, _) in children_sorted ]
             print 'Storing new send order', self.store[core]
-        
-    
+
+
     def optimize_scheduling(self):
 
         """Optimizes the current scheduling.
@@ -203,7 +203,7 @@ class SchedAdaptive(scheduling.Scheduling):
         # --------------------------------------------------
 
         self.reorder()
-        
+
         # --------------------------------------------------
         # RECALCULATE - when do cores first receive a message
         # --------------------------------------------------
@@ -282,9 +282,9 @@ class SchedAdaptive(scheduling.Scheduling):
         assert sending_node in cores_active
 
         cheap_first = self.overlay.options.get('min', False)
-        
+
         self.num += 1
-        print 'Active nodes - %d' % self.num, len(cores_active)
+        #print 'Active nodes - %d' % self.num, len(cores_active)
 
         # Find cores that ...
         # Principles are:
@@ -305,7 +305,7 @@ class SchedAdaptive(scheduling.Scheduling):
                 continue
 
             logging.info('Sending node from %d to %d' % (sending_node, c))
-            
+
             # Is the target node active already?
             node_active = self._numa_domain_active(c, cores_active)
 
@@ -332,7 +332,7 @@ class SchedAdaptive(scheduling.Scheduling):
                 # Check if somebody else sent a message there already
                 for othercores in self.mod.get_numa_node(sending_node):
                     if c in [s for (_,s) in self.store[othercores]]:
-                        
+
                         logging.info('Not considering %d, as message was already sent' % c)
                         consider = False
 
@@ -342,11 +342,11 @@ class SchedAdaptive(scheduling.Scheduling):
                     logging.info('Not considering %d, already active' % c)
                     consider = False
 
-                        
+
             # If we consider this core, it's node is inactive, which
             # means that c is inactive itself.
             assert not consider or not c in cores_active
-            
+
             if consider:
                 # build (cost, core) tuple
                 # Here, we use send + receive time as the cost, as we are
@@ -360,7 +360,7 @@ class SchedAdaptive(scheduling.Scheduling):
                 ('Considering' if consider else 'Not sending', \
                  sending_node, c, node_active, same_node))
 
-            
+
         logging.info("inactive_nodes from %d with cost: %s" % \
             (sending_node, inactive_nodes))
 
@@ -389,7 +389,7 @@ class SchedAdaptive(scheduling.Scheduling):
 
         if self.mod.on_same_numa_node(next_r, sending_node):
             next_hop = (self.mod.query_send_cost(sending_node, next_r), next_r)
-            
+
         else:
             # Add other cores from same node, but ONLY if they are
             # multicast members
@@ -406,9 +406,9 @@ class SchedAdaptive(scheduling.Scheduling):
             next_hop = (c_cost[0][0], c_cost[0][1])
 
         # Remember choice
-        assert next_hop not in self.store[sending_node] 
+        assert next_hop not in self.store[sending_node]
         # Otherwise, we already sent a message to the same core
-        
+
         self.store[sending_node].append(next_hop)
         logging.info(("Targets from", sending_node, ":", self.store[sending_node]))
 
