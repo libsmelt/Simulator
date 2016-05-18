@@ -61,7 +61,11 @@ def simulate(args):
         # Generate representation of each topology
         for _overlay in args.overlay:
 
-
+            if config.args.multimessage :
+                _overlay = _overlay + "-mm"
+            if config.args.reverserecv :
+                _overlay = _overlay + "-rev"
+                
             # ------------------------------
             # Hybrid
             hyb_cluster = None

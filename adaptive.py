@@ -14,7 +14,7 @@ class AdapativeTree(overlay.Overlay):
 
     """
 
-    supported_args = [ "shuffle", "sort", "min", "recvcost", "multimessage" ]
+    supported_args = [ "shuffle", "sort", "min", "rev", "mm" ]
 
     def __init__(self, mod):
         """
@@ -22,7 +22,12 @@ class AdapativeTree(overlay.Overlay):
         super(AdapativeTree, self).__init__(mod)
 
     def get_name(self):
-        return "adaptivetree"
+        name = "adaptivetree"
+        for (key, value) in self.options.items() :
+            if value :
+                name = name + "-" + key
+
+        return name
 
     def set_arguments(self, args):
         for a in args:
