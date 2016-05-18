@@ -192,7 +192,7 @@ def do_pgf_multi_plot(f, multidata, caption='FIXME', xlabel='FIXME', ylabel='FIX
 def _latex_header(f, args=[]):
     header = (
         "\\documentclass[a4wide]{article}\n"
-        "\\usepackage{url,color,xspace,verbatim,subfig,ctable,multirow,listings}\n"
+        "\\usepackage{url,color,xspace,verbatim,subfig,multirow,listings}\n"
         "\\usepackage[utf8]{inputenc}\n"
         "\\usepackage[T1]{fontenc}\n"
         "\\usepackage{txfonts}\n"
@@ -273,4 +273,3 @@ def run_pdflatex(fname, openFile=True):
                         fname], cwd=d) == 0:
         if openFile:
             subprocess.call(['okular', fname.replace('.tex', '.pdf')])
-
