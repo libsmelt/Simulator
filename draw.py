@@ -56,10 +56,10 @@ class Output():
 
     def _scale_time(self, time):
         "Determines scale factor for time"
-        return (50 + time) * self.scale_x
+        return (time + 50) * self.scale_x
 
     def _scale_cost(self, cost):
-        return cost * self.scale_x
+        return cost * self.scale_x * .75
 
     def _scale_height(self, size):
         return size*.4
@@ -68,9 +68,9 @@ class Output():
         "Visualize send operation"
         name = 's_%s_%s' % (core, to)
 
-        self.f.write("\\node[draw,fill=red!20,minimum width=%dmm, minimum height=%dmm,anchor=west] "\
-                         "(%s) at (%dmm,%dmm) {};\n" % \
-                         (self._scale_cost(cost), self._scale_height(10), name, \
+        self.f.write("\\node[draw,fill=red!20,minimum width=%fmm, minimum height=%fmm,anchor=west] "\
+                         "(%s) at (%fmm,%fmm) {};\n" % \
+                         (self._scale_cost(cost), self._scale_height(8), name, \
                               self._scale_time(time), \
                               self._y_coord_for_core(core)))
         self.__add_object(core, name)
@@ -79,14 +79,11 @@ class Output():
     def receive(self, core, sender, time, cost):
         "Visualize receive operation"
 
-        print "Adding receive events at %d -- %d <- %d, cost %d" % \
-            (time, core, sender, cost)
-
         # Box indicating receive operation
         name = 'r_%s_%s' % (sender, core)
-        self.f.write("\\node[draw,fill=blue!20,minimum width=%dmm, minimum height=%dmm,anchor=west] "\
-                         "(%s) at (%dmm,%dmm) {};\n" % \
-                         (self._scale_cost(cost), self._scale_height(10), \
+        self.f.write("\\node[draw,fill=blue!20,minimum width=%fmm, minimum height=%fmm,anchor=west] "\
+                         "(%s) at (%fmm,%fmm) {};\n" % \
+                         (self._scale_cost(cost), self._scale_height(8), \
                               name, \
                               self._scale_time(time), \
                               self._y_coord_for_core(core)))
@@ -194,7 +191,7 @@ class Output():
 
             try:
                 print subprocess.check_output(shlex.split('rm -f test-figure0.pdf'))
-                print subprocess.check_output(shlex.split('pdflatex -shell-escape -interaction nonstopmode test'))
+                print subprocess.check_output(shlex.split('pdflatex -shell-escape -interaction nonstopmode test.tex'))
                 print subprocess.check_output(shlex.split('convert -verbose -density 300 test-figure0.pdf %s' % _out))
 
             except Exception as e:
