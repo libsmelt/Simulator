@@ -126,8 +126,8 @@ class AB(Protocol):
                     eval_context.model.graph.edge_weight((core, dest)))
 
             eval_context.visu.send(core, dest, time, cost)
-            print 'Send(%d,%s,%s) - cost %d' % \
-                (eval_context.sim_round, str(core), str(dest), cost)
+            print '% 5d   Send(%s,%s) - cost % 4d   done=% 5d' % \
+                (eval_context.sim_round, str(core), str(dest), cost, cost+eval_context.sim_round)
 
             send_compl = time + cost
 
@@ -174,7 +174,7 @@ class AB(Protocol):
             # --------------------------------------------------
             # Reorder tree FIRST
             # --------------------------------------------------
-            
+
             if eval_context.topo.options.get('sort', False):
 
                 # Optimize the send order within each node!
@@ -183,17 +183,17 @@ class AB(Protocol):
                 # Make sure new Schedule is _actually_ better
                 _slowest_old = sorted(self.log_first_message.items(), key=lambda x: x[1], reverse=True)
                 _slowest_new = sorted(_log_fist_message.items(), key=lambda x: x[1], reverse=True)
-                
+
                 # Only reorder in case the new schedule is faster:
                 # this is a bit weird, I though we would _always_ be
                 # faster with this.
                 if abs(_slowest_new[0][1]-_slowest_old[0][1])<1 or True:
-                
+
                     # I'm already scared of this!
                     self.log_idle = _log_idle
                     self.log_first_message = _log_fist_message
 
-            
+
             # These are the ones that we want to optimize, that's the time
             # at which cores first receive a message
             _first = sorted(self.log_first_message.items(), key=lambda x: x[1], reverse=True)
@@ -222,7 +222,7 @@ class AB(Protocol):
             # 2) the additional message is not already part of the schedule
             #
             if cost_direct <= slack and \
-               not eval_context.topology.has_edge((last, first)): 
+               not eval_context.topology.has_edge((last, first)):
 
                 optimize = True
                 print 'schedule: replacing', last, first
@@ -752,24 +752,29 @@ class Evaluate():
         d = int(e.dest) if e.dest != None else -1
         s = int(e.src) if e.src != None else -1
 
-        print bcolors.OKGREEN + \
-            ('%d: event %s -- Core %d -> Core %d' %
-             (self.sim_round, e.get_type(), s, d)) + \
-            bcolors.ENDC
-
+        ev_type = None
 
         if isinstance(e, events.Propagate):
+            ev_type = "propagate"
             self.propagate(e.src, e.dest)
 
         if isinstance(e, events.Receive):
+            ev_type = "receive start"
             self.receive(e.src, e.dest)
 
         if isinstance(e, events.Send):
+            ev_type = "send start"
             assert e.dest is None
             self.send(e.src)
 
         if isinstance(e, events.Receiving):
-            print 'Receiving done'
+            ev_type = "receive done"
+
+        print bcolors.OKGREEN + \
+            ('% 5d   core %d - %s -> Core %d' %
+             (self.sim_round, s, e.get_type(), d)) + \
+            bcolors.ENDC
+
 
     def propagate(self, src, dest):
         """Process propagation event. This will queue a receive event on the
@@ -810,7 +815,7 @@ class Evaluate():
         # Node (src) has just sent a message, increment send batch size
         self.node_state[src].send_batch += 1
 
-        print "Propagate(%d,%s->%s) - cost %d" % (self.sim_round, str(src), str(dest), w)
+        print "% 5d   Propagate(%s->%s) - cost % 4d   done=% 5d" % (self.sim_round, str(src), str(dest), w, w + self.sim_round)
 
     def receive(self, src, dest):
         """Receive a message on dest XXX This is a bit of a misnomer. _dest_
@@ -828,8 +833,8 @@ class Evaluate():
         # Get receive cost
         cost = self.model.get_receive_cost(src, dest)
         self.visu.receive(dest, src, self.sim_round, cost)
-        print "Receive(%d,%s->%s) Core %d- cost %d" \
-                         % (self.sim_round, str(src), str(dest), dest, cost)
+        print "% 5d   Receive(%s->%s)  - cost % 4d   done=% 5d" \
+                         % (self.sim_round, str(src), str(dest), cost, cost+self.sim_round)
 
         # Node (src) has just received a mesage, reset send batch
         self.node_state[dest].send_batch = 0
@@ -883,15 +888,15 @@ class Evaluate():
         self.event_queue = _heap
         heapq.heapify(self.event_queue)
 
-        print [ (ts, ev.src) for (ts, ev) in self.event_queue if \
-                ev.dest == dest and isinstance(ev, events.Receive) ]
+    #    print [ (ts, ev.src) for (ts, ev) in self.event_queue if \
+#                ev.dest == dest and isinstance(ev, events.Receive) ]
 
         # Schedule a send? after the receive is complete
         if schedule_send:
 
             recv_cmpl = self.sim_round + cost
-            print bcolors.OKGREEN + \
-                ('%d: Core %d is scheduling a send operation %d at %d' %
+            print bcolors.OKBLUE + \
+                ('% 5d   Core %d is scheduling a send operation %d at %d' %
                  (self.sim_round, dest, src, recv_cmpl)) + \
                  bcolors.ENDC
 
@@ -900,8 +905,8 @@ class Evaluate():
         else:
 
             recv_cmpl = self.sim_round + cost
-            print bcolors.OKGREEN + \
-                ('%d: Core %d is scheduling a DUMMY operation %d at %d' %
+            print bcolors.OKBLUE + \
+                ('% 5d   Core %d is scheduling a DUMMY operation %d at %d' %
                  (self.sim_round, dest, src, recv_cmpl)) + \
                  bcolors.ENDC
 
