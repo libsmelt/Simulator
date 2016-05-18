@@ -14,8 +14,8 @@ class AdapativeTree(overlay.Overlay):
 
     """
 
-    supported_args = [ "shuffle", "sort", "min" ]
-    
+    supported_args = [ "shuffle", "sort", "min", "recvcost", "multimessage" ]
+
     def __init__(self, mod):
         """
         """
@@ -30,7 +30,6 @@ class AdapativeTree(overlay.Overlay):
                 raise Exception(('Onrecognized argument %s' % a))
             else:
                 self.options[a] = True
-                
 
     def get_scheduler(self, final_graph):
         return sched_adaptive.SchedAdaptive(final_graph, self.mod, self)
@@ -50,12 +49,12 @@ class AdapativeTree(overlay.Overlay):
 
         c_snd_cost = sorted(_c_snd_cost.items(), key=lambda x: x[1])
         (root, cost) = c_snd_cost[0]
-        
+
         print 'Choosing node %d as root with cost %d' % \
             (root, cost)
-        
+
         return root
-    
+
     def _build_tree(self, g):
         """
         Will return a empty broadcast tree that has to be build later
