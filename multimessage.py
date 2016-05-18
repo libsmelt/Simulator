@@ -10,7 +10,7 @@ import matplotlib
 import re
 import helpers
 
-MAX=100 # choose bigger than #local and #remote
+MAX=1000 # choose bigger than #local and #remote
 
 class MultiMessage(object):
 
@@ -22,13 +22,16 @@ class MultiMessage(object):
         num_read = 0
         self.max_local = 0
         self.max_remote = 0
-        
+
         # Parse input lines
         for line in _input:
-            m = re.match('WRITEN-(\d+)-(\d+), avg=(\d+), stdev=(\d+), med=(\d+), min=(\d+), max=(\d+) cycles, count=(\d+), ignored=(\d+)', line)
+            m = re.match('r=(\d+),l=(\d+),l=(\d+), avg=(\d+), stdev=(\d+), med=(\d+), min=(\d+), max=(\d+) cycles, count=(\d+), ignored=(\d+)', line)
+
             if m:
-                loc, rem = tuple([ int(m.group(i)) for i in [1, 2]])
-                avg, stdev, med = tuple([ float(m.group(i)) for i in [3, 4, 5]])
+                if not int(m.group(3)) :
+                    continue
+                rem, loc = tuple([ int(m.group(i)) for i in [1, 2]])
+                avg, stdev, med = tuple([ float(m.group(i)) for i in [4, 5, 6]])
 
                 # Sanity checks
                 _check = abs(1.0-avg/med)
@@ -38,21 +41,39 @@ class MultiMessage(object):
                 _check = stdev/avg
                 if _check>0.1:
                     print 'WARNING: avg/med more than 10% apart', _check, 'for', (rem, loc)
-                
+
                 assert self.res[rem][loc] == None # otherwise we would have several
                                              # results for the same data
                 self.res[rem][loc] = (avg, stdev, med)
-
                 self.max_local = max(self.max_local, loc)
                 self.max_remote = max(self.max_remote, rem)
-                
-                print 'Adding', rem, loc, avg, stdev, med
                 num_read += 1
 
-        print 'multimessage: read', num_read, 'elements'
-
+        print 'multimessage: read', num_read, 'elements
 
     def get_factor(self, num_remote, num_local, local=True):
+        """@param local Whether the message to be sent now (and who's cost to
+        look up) is local
+
+        """
+        # Add the new message (whos type is indicated by local parameter)
+        if local:
+            num_local += 1
+        else:
+            num_remote += 1
+
+        if num_remote > self.max_remote and num_local == 0:
+            cost = self.res[self.max_remote][1][0]
+        else:
+            num_remote = min(self.max_remote, num_remote)
+            cost = self.res[num_remote][num_local][0]
+
+        return cost
+
+
+
+
+    def get_factor_old(self, num_remote, num_local, local=True):
         """@param local Whether the message to be sent now (and who's cost to
         look up) is local
 
@@ -72,7 +93,9 @@ class MultiMessage(object):
             num_local += 1
         else:
             num_remote += 1
-            
+
+        if self.res[num_remote][num_local] == None :
+            print "num_remote=%d, num_local=%d" % (num_remote, num_local)
         assert not self.res[num_remote][num_local] == None
 
         # Get baseline
@@ -87,7 +110,7 @@ class MultiMessage(object):
 
         if last_snd_cost>0:
             return (last_snd_cost) / baseline[0]
-            
+
         else:
             # This is a weird case from broken measurement: the cost
             # of sending one more message is than SMALLER than the
