@@ -39,7 +39,11 @@ class NetosMachine(model.Model):
     # Machine name
     name = None
 
-    def __init__(self):
+    enable_mm = False
+
+    opt_reverse_recv = False
+
+    def __init__(self, enable_multimessage, enable_reverserecv):
         """Initialize the Simulator for a NetOS machine.
 
         Read topology information from the NetOS machine DB and build
@@ -58,17 +62,21 @@ class NetosMachine(model.Model):
         fname = '%s/%s/multimessage.gz' % \
                 (config.MACHINE_DATABASE, self.get_name())
 
+        if enable_reverserecv :
+            opt_reverse_recv = True
+            
         self.mm = None
-        try:
-            f = gzip.open(fname, 'r')
-            self.mm = MultiMessage(f)
-            f.close()
-        except IOError:
-            print 'No multimessage data for this machine'
-        except:
-            raise
-
-        self.mm = None # Disable MultiMessage bench XXXX DO NOT COMMIT --------------------------------------------------
+        if enable_multimessage :
+            print 'Using Multimessage data'
+            try:
+                f = gzip.open(fname, 'r')
+                self.mm = MultiMessage(f)
+                f.close()
+            except IOError:
+                print 'No multimessage data for this machine'
+            except:
+                raise
+            self.enable_mm = True
 
         self.send_history = {}
         self.reset()
@@ -167,7 +175,25 @@ class NetosMachine(model.Model):
         send cost without adding the message to the history.
 
         """
-        return self._get_send_cost(src, dest, batchsize)
+        _send_history = self.send_history.get(src, [])
+        if self.opt_reverse_recv :
+            if len(_send_history) == 0 :
+                cost = self._get_send_cost(src, dest, batchsize)
+            else :
+                prev_src, prev_dst = self.send_history[src]
+                cost = self._get_receive_cost(prev_dst, prev_src)
+        elif self.enable_mm :
+            num_l = len([ b for b in _send_history if b ])
+            num_r = len([ b for b in _send_history if not b ])
+            l = self.get_numa_id(src) == self.get_numa_id(dest)
+            if len(_send_history) == 0 :
+                cost = self._get_send_cost(src, dest, batchsize)
+            else :
+                cost = self.mm.get_factor(num_r, num_l, l)
+        else :
+            cost = self._get_send_cost(src, dest, batchsize)
+
+        return cost
 
 
     def get_send_cost(self, src, dest, batchsize=1):
@@ -181,15 +207,27 @@ class NetosMachine(model.Model):
         num_l = len([ b for b in _send_history if b ])
         num_r = len([ b for b in _send_history if not b ])
 
-        _factor = 1.0
-        if self.mm:
-            _factor = self.mm.get_factor(num_r, num_l, l)
+        _send_history = self.send_history.get(src, [])
+        if self.opt_reverse_recv :
+            if len(_send_history) == 0 :
+                cost = self._get_send_cost(src, dest, batchsize)
+            else :
+                prev_src, prev_dst = self.send_history[src]
+                cost = self._get_receive_cost(prev_dst, prev_src)
+            self.send_history[src] = (src, dest)
+        elif self.enable_mm :
+            num_l = len([ b for b in _send_history if b ])
+            num_r = len([ b for b in _send_history if not b ])
+            l = self.get_numa_id(src) == self.get_numa_id(dest)
+            if len(_send_history) == 0 :
+                cost = self._get_send_cost(src, dest, batchsize)
+            else :
+                cost = self.mm.get_factor(num_r, num_l, l)
+            self.send_history[src] = _send_history + [l]
+        else :
+            cost = self._get_send_cost(src, dest, batchsize)
 
-        print 'Factor is', _factor
-
-        self.send_history[src] = _send_history + [l]
-        return self._get_send_cost(src, dest, batchsize)*_factor
-
+        return cost
 
     def __repr__(self):
         return self.name

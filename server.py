@@ -20,6 +20,8 @@ class SimArgs:
     machine = None
     overlay = None
     group = []
+    multimessage = False
+    reverserecv = False
 
 
 def handle_request(r):
@@ -33,6 +35,14 @@ def handle_request(r):
     config.machine = r[u'machine']
     config.overlay = [r[u'topology']] # List of topologies - just one
     config.group = r[u'cores']
+    overlay = r[u'topology'].split('-')
+
+    overlay_name = overlay[0]
+    overlay_args = overlay[1:]
+    if overlay_args == 'mm' :
+        config.multimessage = True
+    elif overlay_args == 'rev' :
+        config.reverserecv = True
 
     c = config
 
@@ -44,7 +54,7 @@ def handle_request(r):
     assert len(config.models)==1 # Exactly one model has been generated
 
     res = {}
-    res['root'] = root 
+    res['root'] = root
     res['model'] = config.models[0]
     res['last_node'] = last_nodes[0]
     res['leaf_nodes'] = leaf_nodes[0]

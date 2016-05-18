@@ -29,7 +29,7 @@ parser.add_argument('machine')
 parser.add_argument('iteration')
 args = parser.parse_args()
 
-m = config.arg_machine_class(args.machine)()
+m = config.arg_machine_class(args.machine)(config.args.multimessage, config.args.reverserecv)
 n = int(args.iteration)
 print "Using machine [%s] with [%d] cores, generating group of [%d]" % \
     (m.get_name(), m.get_num_cores(), n)
@@ -41,9 +41,3 @@ c = sorted(get_group(m, n))
 
 print ','.join(map(str, c))
 exit(0)
-
-
-
-
-
-

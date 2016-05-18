@@ -24,6 +24,7 @@ import server
 from config import machines
 
 
+
 def simulate(args):
 
     print args
@@ -32,11 +33,13 @@ def simulate(args):
     config.args.machine = args.machine
     config.args.group = args.group
     config.args.multicast = args.multicast
+    config.args.multimessage = args.multimessage
+    config.args.reverserecv = args.reverserecv
 
-    print "machine: %s, topology: %s" % (machine, args.overlay)
+    print "machine: %s, topology: %s, multimessage=%d, reverserecv=%d" % (machine, args.overlay, args.multimessage, args.reverserecv)
 
     m_class = config.arg_machine(machine)
-    m = m_class()
+    m = m_class(args.multimessage, args.reverserecv)
     assert m != None
     gr = m.get_graph()
 
@@ -137,7 +140,7 @@ def simulate(args):
         # Generate footer
         helpers.output_quorum_end(all_last_nodes, all_leaf_nodes, \
                                   model_descriptions)
-        return (all_last_nodes, all_leaf_nodes, root)    
+        return (all_last_nodes, all_leaf_nodes, root)
 
 # --------------------------------------------------
 def build_and_simulate():
@@ -169,6 +172,9 @@ def build_and_simulate():
                         action='store_const', default=False, const=True)
     parser.add_argument('--server', action='store_const', default=False, const=True)
 
+    parser.add_argument('--multimessage', action='store_const', default=False, const=True)
+    parser.add_argument('--reverserecv', action='store_const', default=False, const=True)
+
     try:
         config.args = parser.parse_args()
     except:
@@ -195,7 +201,7 @@ def build_and_simulate():
 
     # --------------------------------------------------
     # Output graphs
-    helpers.output_graph(gr, '%s_full_mesh' % m.get_name())
+#    helpers.output_graph(gr, '%s_full_mesh' % m.get_name())
 
     # --------------------------------------------------
     sched = topo.get_scheduler(final_graph)
