@@ -7,10 +7,35 @@ import shlex
 import logging
 
 class Output():
+    """Generate LaTeX virtualization of control message flow
 
-    color_map = [ "red", "green", "blue", "orange" ]
-    height_per_core = 5
-    scale_x = .05
+    Note: the unit in which we draw this is "\sku", a unit that has to
+    be defined outside of the tikzpicture environemnt. We really want
+    to define this as a multiple of "sp", the smallest unit TeX
+    understands. This guarantees exam display, as there will not be
+    any scaling errors.
+
+    We have to do this outside of the tikzpicture, as "sp" depends on
+    the fond, which is set to NULL inside of tikz [1]. Just use the
+    following code inside \begin{document}:
+
+    \newdimen\sku
+      \sku=2000sp
+
+    Note: "sp" is very small. 1sku in the final output will be equal
+    to 1 cycle of the machine simulated. For any useful output, "sku"
+    has hence to be a couple of thousand "sp"s.
+
+    [1] https://tex.stackexchange.com/questions/105615/why-does-pgf-not-understand-relative-dimensions-ex-em-sp
+
+    """
+
+    cid = [0, 4, 16, 18]
+    color_map = [ "color%d" % i for i in  cid ]
+    fill_map = [ "color%d" % (i+1) for i in cid ]
+
+    height_per_core = 500
+    scale_x = 5
 
     "Wrapper to enable visualization output to file"
     def __init__(self, name, model, topo):
@@ -30,7 +55,8 @@ class Output():
             # Label
             node_name = 'core_%s_label' % c
             self.__add_object(c, node_name)
-            self.f.write("\\node (%s) at (0mm,%dmm) {%5s};\n" % \
+
+            self.f.write("\\node[minimum width=.6cm] (%s) at (0\\sku,%d\\sku) {%2d};\n" % \
                              (node_name, self._y_coord_for_core(c), c))
 
     def __add_object(self, core, label):
@@ -62,17 +88,17 @@ class Output():
         return cost * self.scale_x * .75
 
     def _scale_height(self, size):
-        return size*.4
+        return size*self.height_per_core*.7
 
     def send(self, core, to, time, cost):
         "Visualize send operation"
         name = 's_%s_%s' % (core, to)
 
-        self.f.write("\\node[draw,fill=red!20,minimum width=%fmm, minimum height=%fmm,anchor=west] "\
-                         "(%s) at (%fmm,%fmm) {};\n" % \
-                         (self._scale_cost(cost), self._scale_height(8), name, \
-                              self._scale_time(time), \
-                              self._y_coord_for_core(core)))
+        self.f.write("\\node[draw,fill=color2!50,minimum width=%d\\sku, minimum height=%d\\sku,anchor=west] "\
+                         "(%s) at (%d\\sku,%d\\sku) {};\n" % \
+                         (self._scale_cost(cost), self._scale_height(1), name, \
+                          self._scale_time(time), \
+                          self._y_coord_for_core(core)))
         self.__add_object(core, name)
 
 
@@ -81,12 +107,12 @@ class Output():
 
         # Box indicating receive operation
         name = 'r_%s_%s' % (sender, core)
-        self.f.write("\\node[draw,fill=blue!20,minimum width=%fmm, minimum height=%fmm,anchor=west] "\
-                         "(%s) at (%fmm,%fmm) {};\n" % \
-                         (self._scale_cost(cost), self._scale_height(8), \
-                              name, \
-                              self._scale_time(time), \
-                              self._y_coord_for_core(core)))
+        self.f.write("\\node[draw,fill=color6!50,minimum width=%d\\sku, minimum height=%d\\sku,anchor=west] "\
+                         "(%s) at (%d\\sku,%d\\sku) {};\n" % \
+                     (self._scale_cost(cost), self._scale_height(1), \
+                      name, \
+                      self._scale_time(time), \
+                      self._y_coord_for_core(core)))
         self.__add_object(core, name)
 
         # Iteratively add settings for drawing the connection
@@ -97,7 +123,7 @@ class Output():
                 settings.append('semithick')
                 settings.append('color=red')
         # Arrow indicating flow
-        self.f.write("\\draw[->%s] ($(s_%s_%s.east)-(1mm,0mm)$) -- ($(r_%s_%s.west)+(1mm,0mm)$); \n" % \
+        self.f.write("\\draw[->%s] ($(s_%s_%s.east)-(1\\sku,0\\sku)$) -- ($(r_%s_%s.west)+(1\\sku,0\\sku)$); \n" % \
                          (','.join(settings), sender, core, sender, core))
 
     def finalize(self, final_time):
@@ -107,13 +133,13 @@ class Output():
         n = [ '(%s)' % x for x in self.obj ]
         # add empty node containing all objects for easier calculation
         self.f.write("\\node [fit=%s] (allobjects) {};\n" % ' '.join(n))
-        self.f.write("\\node [draw=black!50,fill=black!10,fit=%s,scale=1.1] (bg) {};\n" % \
+        self.f.write("\\node [fit=%s,scale=1.1] (bg) {};\n" % \
                          ' '.join(n))
 
         # Dummy object to extend NUMA nodes to the right
         for c in self.model.get_graph().nodes():
             numa_name = 'numa_axis_%s' % c
-            self.f.write("\\draw let \\p1 = (allobjects.east) in node[] (%s) at (\\x1,%dmm) {};\n" % \
+            self.f.write("\\draw let \\p1 = (allobjects.east) in node[] (%s) at (\\x1,%d\\sku) {};\n" % \
                              (numa_name, self._y_coord_for_core(c)))
 
         # Are cores "packed" on nodes?
@@ -121,8 +147,8 @@ class Output():
         assert self.model.get_num_numa_nodes()>0 # at least one node
         _cores_on_node = self.model.get_numa_node_by_id(0)
         for i in range(len(_cores_on_node)-1):
-            packed = packed and _cores_on_node[i] == _cores_on_node[i]+1
-        logging.info(('Visualization: packed display %d' % packed))
+            packed = packed and _cores_on_node[i]+1 == _cores_on_node[i+1]
+        logging.info(('Visualization: packed disksplay %d' % packed))
 
         # Individual core by core, no merging of neighboring cores in one box
         if not packed:
@@ -130,10 +156,11 @@ class Output():
             for c in self.model.get_cores(True):
                 cidx = self.model.get_numa_id(c) % int(len(self.color_map))
                 color = self.color_map[cidx]
+                fill = self.fill_map[cidx]
                 self.obj_per_core[c] = self.obj_per_core.get(c, []) + ['numa_axis_%d.west' % (c)]
                 nn = [ '(%s)' % x for x in self.obj_per_core[c] ]
-                self.f.write("\\node [yscale=0.85,draw=%s!50,fill=%s!10,fit=%s,rounded corners] {};\n" \
-                                 % (color, color, ' '.join(nn)))
+                self.f.write("\\node [yscale=0.85,draw=%s,fill=%s,fit=%s,rounded corners] {};\n" \
+                                 % (color, fill, ' '.join(nn)))
 
         # colored background box for each numa domain - merging nodes
         else:
@@ -144,23 +171,25 @@ class Output():
 
                 self.obj_per_node[i].append('numa_axis_%d.west' % (coreid))
                 nn = [ '(%s)' % x for x in self.obj_per_node[i] ]
-                self.f.write("\\node [yscale=0.85,draw=%s!50,fill=%s!10,fit=%s,rounded corners] {};\n" \
+                self.f.write("\\node [yscale=.95,draw=%s!50,fill=%s!10,fit=%s] {};\n" \
                                  % (color, color, ' '.join(nn)))
 
         # X-axes
         for c in self.model.get_graph().nodes():
-            self.f.write("\\draw[color=black!30] let \\p1 = (core_10_label.east), \\p2 = (allobjects.east) in (\\x1,%dmm) -- (\\x2,%dmm);\n" % \
+            self.f.write("\\draw[color=black!30] let \\p1 = (core_10_label.east), \\p2 = (allobjects.east) in (\\x1,%d\\sku) -- (\\x2,%d\\sku);\n" % \
                              (self._y_coord_for_core(c), self._y_coord_for_core(c)))
 
 
-        self.f.write("\\node[draw=black,anchor=north,fill=black!20] at (bg.north) {Machine: %s, topology: %s};\n" % (
-                self.model.get_name(),
-                self.topo.get_name()
-                ))
+        # self.f.write("\\node[draw=black,anchor=north,fill=black!20] at (bg.north) {Machine: %s, topology: %s};\n" % (
+        #         self.model.get_name(),
+        #         self.topo.get_name()
+        #         ))
 
         for xaxis_label in range(0, final_time, 500):
-            self.f.write("\\node at (%dmm,-5mm) { %d };\n" % \
-                         (self._scale_time(xaxis_label), xaxis_label))
+            self.f.write("\\node at (%d\\sku,-%d\\sku) (cycles) { %d };\n" % \
+                         (self._scale_time(xaxis_label), self.height_per_core,
+                          xaxis_label))
+        self.f.write("\\node [right=of cycles] {cycles};\n")
 
         # footer
         self.f.write("\\end{pgfonlayer}\n")
