@@ -17,6 +17,7 @@ class SimArgs:
 
     multicast = True
     hybrid = False
+    hybrid_cluster = False
     machine = None
     overlay = None
     group = []
@@ -35,6 +36,7 @@ def handle_request(r):
     config.machine = r[u'machine']
     config.overlay = [r[u'topology']] # List of topologies - just one
     config.group = r[u'cores']
+    config.hybrid = r[u'hybrid']
     overlay = r[u'topology'].split('-')
 
     overlay_name = overlay[0]

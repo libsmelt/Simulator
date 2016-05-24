@@ -27,14 +27,13 @@ from config import machines
 
 def simulate(args):
 
-    print args
-
     machine = args.machine
     config.args.machine = args.machine
     config.args.group = args.group
     config.args.multicast = args.multicast
     config.args.multimessage = args.multimessage
     config.args.reverserecv = args.reverserecv
+    config.args.hybrid = args.hybrid
 
     print "machine: %s, topology: %s, multimessage=%d, reverserecv=%d" % (machine, args.overlay, args.multimessage, args.reverserecv)
 
@@ -42,7 +41,7 @@ def simulate(args):
     m = m_class(args.multimessage, args.reverserecv)
     assert m != None
     gr = m.get_graph()
-
+    
     if args.multicast:
         print "Building a multicast"
 
@@ -64,25 +63,24 @@ def simulate(args):
             if config.args.multimessage :
                 _overlay = _overlay + "-mm"
             if config.args.reverserecv :
-                _overlay = _overlay + "-rev"
-                
+                _overlay = _overlay + "-rev"  
+            if config.args.hybrid :
+                _overlay = _overlay + "-hybrid"
             # ------------------------------
             # Hybrid
             hyb_cluster = None
             shm_writers = None
             hyb_leaf_nodes = None
 
-            if args.hybrid:
+            if args.hybrid == 'True':
 
                 if args.hybrid_cluster == "socket":
-
                     print "Clustering: Sockets"
-                    hyb_cluster = m.res['Package'].get()
+                    hyb_cluster = m.machine_topology['Package'].get()
 
                 else:
-
                     print "Clustering: NUMA nodes"
-                    hyb_cluster = m.res['NUMA'].get()
+                    hyb_cluster = m.machine_topology['NUMA'].get()
 
                 # Simulate a multicast tree
                 args.multicast = True
@@ -120,7 +118,7 @@ def simulate(args):
                                                 shm_writers=shm_writers)
 
 
-            if args.hybrid:
+            if args.hybrid == 'True':
                 # Set ONE reader of the shared memory cluster as last node
                 all_leaf_nodes.append(hyb_leaf_nodes)
 
