@@ -36,11 +36,16 @@ def handle_request(r):
     config.machine = r[u'machine']
     config.overlay = [r[u'topology']] # List of topologies - just one
     config.group = r[u'cores']
-    config.hybrid = r[u'hybrid']
     overlay = r[u'topology'].split('-')
 
     overlay_name = overlay[0]
     overlay_args = overlay[1:]
+
+    if overlay_name == 'hybrid':
+	overlay_name = 'cluster'
+	config.hybrid = True;
+	config.overlay = [u'cluster']
+
     if overlay_args == 'mm' :
         config.multimessage = True
     elif overlay_args == 'rev' :

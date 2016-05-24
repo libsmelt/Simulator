@@ -72,7 +72,7 @@ def simulate(args):
             shm_writers = None
             hyb_leaf_nodes = None
 
-            if args.hybrid == 'True':
+            if config.args.hybrid:
 
                 if args.hybrid_cluster == "socket":
                     print "Clustering: Sockets"
@@ -118,7 +118,7 @@ def simulate(args):
                                                 shm_writers=shm_writers)
 
 
-            if args.hybrid == 'True':
+            if config.args.hybrid:
                 # Set ONE reader of the shared memory cluster as last node
                 all_leaf_nodes.append(hyb_leaf_nodes)
 
