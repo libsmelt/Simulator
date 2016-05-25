@@ -89,6 +89,7 @@ def simulate(args):
                 hyb_leaf_nodes = [ max(x) for x in hyb_cluster ]
 
                 args.group = map(int, shm_writers)
+                config.args.group = map(int, shm_writers)
                 #args.group = ','.join(map(str, shm_writers))
 
             # type(topology) = hybrid.Hybrid | binarytree.BinaryTree -- inherited from overlay.Overlay
