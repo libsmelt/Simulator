@@ -35,7 +35,7 @@ def simulate(args):
     config.args.reverserecv = args.reverserecv
     config.args.hybrid = args.hybrid
 
-    print "machine: %s, topology: %s, multimessage=%d, reverserecv=%d" % (machine, args.overlay, args.multimessage, args.reverserecv)
+    print "machine: %s, topology: %s, hybrid: %s, multimessage=%d, reverserecv=%d" % (machine, args.overlay, args.hybrid, args.multimessage, args.reverserecv)
 
     m_class = config.arg_machine(machine)
     m = m_class(args.multimessage, args.reverserecv)
@@ -88,8 +88,8 @@ def simulate(args):
                 shm_writers = [ min(x) for x in hyb_cluster ]
                 hyb_leaf_nodes = [ max(x) for x in hyb_cluster ]
 
-                args.group = ','.join(map(str, shm_writers))
-
+                args.group = map(int, shm_writers)
+                #args.group = ','.join(map(str, shm_writers))
 
             # type(topology) = hybrid.Hybrid | binarytree.BinaryTree -- inherited from overlay.Overlay
             (topo, evs, root, sched, topology) = \
@@ -195,6 +195,9 @@ def build_and_simulate():
 
     if config.args.group:
         config.args.group = map(int, config.args.group.split(','))
+    
+    if config.args.hybrid:
+        config.args.hybrid = 'True'
 
     simulate(config.args)
 
