@@ -98,9 +98,9 @@ def simulate(args):
                                 raise Exception(('Only support values less or equal to half'
                                                  'the numa nodes'))
                             new_cluster = []
-                            for i in range(0,len(hyb_cluster), size):
+                            for i in range(0,len(hyb_cluster), int(size)):
                                 tmp = []
-                                for j in range(0, size):
+                                for j in range(0, int(size)):
                                     tmp += hyb_cluster[i+j]
 
                                 new_cluster.append(tmp)
