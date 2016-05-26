@@ -44,7 +44,7 @@ def handle_request(r):
     if overlay_name == 'hybrid':
         overlay_name = 'cluster'
         config.hybrid = True;
-        config.hybrid_cluster = overlay_args;
+        config.hybrid_cluster = overlay_args[0];
         config.overlay = [u'cluster']
 
     if overlay_args == 'mm' :

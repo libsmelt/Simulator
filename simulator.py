@@ -76,6 +76,7 @@ def simulate(args):
 
             if config.args.hybrid:
 
+                print args.hybrid_cluster
                 if 'socket' in args.hybrid_cluster:
                     print "Clustering: Sockets"
                     hyb_cluster = m.machine_topology['Package'].get()
@@ -84,7 +85,47 @@ def simulate(args):
                     hyb_cluster = [range(0, m.machine_topology['numcpus'])]
                 elif 'numa' in args.hybrid_cluster:
                     print "Clustering: NUMA nodes"
-                    hyb_cluster = m.machine_topology['NUMA'].get()
+                    if len(args.hybrid_cluster) > 4:
+                        hyb_cluster = m.machine_topology['NUMA'].get()
+                        size = float(args.hybrid_cluster[4:])
+                        
+                        if size > 1:
+                            # Merge NUMA nodes
+                            if ((size % 2) != 0):
+                                raise Exception(('Only support powers of two for'
+                                                 ' numa node merge'))
+                            if (size > (len(hyb_cluster)/2)):
+                                raise Exception(('Only support values less or equal to half'
+                                                 'the numa nodes'))
+                            new_cluster = []
+                            for i in range(0,len(hyb_cluster), size):
+                                tmp = []
+                                for j in range(0, size):
+                                    tmp += hyb_cluster[i+j]
+
+                                new_cluster.append(tmp)
+                            hyb_cluster = new_cluster
+                        else:
+                            # Split NUMA nodes
+                            print hyb_cluster
+                            new_cluster = []
+                            split = int(1/size)
+                            if split > (len(hyb_cluster[0])/2):
+                                raise Exception(('Single core in clusters not allowed'))
+                            if (len(hyb_cluster[0]) % split) != 0:
+                                raise Exception(('Only support splitting numa nodes if'
+                                                 ' the numa size is divisible by the number'
+                                                 ' of splits'))
+                            for i in range(0, len(hyb_cluster)):
+                                seg_len = int(len(hyb_cluster[0])/split)
+                                for j in range(1, split+1):
+                                    tmp1 = hyb_cluster[i][(j-1)*seg_len:j*seg_len]
+                                    new_cluster.append(tmp1)
+                            
+                            hyb_cluster = new_cluster
+                            print hyb_cluster
+                    else:
+                        hyb_cluster = m.machine_topology['NUMA'].get()
                 else:
                     print "Warning: Unknown cluster argument for hybrid, using default option"
                     print "Clustering: NUMA nodes"

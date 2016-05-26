@@ -160,11 +160,9 @@ def output_quorum_configuration(model, hierarchies, root, sched, topo, midx,
                 mat[reader][writer] = cidx + SHM_SLAVE_START
 
             cidx += 1
-
-            assert cidx < SHM_REGIONS_OFFSET
-            assert cidx < SHM_REGIONS_OFFSET
-
-
+            
+            if cidx == SHM_REGIONS_OFFSET:
+                raise Exception('Too many shared memory regions')
 
 
     # Generate c code
