@@ -34,6 +34,7 @@ def simulate(args):
     config.args.multimessage = args.multimessage
     config.args.reverserecv = args.reverserecv
     config.args.hybrid = args.hybrid
+    config.args.hybrid_cluster = args.hybrid_cluster
 
     print "machine: %s, topology: %s, hybrid: %s, multimessage=%d, reverserecv=%d" % (machine, args.overlay, args.hybrid, args.multimessage, args.reverserecv)
 
@@ -70,15 +71,22 @@ def simulate(args):
             # Hybrid
             hyb_cluster = None
             shm_writers = None
+ 
             hyb_leaf_nodes = None
 
             if config.args.hybrid:
 
-                if args.hybrid_cluster == "socket":
+                if 'socket' in args.hybrid_cluster:
                     print "Clustering: Sockets"
                     hyb_cluster = m.machine_topology['Package'].get()
-
+                elif 'all' in args.hybrid_cluster:
+                    print "Clustering: All cores"
+                    hyb_cluster = [range(0, m.machine_topology['numcpus'])]
+                elif 'numa' in args.hybrid_cluster:
+                    print "Clustering: NUMA nodes"
+                    hyb_cluster = m.machine_topology['NUMA'].get()
                 else:
+                    print "Warning: Unknown cluster argument for hybrid, using default option"
                     print "Clustering: NUMA nodes"
                     hyb_cluster = m.machine_topology['NUMA'].get()
 

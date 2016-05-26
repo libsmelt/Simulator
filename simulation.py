@@ -90,8 +90,17 @@ def _simulation_wrapper(ol, m, gr, multicast=False):
             raise Exception('XXX Do not know how to get scheduler for list of modules')
 
         # Evaluate the MP part
-        ev = evaluate.Evaluate.evaluate_all(r, root, m, sched)
-
+        if not (multicast and len(config.get_mc_group()) == 1):
+            ev = evaluate.Evaluate.evaluate_all(r, root, m, sched)
+        else:
+            from evaluate import Result
+            ev = []
+            tmp = Result(0,0,"SHM")
+            tmp.time = 0;
+            tmp.time_no_ab = 0;
+            tmp.last_node = 0;
+            ev.append(('dummy',tmp))
+            
         # Return result
         if r_tmp:
             r = r_tmp

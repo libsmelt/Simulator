@@ -17,7 +17,7 @@ class SimArgs:
 
     multicast = True
     hybrid = False
-    hybrid_cluster = False
+    hybrid_cluster = 'NUMA'
     machine = None
     overlay = None
     group = []
@@ -42,9 +42,10 @@ def handle_request(r):
     overlay_args = overlay[1:]
 
     if overlay_name == 'hybrid':
-	overlay_name = 'cluster'
-	config.hybrid = True;
-	config.overlay = [u'cluster']
+        overlay_name = 'cluster'
+        config.hybrid = True;
+        config.hybrid_cluster = overlay_args;
+        config.overlay = [u'cluster']
 
     if overlay_args == 'mm' :
         config.multimessage = True
