@@ -31,15 +31,14 @@ def simulate(args):
     config.args.machine = args.machine
     config.args.group = args.group
     config.args.multicast = args.multicast
-    config.args.multimessage = args.multimessage
-    config.args.reverserecv = args.reverserecv
     config.args.hybrid = args.hybrid
     config.args.hybrid_cluster = args.hybrid_cluster
 
-    print "machine: %s, topology: %s, hybrid: %s, multimessage=%d, reverserecv=%d" % (machine, args.overlay, args.hybrid, args.multimessage, args.reverserecv)
+    print "machine: %s, topology: %s, hybrid: %s" % \
+        (machine, args.overlay, args.hybrid)
 
     m_class = config.arg_machine(machine)
-    m = m_class(args.multimessage, args.reverserecv)
+    m = m_class()
     assert m != None
     gr = m.get_graph()
     
@@ -61,12 +60,9 @@ def simulate(args):
         # Generate representation of each topology
         for _overlay in args.overlay:
 
-            if config.args.multimessage :
-                _overlay = _overlay + "-mm"
-            if config.args.reverserecv :
-                _overlay = _overlay + "-rev"  
             if config.args.hybrid :
                 _overlay = _overlay + "-hybrid"
+
             # ------------------------------
             # Hybrid
             hyb_cluster = None
@@ -224,9 +220,7 @@ def build_and_simulate():
                         action='store_const', default=False, const=True)
     parser.add_argument('--server', action='store_const', default=False, const=True)
 
-    parser.add_argument('--multimessage', action='store_const', default=False, const=True)
-    parser.add_argument('--reverserecv', action='store_const', default=False, const=True)
-    parser.add_argument('--mmtype', default='all',
+    parser.add_argument('--mmtype', default='last',
                         help='Variant of multimessage benchmark to use')
 
     try:

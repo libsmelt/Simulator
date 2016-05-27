@@ -35,6 +35,7 @@ class AdapativeTree(overlay.Overlay):
                 raise Exception(('Onrecognized argument %s' % a))
             else:
                 self.options[a] = True
+        super(AdapativeTree, self).set_arguments(args)
 
     def get_scheduler(self, final_graph):
         return sched_adaptive.SchedAdaptive(final_graph, self.mod, self)

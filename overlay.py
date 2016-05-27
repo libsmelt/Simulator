@@ -41,7 +41,14 @@ class Overlay(object):
 
         @param args list of strings
         """
-        return
+        for a in args:
+            self.options[a] = True
+            # Some options have to be passed to the Machine
+            if a == 'mm':
+                self.mod.enable_mm = True
+            if a == 'rev':
+                self.mod.opt_reverse_recv = True
+
 
     def _get_broadcast_tree(self):
 

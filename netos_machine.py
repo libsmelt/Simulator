@@ -43,7 +43,7 @@ class NetosMachine(model.Model):
 
     opt_reverse_recv = False
 
-    def __init__(self, enable_multimessage, enable_reverserecv):
+    def __init__(self):
         """Initialize the Simulator for a NetOS machine.
 
         Read topology information from the NetOS machine DB and build
@@ -62,21 +62,21 @@ class NetosMachine(model.Model):
         fname = '%s/%s/multimessage.gz' % \
                 (config.MACHINE_DATABASE, self.get_name())
 
-        if enable_reverserecv :
-            opt_reverse_recv = True
-            
         self.mm = None
-        if enable_multimessage :
-            print 'Using Multimessage data', fname
-            try:
-                f = gzip.open(fname, 'r')
-                self.mm = MultiMessage(f)
-                f.close()
-            except IOError:
-                print 'No multimessage data for this machine'
-            except:
-                raise
-            self.enable_mm = True
+        
+        # These will be enabled from overlay.py
+        self.enable_mm = False
+        self.opt_reverse_recv = False
+        
+        print 'Using Multimessage data', fname
+        try:
+            f = gzip.open(fname, 'r')
+            self.mm = MultiMessage(f)
+            f.close()
+        except IOError:
+            print 'No multimessage data for this machine'
+        except:
+            raise
 
         self.send_history = {}
         self.reset()
