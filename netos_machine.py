@@ -67,7 +67,7 @@ class NetosMachine(model.Model):
             
         self.mm = None
         if enable_multimessage :
-            print 'Using Multimessage data'
+            print 'Using Multimessage data', fname
             try:
                 f = gzip.open(fname, 'r')
                 self.mm = MultiMessage(f)

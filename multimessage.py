@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import matplotlib
 import re
 import helpers
+import config
 
 MAX=1000 # choose bigger than #local and #remote
 
@@ -25,11 +26,15 @@ class MultiMessage(object):
 
         # Parse input lines
         for line in _input:
-            m = re.match('r=(\d+),l=(\d+),l=(\d+), avg=(\d+), stdev=(\d+), med=(\d+), min=(\d+), max=(\d+) cycles, count=(\d+), ignored=(\d+)', line)
+            m = re.match('r=(\d+),l=(\d+), mode=([^,]+), avg=(\d+), stdev=(\d+), med=(\d+), min=(\d+), max=(\d+) cycles, count=(\d+), ignored=(\d+)', line)
+            if m :
+                l = int(m.group(2))
+                r = int(m.group(1))
+                mode = m.group(3).rstrip()
 
-            if m:
-                if not int(m.group(3)) :
+                if mode != config.args.mmtype:
                     continue
+
                 rem, loc = tuple([ int(m.group(i)) for i in [1, 2]])
                 avg, stdev, med = tuple([ float(m.group(i)) for i in [4, 5, 6]])
 

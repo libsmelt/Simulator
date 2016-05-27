@@ -226,6 +226,8 @@ def build_and_simulate():
 
     parser.add_argument('--multimessage', action='store_const', default=False, const=True)
     parser.add_argument('--reverserecv', action='store_const', default=False, const=True)
+    parser.add_argument('--mmtype', default='all',
+                        help='Variant of multimessage benchmark to use')
 
     try:
         config.args = parser.parse_args()
