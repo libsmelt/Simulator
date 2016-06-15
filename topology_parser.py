@@ -103,6 +103,15 @@ def parse_machine_db(machine):
         if m and res['CPU'] == 'unknown':
             res['CPU'] = m.group(1)
 
+        # Find memory
+        m = re.match('Total memory:\s*([0-9.]+)\s+MB', l)
+        if m:
+            res['memory'] = res.get('memory', 0) + float(m.group(1))
+
+        # Memory: 31409 MB free of total 32252.4 MB
+        m = re.match('Memory: [0-9.]+ MB free of total ([0-9.]+) MB', l)
+        if m:
+            res['memory'] = res.get('memory', 0) + float(m.group(1))
 
     stream.close()
 
