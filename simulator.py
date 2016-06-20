@@ -220,9 +220,6 @@ def build_and_simulate():
                         action='store_const', default=False, const=True)
     parser.add_argument('--server', action='store_const', default=False, const=True)
 
-    parser.add_argument('--mmtype', default='last',
-                        help='Variant of multimessage benchmark to use')
-
     try:
         config.args = parser.parse_args()
     except:

@@ -39,7 +39,14 @@ class NetosMachine(model.Model):
     # Machine name
     name = None
 
+    # Enable multimessage support
     enable_mm = False
+
+    # Choose type of multimessage benchmark to use
+    # Default: all - can be selected with topology:
+    #    mm      --> use multimessage with "last"
+    #    mm_last --> use multimessage with "all"
+    mm_last = False
 
     opt_reverse_recv = False
 
@@ -62,16 +69,23 @@ class NetosMachine(model.Model):
         fname = '%s/%s/multimessage.gz' % \
                 (config.MACHINE_DATABASE, self.get_name())
 
-        self.mm = None
-        
         # These will be enabled from overlay.py
         self.enable_mm = False
+        self.mm_last = False
         self.opt_reverse_recv = False
-        
+
+        mmtypes = [ 'all', 'last' ]
+        self.mm = [ None for i in range(len(mmtypes)) ]
+
         print 'Using Multimessage data', fname
         try:
             f = gzip.open(fname, 'r')
-            self.mm = MultiMessage(f)
+
+            for (i, mmtype) in enumerate(mmtypes):
+
+                self.mm[i] = MultiMessage(f, mmtype)
+                f.seek(0) # reset file cursor
+
             f.close()
         except IOError:
             print 'No multimessage data for this machine'
@@ -170,7 +184,7 @@ class NetosMachine(model.Model):
                 return i
 
 
-    def query_send_cost(self, src, dest, batchsize=1):
+    def query_send_cost(self, src, dest, batchsize=1, add_history=False):
         """In difference to get_send_cost, query_send_cost just retrieves the
         send cost without adding the message to the history.
 
@@ -182,14 +196,27 @@ class NetosMachine(model.Model):
             else :
                 prev_src, prev_dst = self.send_history[src]
                 cost = self._get_receive_cost(prev_dst, prev_src)
+
+            # Add to the history if requested
+            if add_history:
+                self.send_history[src] = (src, dest)
+
         elif self.enable_mm :
             num_l = len([ b for b in _send_history if b ])
             num_r = len([ b for b in _send_history if not b ])
             l = self.get_numa_id(src) == self.get_numa_id(dest)
+
             if len(_send_history) == 0 :
                 cost = self._get_send_cost(src, dest, batchsize)
             else :
-                cost = self.mm.get_factor(num_r, num_l, l)
+                if self.mm_last:
+                    cost = self.mm[1].get_factor(num_r, num_l, l)
+                else:
+                    cost = self.mm[0].get_factor(num_r, num_l, l)
+
+            # Add to history on request
+            if add_history:
+                self.send_history[src] = _send_history + [l]
         else :
             cost = self._get_send_cost(src, dest, batchsize)
 
@@ -197,37 +224,12 @@ class NetosMachine(model.Model):
 
 
     def get_send_cost(self, src, dest, batchsize=1):
-
-        """
-        The cost of the send operation (e.g. to work to done on the
+        """The cost of the send operation (e.g. to work to done on the
         sending node) when sending a message to core dest
+
         """
-        l = self.get_numa_id(src) == self.get_numa_id(dest)
-        _send_history = self.send_history.get(src, [])
-        num_l = len([ b for b in _send_history if b ])
-        num_r = len([ b for b in _send_history if not b ])
+        return self.query_send_cost(src, dest, batchsize, True)
 
-        _send_history = self.send_history.get(src, [])
-        if self.opt_reverse_recv :
-            if len(_send_history) == 0 :
-                cost = self._get_send_cost(src, dest, batchsize)
-            else :
-                prev_src, prev_dst = self.send_history[src]
-                cost = self._get_receive_cost(prev_dst, prev_src)
-            self.send_history[src] = (src, dest)
-        elif self.enable_mm :
-            num_l = len([ b for b in _send_history if b ])
-            num_r = len([ b for b in _send_history if not b ])
-            l = self.get_numa_id(src) == self.get_numa_id(dest)
-            if len(_send_history) == 0 :
-                cost = self._get_send_cost(src, dest, batchsize)
-            else :
-                cost = self.mm.get_factor(num_r, num_l, l)
-            self.send_history[src] = _send_history + [l]
-        else :
-            cost = self._get_send_cost(src, dest, batchsize)
-
-        return cost
 
     def __repr__(self):
         return self.name

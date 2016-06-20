@@ -44,8 +44,10 @@ class Overlay(object):
         for a in args:
             self.options[a] = True
             # Some options have to be passed to the Machine
-            if a == 'mm':
+            if a == 'mm' or a == 'mmlast':
+                assert self.mod.enable_mm == False
                 self.mod.enable_mm = True
+                self.mod.mm_last = a == 'mmlast'
             if a == 'rev':
                 self.mod.opt_reverse_recv = True
 

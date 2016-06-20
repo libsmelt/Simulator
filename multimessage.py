@@ -15,7 +15,11 @@ MAX=1000 # choose bigger than #local and #remote
 
 class MultiMessage(object):
 
-    def __init__(self, _input=sys.stdin):
+    def __init__(self, _input=sys.stdin, mmtype='last'):
+        """Initiate the multimessage parser.
+
+        @param mmtype: Choose the type of multimessage to use. Supported are:
+            'last', 'all'"""
 
         # Initialize
         self.res = [[ None for j in range(MAX) ] for i in range(MAX) ]
@@ -32,7 +36,7 @@ class MultiMessage(object):
                 r = int(m.group(1))
                 mode = m.group(3).rstrip()
 
-                if mode != config.args.mmtype:
+                if mode != mmtype:
                     continue
 
                 rem, loc = tuple([ int(m.group(i)) for i in [1, 2]])
@@ -41,11 +45,11 @@ class MultiMessage(object):
                 # Sanity checks
                 _check = abs(1.0-avg/med)
                 if _check>0.1:
-                    print 'WARNING: avg/med more than 10% apart', _check, 'for', (rem, loc)
+                    helpers.warn('WARNING: avg/med more than 10% apart ' + str(_check) + ' for ' + str((rem, loc)))
 
                 _check = stdev/avg
                 if _check>0.1:
-                    print 'WARNING: avg/med more than 10% apart', _check, 'for', (rem, loc)
+                    helpers.warn('WARNING: avg/med more than 10% apart ' + str(_check) + ' for ' + str((rem, loc)))
 
                 assert self.res[rem][loc] == None # otherwise we would have several
                                              # results for the same data
