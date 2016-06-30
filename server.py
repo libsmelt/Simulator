@@ -123,12 +123,19 @@ def server_loop():
 
                     # Receive the data in small chunks and retransmit it
                     buf = StringIO()
-                    while True:
-                        data = connection.recv(1024)
-                        buf.write(data)
 
-                        if len(data)>0:
-                            break
+                    # XXX properly detect the length of the message
+                    # here and receive ALL of it.
+                    data = connection.recv(10240)
+                    buf.write(data)
+
+                    # There is still no guarantee that this is
+                    # correct, but if not, the json parser will fail.
+
+                    assert len(data)<10240 # Otherwise, the message is
+                                           # longer than 10240 and we
+                                           # need to properly
+                                           # implement sockets
 
                     res = handle_request(json.loads(buf.getvalue()))
                     if len(res)>0:
