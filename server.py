@@ -84,9 +84,8 @@ def write_statistics(machine):
         with open(STAT_FILE, 'r') as f:
             stat = json.loads(f.read())
             f.close()
-    except Exception:
+    except IOError:
         stat = {}
-        raise
 
     # Update
     stat['num_served'] = stat.get('num_served', 0) + 1
