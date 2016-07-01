@@ -29,7 +29,7 @@ machines = [
 models = []
 
 # Path to the machine database.
-MACHINE_DATABASE=os.getenv('HOME') + '/projects/netos-machine-hardware-information'
+MACHINE_DATABASE='model/'
 
 def result_suffix():
     return _result_suffix(USE_UMP_NUMA, USE_UMPQ)
