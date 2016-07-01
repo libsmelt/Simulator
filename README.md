@@ -1,5 +1,7 @@
 This is a simulator for multicores.
 
+[![build status](https://gitlab.inf.ethz.ch/skaestle/Simulator/badges/ci/build.svg)](https://gitlab.inf.ethz.ch/skaestle/Simulator/commits/ci)
+
 It can be used to Simulate broadcast trees and generate configurations
 to be fed into the Barrelfish's Quorum program.
 
@@ -7,15 +9,18 @@ to be fed into the Barrelfish's Quorum program.
 
 Install the following packages (on Ubuntu LTS).
 
-```apt-get install python-networkx python-pygraphviz libgv-python python-numpy python-pygraph```
+    apt-get install python-networkx python-pygraphviz libgv-python python-numpy python-pygraph python-matplotlib
 
 I had to do some manual config to make it work:
-/usr/lib/python2.7/dist-packages$ sudo ln -s libgv_python27.x86_64-linux-gnu.so _gv.so
 
+    (cd /usr/lib/python2.7/dist-packages; sudo ln -s libgv_python27.x86_64-linux-gnu.so _gv.so)
 
-Then, you have to manually create directories:
+Then, you have to manually create directories and install the model:
 
-```mkdir graphs/ visu/```.
+    mkdir graphs/ visu/ model/
+    wget 'http://people.inf.ethz.ch/skaestle/machinemodel.gz' -O "machinemodel.gz"
+    tar -xzf "machinemodel.gz" -C "model/"
+
 
 # Machines
 
@@ -33,7 +38,7 @@ only our pairwise UMP send/receive benchmark.
 
 ## Static machine information
 
-``lscpu > lscpu.txt```
+```lscpu > lscpu.txt```
 
 There is a version of likwid ready to go at `/mnt/scratch/skaestle/software/likwid-likwid-4.0.1/`.
 If this does not work out of the box, try recompiling: `make clean && make && make local`.
