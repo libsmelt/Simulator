@@ -46,15 +46,6 @@ If this does not work out of the box, try recompiling: `make clean && make && ma
 Ideally, you have to call only:
 ```(cd /mnt/scratch/skaestle/software/likwid-likwid-4.0.1/; LD_LIBRARY_PATH=.:./ext/lua/:./ext/hwloc/ ./likwid-topology ) > likwid.txt```
 
-
-## Pairwise
-
-Furthermore, pairwise send and receive cost of all combinations of
-cores need to be provided for each machine.
-
-The procedure for generating these is explained in Smelt's repository in README.md
-
-
 ## Machine hierarchy
 
 Last, the hierarchy of caches and affinity of cores to them is needed.
