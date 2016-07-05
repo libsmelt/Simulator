@@ -20,6 +20,8 @@ import os
 import matplotlib.cm as cm
 from tableau20 import tab_cmap, colors
 
+from topology_parser import on_same_node, parse_machine_db
+
 import matplotlib
 
 from config import MACHINE_DATABASE
@@ -29,13 +31,15 @@ sys.path.append(MDB)
 import machineinfo
 
 fontsize = 14
-mode_list = [ 'sum', 'sumA', 'last', 'all' ]
+mode_list = [ 'sum', 'last', 'all' ]
 
 # CONFIGURE FONT
 # --------------------------------------------------
 
 PRESENTATION=False           # << font + colors
-OUTPUT_FOR_POSTER=False     # << higher resolution
+OUTPUT_FOR_POSTER=False      # << higher resolution
+
+SENDER_CORE=0                # << for distinction local vs remote
 
 import matplotlib
 matplotlib.rcParams['figure.figsize'] = 8.0, 4.0
@@ -133,6 +137,7 @@ def plot_multimesage(machine, f, output_last=True, calc_diff=True):
 
     """
 
+    topology = parse_machine_db(machine)
 
     print "parsing multimessasge for " + machine
 
@@ -147,17 +152,44 @@ def plot_multimesage(machine, f, output_last=True, calc_diff=True):
     # PARSE INPUT
     # --------------------------------------------------
 
-    for line in f:
-        #             r=0,l=3, mode=sum , avg=140, stdev=11, med=141, min=117, max=156 cycles, count=1800, ignored=3200
-        m = re.match('r=(\d+),l=(\d+), mode=([^,]+), avg=(\d+), stdev=(\d+), med=(\d+), min=(\d+), max=(\d+) cycles, count=(\d+), ignored=(\d+)', line)
-        if m :
-            l = int(m.group(2))
-            r = int(m.group(1))
-            mode = m.group(3).rstrip()
-            print 'found', l, r, mode, int(m.group(4))
+    import debug
 
-            data[mode][r][l] = int(m.group(4))
-            err[mode][r][l] = int(m.group(5))
+    for line in f:
+
+        # Format:
+        # cores=01,02,03,04,08,12,16,20,24,28, mode=all , avg=109, stdev=13, med=106, min=98, max=355 cycles, count=1800, ignored=3200
+
+        m = re.match('cores=([0-9,]+), mode=([^,]+), avg=(\d+), stdev=(\d+), med=(\d+), min=(\d+), max=(\d+) cycles, count=(\d+), ignored=(\d+)', line)
+        if m :
+            cores = map(int, m.group(1).split(','))
+
+            l_cores = []
+            r_cores = []
+
+            print 'Found cores', str(cores)
+
+            local = False # we execute remote sends first
+            for c in cores:
+                _local = on_same_node(topology, SENDER_CORE, c)
+                assert not local or _local # no local message after remote ones
+                local = _local
+
+                if local:
+                    l_cores.append(c)
+                else:
+                    r_cores.append(c)
+
+            print 'local', l_cores
+            print 'remote', r_cores
+
+            l = len(l_cores)
+            r = len(r_cores)
+
+            mode = m.group(2).rstrip()
+            print 'found', l, r, mode, int(m.group(3))
+
+            data[mode][r][l] = int(m.group(3))
+            err[mode][r][l] = int(m.group(4))
 
             # # Store depending on type of measurement
             # if int(m.group(3)) == 1 :
@@ -183,10 +215,11 @@ def plot_multimesage(machine, f, output_last=True, calc_diff=True):
             print "TSC " + m.group(1)
             tsc_overhead = int(m.group(1))
 
-        m = re.match('num_local_cores=(\d+), num_cluster=(\d+)', line)
+        # num_cores: local=7 remote=3
+        m = re.match('num_cores: local=(\d+) remote=(\d+)', line)
         if m:
-            cores_local = int(m.group(1))
-            cores_remote = int(m.group(2))
+            cores_local = int(m.group(1)) + 1
+            cores_remote = int(m.group(2)) + 1
             print "num_local_cores " + str(cores_local)
             print "num_cluster " + str(cores_remote)
 
