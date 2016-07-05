@@ -39,7 +39,9 @@ mode_list = [ 'sum', 'last', 'all' ]
 PRESENTATION=False           # << font + colors
 OUTPUT_FOR_POSTER=False      # << higher resolution
 
-SENDER_CORE=0                # << for distinction local vs remote
+SENDER_CORE=None             # << for distinction local vs remote - given by output
+
+tsc_overhead = -1            # << TSC overhead read from  output
 
 import matplotlib
 matplotlib.rcParams['figure.figsize'] = 8.0, 4.0
@@ -69,7 +71,7 @@ label_lookup = {
     'agreement': '2PC'
 }
 
-def do_plot(cores_remote, cores_local, z, mode, machine):
+def do_plot(cores_remote, cores_local, z, e, mode, machine):
     # PREPARE heat map plot
     # --------------------------------------------------
 
@@ -93,7 +95,7 @@ def do_plot(cores_remote, cores_local, z, mode, machine):
     for x in range(0,cores_local):
         for y in range(0, cores_remote):
             color = 'black'
-            plt.text(x + 0.5, y + 0.5, '%.0f' % (z[y][x]),
+            plt.text(x + 0.5, y + 0.5, '%.0f (%.0f)' % (z[y][x], e[y][x]),
                      horizontalalignment='center',
                      verticalalignment='center',
                      color=color,
@@ -141,7 +143,6 @@ def plot_multimesage(machine, f, output_last=True, calc_diff=True):
 
     print "parsing multimessasge for " + machine
 
-    tsc_overhead = 0
     cores_local = 0
     cores_remote = 0
     cores_total = 0
@@ -168,13 +169,15 @@ def plot_multimesage(machine, f, output_last=True, calc_diff=True):
 
             print 'Found cores', str(cores)
 
+            assert SENDER_CORE != None
+
             local = False # we execute remote sends first
             for c in cores:
                 _local = on_same_node(topology, SENDER_CORE, c)
                 assert not local or _local # no local message after remote ones
                 local = _local
 
-                if local:
+                if _local:
                     l_cores.append(c)
                 else:
                     r_cores.append(c)
@@ -186,7 +189,7 @@ def plot_multimesage(machine, f, output_last=True, calc_diff=True):
             r = len(r_cores)
 
             mode = m.group(2).rstrip()
-            print 'found', l, r, mode, int(m.group(3))
+            print 'found l=', l, 'r=', r, SENDER_CORE, cores, mode, int(m.group(3))
 
             data[mode][r][l] = int(m.group(3))
             err[mode][r][l] = int(m.group(4))
@@ -227,15 +230,61 @@ def plot_multimesage(machine, f, output_last=True, calc_diff=True):
                 data[l] = [[0 for i in range(cores_local)] for j in range(cores_remote)]
                 err[l] = [[0 for i in range(cores_local)] for j in range(cores_remote)]
 
+        # sender: 12
+        m = re.match('sender: (\d+)', line)
+        if m:
+            SENDER_CORE = int(m.group(1))
+            print "sender is: ", SENDER_CORE
+
+
+    # END -- parsing file
+    assert tsc_overhead >= 0
+    for m in mode_list:
+        for r in range(cores_remote):
+            for l in range(cores_local):
+                if r==0 and l==0:
+                    continue
+
+                print data[m][r][l]
+                data[m][r][l] -= tsc_overhead
+                print '->', data[m][r][l]
+
+    #  Substract TSC
+
+    # Calculate "sum" results - these are only meaningful if
+    # subtracted from the previous result.
+    #
+    # We need to determine the cost of the last message by comparing
+    # the cost of the current send batch with the cost of the one
+    # smaller send batch.
+    for r in range(cores_remote):
+        for l in range(cores_local):
+
+            if r+l < 2: # Nothing to do, for one message, the "sum"
+                        # equals the cost of the last message
+                continue
+
+            l_ = l
+            r_ = r
+
+            if l>1:
+                l_ = l-1
+            else:
+                r_ = r-1
+
+            data['sum'][r][l] -= data['sum'][r_][l_]
+
 
     for m in mode_list:
         z = np.zeros((cores_remote, cores_local), dtype=np.float)
+        e = np.zeros((cores_remote, cores_local), dtype=np.float)
         for x in range(cores_remote):
             for y in range(cores_local):
                 if data[m][x][y] == 0:
                     print 'Warning', m, x, y, 'is 0'
                 z[x][y] = data[m][x][y]
-        do_plot(cores_remote, cores_local, z, m, machine)
+                e[x][y] =  err[m][x][y]
+        do_plot(cores_remote, cores_local, z, e, m, machine)
 
 
 
