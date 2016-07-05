@@ -66,6 +66,21 @@ def _parse_line(cpuid, match):
     return (None, None)
 
 
+def on_same_node(res, cpu1, cpu2):
+    """Checks if the CPU given as arguments cpu1 and cpu2 are on the same
+    NUMA node.
+
+    @param res Resource summary as returned by parse_machine_db
+
+    """
+    for n in res['NUMA'].get():
+        if cpu1 in n and cpu2 in n:
+            return True
+
+    return False
+
+
+
 def parse_machine_db(machine):
     '''Returns a dictionary of lists of lists with cores sharing the same
     instance of the resource indicated by the dictionary key
