@@ -29,7 +29,7 @@ machines = [
 models = []
 
 # Path to the machine database.
-MACHINE_DATABASE='model/'
+MACHINE_DATABASE='machinedb/'
 
 def result_suffix():
     return _result_suffix(USE_UMP_NUMA, USE_UMPQ)

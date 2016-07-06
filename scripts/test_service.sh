@@ -2,6 +2,7 @@
 
 # PID of the Simulator server
 SERVER_PID=0
+MACHINEDB='machinedb/'
 
 function terminate() {
 
@@ -40,12 +41,12 @@ function assert_sim_running() {
 function download_model() {
 
     # Clean model directory
-    rm -rf 'model/'
-    mkdir -p 'model'
+    rm -rf $MACHINEDB
+    mkdir -p $MACHINEDB
 
     # Download and install model
     wget 'http://people.inf.ethz.ch/skaestle/machinemodel.gz' -O "machinemodel.gz"
-    tar -xzf "machinemodel.gz" -C "model"
+    tar -xzf "machinemodel.gz" -C $MACHINEDB
 }
 
 # --------------------------------------------------
