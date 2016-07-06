@@ -22,3 +22,4 @@ basetest:
   script:
     - scripts/test_service.sh
     - scripts/test_visu.sh
+    - scripts/test_standalone.sh
