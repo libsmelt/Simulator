@@ -2,7 +2,9 @@
 
 # PID of the Simulator server
 SERVER_PID=0
-MACHINEDB='machinedb/'
+
+SCRIPTDIR=$(dirname $0)
+source $SCRIPTDIR/common.sh
 
 function terminate() {
 
@@ -38,25 +40,8 @@ function assert_sim_running() {
     [[ $RC -eq 0 ]] || error "Simulator is not running"
 }
 
-function download_model() {
-
-    # Clean model directory
-    rm -rf $MACHINEDB
-    mkdir -p $MACHINEDB
-
-    # Download and install model
-    wget 'http://people.inf.ethz.ch/skaestle/machinemodel.gz' -O "machinemodel.gz"
-    tar -xzf "machinemodel.gz" -C $MACHINEDB
-}
-
-# --------------------------------------------------
-# Download the machine model, prepare and start the server
-# --------------------------------------------------
-
-mkdir -p 'visu/' 'graphs/'
-
-download_model
-ls -R 'model/'
+# Get machine model
+get_model
 
 # Execute Simulator in background
 ./simulator.py --server 2>&1  &

@@ -18,5 +18,7 @@ basetest:
   artifacts:
     paths:
       - "simulator-server.log"
+      - "visu/visu_gruyere_adaptivetree_atomic_broadcast.png"
   script:
     - scripts/test_service.sh
+    - scripts/test_visu.sh
