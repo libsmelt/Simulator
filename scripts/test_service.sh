@@ -1,5 +1,9 @@
 #!/bin/bash
 
+echo "--------------------------------------------------"
+echo "-- Testing Simulator as a service"
+echo "--------------------------------------------------"
+
 # PID of the Simulator server
 SERVER_PID=0
 
@@ -41,9 +45,11 @@ function assert_sim_running() {
 }
 
 # Get machine model
+echo " --> Getting model"
 get_model
 
 # Execute Simulator in background
+echo " --> Starting Simulator server"
 python ./simulator.py --server 2>&1  &
 SERVER_PID=$!
 
@@ -57,6 +63,7 @@ sleep 5
 assert_sim_running
 
 # Request something from the Simulator
+echo " --> Executing tests"
 python server-test.py sgs-r815-03 adaptivetree "1,2,3-4,5"; [[ $? -eq 0 ]] || error "Simulator request failed"
 assert_sim_running
 
