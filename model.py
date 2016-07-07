@@ -98,11 +98,14 @@ class Model(object):
         return self._get_send_cost(src, dest, batchsize)
 
 
-    def get_send_history_cost(self, sender, cores):
+    def get_send_history_cost(self, sender, cores, corrected=False):
         """Return the send cost for the given history of cores.
 
         @param sender int The core ID of the sender.
         @param cores list(int) The cores in the send history.
+
+        @param corrected If set to True, enables correction of the
+            n-send costs based on multimessage data.
 
         """
         cost = 0
@@ -110,10 +113,25 @@ class Model(object):
         for c in cores:
             cost += self.query_send_cost(sender, c)
 
+        # Correct if requested
+        if corrected and self.mm:
+            cost /= self.mm.get_factor(sender, cores)
+
         return cost
 
 
+    def get_send_cost_for_history(self, sender, receiver, cores):
+        """Determine the cost of sending a message from <sender> to <receiver>
+        given the previous send history <cores>
+
+        """
+        return get_send_history_cost(sender, cores + [receiver], True) - \
+            get_send_history_cost(sender, cores, True)
+
+
+
     def get_send_cost(self, src, dest, batchsize=1):
+
         """
         The cost of the send operation (e.g. to work to done on the
         sending node) when sending a message to core dest

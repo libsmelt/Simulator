@@ -131,6 +131,8 @@ class MultiMessage(object):
 
         """
 
+        self.matrix = [[ 0 for l in range(self.cores_local) ] for r in range(self.cores_remote)]
+
         for r in range(self.cores_remote)[::-1]:
             print '>> ',
             for l in range(self.cores_local):
@@ -145,7 +147,29 @@ class MultiMessage(object):
 
                 cost_last = self.data['last'][r][l] - self.tsc_overhead
 
+                self.matrix[r][l] = rel_error
+
                 print ' %5.1f %5.0f %5.0f %5.2f |' % \
                     (cost_last, self.data['sum'][r][l], send_pw, rel_error),
 
             print ''
+
+
+    def get_factor(self, sender, c_batch):
+        """Determine the correction factor for the given send batch <c_batch>
+        starting from core sender
+
+        """
+
+        c_local = 0
+        c_remote = 0
+
+        for c in c_batch:
+            if self.machine.on_same_numa_node(sender, c):
+                c_local += 1
+            else:
+                c_remote += 1
+                if c_local > 0:
+                    helpers.warn('mm: adding remote communication AFTER local communication')
+
+        return self.matrix[c_remote][c_local]
