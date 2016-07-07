@@ -23,7 +23,7 @@ class MultiMessage(object):
 
         """
 
-        SENDER_CORE = None
+        sender_core = None
         data = {}
         err = {}
         history = {}
@@ -45,11 +45,11 @@ class MultiMessage(object):
                 r_cores = []
 
                 print 'Found cores', str(cores)
-                assert SENDER_CORE != None
+                assert sender_core != None
 
                 local = False # we execute remote sends first
                 for c in cores:
-                    _local = on_same_node(topology, SENDER_CORE, c)
+                    _local = on_same_node(topology, sender_core, c)
                     assert not local or _local # no local message after remote ones
                     local = _local
 
@@ -65,7 +65,7 @@ class MultiMessage(object):
                 r = len(r_cores)
 
                 mode = m.group(2).rstrip()
-                print 'found l=', l, 'r=', r, 'sender=', SENDER_CORE, \
+                print 'found l=', l, 'r=', r, 'sender=', sender_core, \
                                'cores=', cores, 'mode=', mode, 'value=', int(m.group(3))
 
                 if not mode in data:
@@ -97,10 +97,10 @@ class MultiMessage(object):
             # sender: 12
             m = re.match('sender: (\d+)', line)
             if m:
-                SENDER_CORE = int(m.group(1))
-                print "sender is: ", SENDER_CORE
+                sender_core = int(m.group(1))
+                print "sender is: ", sender_core
 
-        return (SENDER_CORE, cores_local, cores_remote, tsc_overhead, data, err, history)
+        return (sender_core, cores_local, cores_remote, tsc_overhead, data, err, history)
 
 
     def __init__(self, _input=sys.stdin, mmtype='last'):
