@@ -46,6 +46,7 @@ from pygraph.algorithms.minmax import shortest_path
 
 # For printing clusters
 import networkx as nx
+from networkx.drawing.nx_agraph import to_agraph
 
 from overlay import Overlay
 
@@ -72,7 +73,7 @@ def output_clustered_graph(graph, name, clustering):
     G.add_nodes_from(graph.nodes())
     G.add_edges_from(graph.edges())
 
-    A = nx.to_agraph(G)
+    A = to_agraph(G)
 
     tableau20 = [ '#1f77b4', '#aec7e8', '#ff7f0e', '#ffbb78',
                   '#2ca02c', '#98df8a', '#d62728', '#ff9896',
