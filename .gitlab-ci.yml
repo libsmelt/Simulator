@@ -10,7 +10,7 @@ image: stefankaestle/gcc
 before_script:
   - "apt-get update; apt-get install -y python-networkx python-pygraphviz libgv-python python-numpy python-pygraph python-matplotlib wget net-tools"
   - "(cd /usr/lib/python2.7/dist-packages; ln -s libgv_python27.x86_64-linux-gnu.so _gv.so)"
-  - "apt-get install texlive-pictures"
+  - "apt-get install -y texlive-pictures"
 
 stages:
   - test
