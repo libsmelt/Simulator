@@ -18,7 +18,6 @@ import sys
 import os
 
 import matplotlib.cm as cm
-from tableau20 import tab_cmap, colors
 
 from topology_parser import on_same_node, parse_machine_db
 
@@ -31,6 +30,7 @@ MDB= '%s/' % MACHINE_DATABASE
 sys.path.append(MDB)
 import machineinfo
 
+global m_class
 m_class = None
 
 fontsize = 14
@@ -47,7 +47,7 @@ SENDER_CORE=None             # << for distinction local vs remote - given by out
 tsc_overhead = -1            # << TSC overhead read from  output
 
 import matplotlib
-matplotlib.rcParams['figure.figsize'] = 16.0, 4.0
+matplotlib.rcParams['figure.figsize'] = 12.0, 4.0
 plt.rc('legend',**{'fontsize':fontsize, 'frameon': 'false'})
 matplotlib.rcParams.update({'font.size': fontsize, 'xtick.labelsize':fontsize, 'ytick.labelsize':fontsize})
 
@@ -74,9 +74,19 @@ label_lookup = {
     'agreement': '2PC'
 }
 
-def do_plot(cores_remote, cores_local, z, e, h, d, mode, machine):
+def do_plot(cores_remote, cores_local, z, e, h, d, mode, machine, show_accurracy=False):
+    """Plot data
+
+    @param show_accurracy If set, rather than printing the measured
+    values, generate a new heat-map with the accurracy of the raw
+    n-send data, when applied to each core in the send history
+    compared to the measured "sum" data.
+
+    """
     # PREPARE heat map plot
     # --------------------------------------------------
+
+    print h
 
     # make these smaller to increase the resolution
     dx, dy = 1.0, 1.0 # 0.15, 0.05
@@ -85,9 +95,28 @@ def do_plot(cores_remote, cores_local, z, e, h, d, mode, machine):
     Y, X = np.mgrid[slice(0, cores_remote+1, dy),
                     slice(0, cores_local+1, dx)]
 
+    _vmin = None
+    _vmax = None
+    Z = z.copy()
+
+    if show_accurracy:
+        for r in range(0,cores_remote):
+            for l in range(0, cores_local):
+
+                if r==0 and l==0:
+                    continue
+
+                # Get cost of history
+                pairwise_cost = m_class.get_send_history_cost(SENDER_CORE, h[r][l])
+
+                Z[r][l] = pairwise_cost/float(d['sum'][r][l])
+                _vmin = 0.0
+                _vmax = 2.0
+
+
     fig, ax = plt.subplots()
 
-    plt.pcolor(X, Y, z, cmap=tab_cmap) # , vmin=1-z_dist, vmax=1+z_dist)
+    plt.pcolor(X, Y, Z, cmap=tab_cmap, vmin=_vmin, vmax=_vmax)
     cb = plt.colorbar()
 
     color=cm.rainbow(numpy.linspace(0,1,cores_remote))
@@ -220,15 +249,22 @@ def plot_multimesage(machine, f, output_last=True, calc_diff=True):
                 z[r][l] =    data[m][r][l]
                 e[r][l] =     err[m][r][l]
 
-        do_plot(cores_remote, cores_local, z, e, history[m], data, m, machine)
+        do_plot(cores_remote, cores_local, z, e, history[m], data, m, machine, arg.accuracy)
 
 
 
 import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument('--machines')
+parser.add_argument('--accuracy', help=('Accuracy of the raw n-receive measurements compared'
+                                        'to the real execution of the send history'),
+                    dest='accuracy', action='store_true')
+parser.set_defaults(Accuracy=False)
+
+global arg
 arg = parser.parse_args()
 
+from tableau20 import tab_cmap, colors
 import machineinfo
 _all_machines = [ s for (s, _, _) in machineinfo.machines ]
 machines = _all_machines if not arg.machines else arg.machines.split()
@@ -245,7 +281,6 @@ for m in machines:
         config.args = SimArgs()
         config.args.machine = m
 
-        global m_class
         m_class = NetosMachine()
 
         _name = '%s/%s/multimessage.gz' % (MDB, m)
