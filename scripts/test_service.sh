@@ -8,7 +8,9 @@ echo "--------------------------------------------------"
 SERVER_PID=0
 
 SCRIPTDIR=$(dirname $0)
-source $SCRIPTDIR/common.sh
+F=$SCRIPTDIR/common.sh
+echo "sourcing common files $F"
+source $F
 
 function terminate() {
 

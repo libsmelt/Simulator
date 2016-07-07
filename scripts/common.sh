@@ -8,6 +8,8 @@ function download_model() {
     # Download the machine model
     # --------------------------------------------------
 
+    echo " --> downloading model"
+
     mkdir -p 'visu/' 'graphs/'
 
     download_model
