@@ -44,7 +44,7 @@ function assert_sim_running() {
 get_model
 
 # Execute Simulator in background
-./simulator.py --server 2>&1  &
+python ./simulator.py --server 2>&1  &
 SERVER_PID=$!
 
 # Wait for Simulator to come up

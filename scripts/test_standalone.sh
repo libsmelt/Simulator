@@ -16,7 +16,7 @@ TOPOS="adaptivetree adaptivetree-mm adaptivetree-mm-shuffle adaptivetree-mm-shuf
 # Execute simulator for each topology, indicate error in case of fail
 for t in $TOPOS
 do
-    ./simulator.py gruyere $t || error "Failed for topo $t"
+    python ./simulator.py gruyere $t || error "Failed for topo $t"
 done
 
 # Everything fine, indicate success
