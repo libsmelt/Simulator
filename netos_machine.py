@@ -76,18 +76,12 @@ class NetosMachine(model.Model):
         self.mm_last = False
         self.opt_reverse_recv = False
 
-        mmtypes = [ 'all', 'last' ]
-        self.mm = [ None for i in range(len(mmtypes)) ]
+        self.mm = None
 
         print 'Using Multimessage data', fname
         try:
             f = gzip.open(fname, 'r')
-
-            for (i, mmtype) in enumerate(mmtypes):
-
-                self.mm[i] = MultiMessage(f, self, mmtype)
-                f.seek(0) # reset file cursor
-
+            self.mm = MultiMessage(f, self)
             f.close()
         except IOError:
             print 'No multimessage data for this machine'
