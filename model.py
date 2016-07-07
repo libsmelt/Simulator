@@ -30,7 +30,7 @@ class Model(object):
         try:
             self.machine_topology = topology_parser.parse_machine_db(self.get_name())
         except:
-            print 'Warning: topology parser did not find machine data'
+            helpers.warn('Warning: topology parser did not find machine data')
             self.machine_topology = {}
             raise
 #            pass
@@ -106,8 +106,6 @@ class Model(object):
 
         """
         cost = 0
-
-        print "Determining the cost of history", str(cores)
 
         for c in cores:
             cost += self.query_send_cost(sender, c)

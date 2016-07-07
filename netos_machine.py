@@ -65,6 +65,8 @@ class NetosMachine(model.Model):
         # Build a graph model
         super(NetosMachine, self).__init__()
 
+        self.send_history = {}
+
         # Read multimessage data
         fname = '%s/%s/multimessage.gz' % \
                 (config.MACHINE_DATABASE, self.get_name())
@@ -83,7 +85,7 @@ class NetosMachine(model.Model):
 
             for (i, mmtype) in enumerate(mmtypes):
 
-                self.mm[i] = MultiMessage(f, mmtype)
+                self.mm[i] = MultiMessage(f, self, mmtype)
                 f.seek(0) # reset file cursor
 
             f.close()
@@ -92,7 +94,6 @@ class NetosMachine(model.Model):
         except:
             raise
 
-        self.send_history = {}
         self.reset()
 
     def reset(self):
