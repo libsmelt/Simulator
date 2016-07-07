@@ -238,7 +238,7 @@ class Model(object):
         We then use these measurements for the receive cost in the simulator
 
         """
-        fname = '%s/%s/pairwise_receive' % \
+        fname = '%s/%s/pairwise-nsend_receive' % \
                 (config.MACHINE_DATABASE, self.get_name())
         f = open(fname)
         assert not self.recv_cost
