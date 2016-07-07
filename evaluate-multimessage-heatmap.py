@@ -23,6 +23,7 @@ from tableau20 import tab_cmap, colors
 from topology_parser import on_same_node, parse_machine_db
 
 import matplotlib
+from multimessage import MultiMessage
 
 from config import MACHINE_DATABASE
 MDB= '%s/' % MACHINE_DATABASE
@@ -160,114 +161,19 @@ def plot_multimesage(machine, f, output_last=True, calc_diff=True):
 
     """
 
-    topology = parse_machine_db(machine)
+    global SENDER_CORE
 
+    topology = parse_machine_db(machine)
     print "parsing multimessasge for " + machine
 
-    cores_local = 0
-    cores_remote = 0
     cores_total = 0
-
-    data = {}
-    err = {}
-    history = {}
 
     # PARSE INPUT
     # --------------------------------------------------
-
-    import debug
-
-    global SENDER_CORE
-
-    for line in f:
-
-        # Format:
-        # cores=01,02,03,04,08,12,16,20,24,28, mode=all , avg=109, stdev=13, med=106, min=98, max=355 cycles, count=1800, ignored=3200
-
-        m = re.match('cores=([0-9,]+), mode=([^,]+), avg=(\d+), stdev=(\d+), med=(\d+), min=(\d+), max=(\d+) cycles, count=(\d+), ignored=(\d+)', line)
-        if m :
-            cores = map(int, m.group(1).split(','))
-
-            l_cores = []
-            r_cores = []
-
-            print 'Found cores', str(cores)
-
-            assert SENDER_CORE != None
-
-            local = False # we execute remote sends first
-            for c in cores:
-                _local = on_same_node(topology, SENDER_CORE, c)
-                assert not local or _local # no local message after remote ones
-                local = _local
-
-                if _local:
-                    l_cores.append(c)
-                else:
-                    r_cores.append(c)
-
-            print 'local', l_cores
-            print 'remote', r_cores
-
-            l = len(l_cores)
-            r = len(r_cores)
-
-            mode = m.group(2).rstrip()
-            print 'found l=', l, 'r=', r, 'sender=', SENDER_CORE, \
-                           'cores=', cores, 'mode=', mode, 'value=', int(m.group(3))
-
-            if not mode in data:
-                continue
-
-            data   [mode][r][l] = int(m.group(3)) # arr[r][l]
-            err    [mode][r][l] = int(m.group(4))
-            history[mode][r][l] = cores # remember which core where used for that batch
-
-            # # Store depending on type of measurement
-            # if int(m.group(3)) == 1 :
-            #     data_last[r][l] = int(m.group(4))
-            #     err_last[r][l] = int(m.group(5))
-            # else :
-            #     data_all[r][l] = int(m.group(4))
-            #     err_all[r][l] = int(m.group(5))
-
-            #     if l + r == 1: # Only one message sent
-            #         _last = 0
-            #     else:
-            #         if l > 0: # Last message was a local one
-            #             _last = data_diff[r][l-1]
-            #         else:
-            #             _last = data_diff[r-1][l]
-
-            #     data_diff[r][l] = int(m.group(4)) - _last
+    tmp = MultiMessage.parse(f, topology, mode_list)
+    SENDER_CORE, cores_local, cores_remote, tsc_overhead, data, err, history = tmp
 
 
-        m = re.match('Calibrating TSC overhead is (\d+) cycles', line)
-        if m:
-            print "TSC " + m.group(1)
-            tsc_overhead = int(m.group(1))
-
-        # num_cores: local=7 remote=3
-        m = re.match('num_cores: local=(\d+) remote=(\d+)', line)
-        if m:
-            cores_local = int(m.group(1)) + 1
-            cores_remote = int(m.group(2)) + 1
-            print "num_local_cores "  + str(cores_local)
-            print "num_remote_cores " + str(cores_remote)
-
-            for l in mode_list: # arr[r][l]
-                data[l] =    [[0  for i in range(cores_local)] for j in range(cores_remote)]
-                err[l] =     [[0  for i in range(cores_local)] for j in range(cores_remote)]
-                history[l] = [[[] for i in range(cores_local)] for j in range(cores_remote)]
-
-        # sender: 12
-        m = re.match('sender: (\d+)', line)
-        if m:
-            SENDER_CORE = int(m.group(1))
-            print "sender is: ", SENDER_CORE
-
-
-    # END -- parsing file
 
     assert tsc_overhead >= 0
     if 'last' in mode_list:
