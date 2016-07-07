@@ -30,8 +30,10 @@ MDB= '%s/' % MACHINE_DATABASE
 sys.path.append(MDB)
 import machineinfo
 
+m_class = None
+
 fontsize = 14
-mode_list = [ 'sum', 'last', 'all' ]
+mode_list = [ 'last', 'sum' ]
 
 # CONFIGURE FONT
 # --------------------------------------------------
@@ -44,7 +46,7 @@ SENDER_CORE=None             # << for distinction local vs remote - given by out
 tsc_overhead = -1            # << TSC overhead read from  output
 
 import matplotlib
-matplotlib.rcParams['figure.figsize'] = 8.0, 4.0
+matplotlib.rcParams['figure.figsize'] = 16.0, 4.0
 plt.rc('legend',**{'fontsize':fontsize, 'frameon': 'false'})
 matplotlib.rcParams.update({'font.size': fontsize, 'xtick.labelsize':fontsize, 'ytick.labelsize':fontsize})
 
@@ -71,7 +73,7 @@ label_lookup = {
     'agreement': '2PC'
 }
 
-def do_plot(cores_remote, cores_local, z, e, mode, machine):
+def do_plot(cores_remote, cores_local, z, e, h, d, mode, machine):
     # PREPARE heat map plot
     # --------------------------------------------------
 
@@ -92,14 +94,33 @@ def do_plot(cores_remote, cores_local, z, e, mode, machine):
     # PRINT MEASUREMENTS
     # --------------------------------------------------
 
-    for x in range(0,cores_local):
-        for y in range(0, cores_remote):
+    for r in range(0,cores_remote):
+       for l in range(0, cores_local):
+
+            if r==0 and l==0:
+                continue
+
             color = 'black'
-            plt.text(x + 0.5, y + 0.5, '%.0f (%.0f)' % (z[y][x], e[y][x]),
+            pairwise_cost = m_class.get_send_history_cost(SENDER_CORE, h[r][l])
+
+            x = l
+            y = r
+
+            # Output multimessage + cores
+            #label = '%.0f %s' % (z[r][l], ','.join(map(str,h[r][l])))
+
+            # Output multimessage + pairwise estimate + std error
+            #label = '%.0f %.f (%.0f)' % (z[r][l], pairwise_cost, e[r][l])
+
+            # Output multimessage + pairwise estimate + relative error
+            rel_error = pairwise_cost/float(d['sum'][r][l])
+            label = '%.0f %.f (%.3f)' % (z[r][l], pairwise_cost, rel_error)
+
+            plt.text(x + 0.5, y + 0.5, label,
                      horizontalalignment='center',
                      verticalalignment='center',
                      color=color,
-                     fontsize=11)
+                     fontsize=9)
 
 
     # CONFIGURE AXIS
@@ -149,11 +170,14 @@ def plot_multimesage(machine, f, output_last=True, calc_diff=True):
 
     data = {}
     err = {}
+    history = {}
 
     # PARSE INPUT
     # --------------------------------------------------
 
     import debug
+
+    global SENDER_CORE
 
     for line in f:
 
@@ -189,10 +213,15 @@ def plot_multimesage(machine, f, output_last=True, calc_diff=True):
             r = len(r_cores)
 
             mode = m.group(2).rstrip()
-            print 'found l=', l, 'r=', r, SENDER_CORE, cores, mode, int(m.group(3))
+            print 'found l=', l, 'r=', r, 'sender=', SENDER_CORE, \
+                           'cores=', cores, 'mode=', mode, 'value=', int(m.group(3))
 
-            data[mode][r][l] = int(m.group(3))
-            err[mode][r][l] = int(m.group(4))
+            if not mode in data:
+                continue
+
+            data   [mode][r][l] = int(m.group(3)) # arr[r][l]
+            err    [mode][r][l] = int(m.group(4))
+            history[mode][r][l] = cores # remember which core where used for that batch
 
             # # Store depending on type of measurement
             # if int(m.group(3)) == 1 :
@@ -223,12 +252,13 @@ def plot_multimesage(machine, f, output_last=True, calc_diff=True):
         if m:
             cores_local = int(m.group(1)) + 1
             cores_remote = int(m.group(2)) + 1
-            print "num_local_cores " + str(cores_local)
-            print "num_cluster " + str(cores_remote)
+            print "num_local_cores "  + str(cores_local)
+            print "num_remote_cores " + str(cores_remote)
 
-            for l in mode_list:
-                data[l] = [[0 for i in range(cores_local)] for j in range(cores_remote)]
-                err[l] = [[0 for i in range(cores_local)] for j in range(cores_remote)]
+            for l in mode_list: # arr[r][l]
+                data[l] =    [[0  for i in range(cores_local)] for j in range(cores_remote)]
+                err[l] =     [[0  for i in range(cores_local)] for j in range(cores_remote)]
+                history[l] = [[[] for i in range(cores_local)] for j in range(cores_remote)]
 
         # sender: 12
         m = re.match('sender: (\d+)', line)
@@ -238,16 +268,15 @@ def plot_multimesage(machine, f, output_last=True, calc_diff=True):
 
 
     # END -- parsing file
+
     assert tsc_overhead >= 0
-    for m in mode_list:
+    if 'last' in mode_list:
         for r in range(cores_remote):
             for l in range(cores_local):
                 if r==0 and l==0:
                     continue
 
-                print data[m][r][l]
-                data[m][r][l] -= tsc_overhead
-                print '->', data[m][r][l]
+                data['last'][r][l] -= tsc_overhead
 
     #  Substract TSC
 
@@ -276,15 +305,16 @@ def plot_multimesage(machine, f, output_last=True, calc_diff=True):
 
 
     for m in mode_list:
-        z = np.zeros((cores_remote, cores_local), dtype=np.float)
+        z = np.zeros((cores_remote, cores_local), dtype=np.float) # arr[r][l]
         e = np.zeros((cores_remote, cores_local), dtype=np.float)
-        for x in range(cores_remote):
-            for y in range(cores_local):
-                if data[m][x][y] == 0:
-                    print 'Warning', m, x, y, 'is 0'
-                z[x][y] = data[m][x][y]
-                e[x][y] =  err[m][x][y]
-        do_plot(cores_remote, cores_local, z, e, m, machine)
+        for r in range(cores_remote):
+            for l in range(cores_local):
+                if data[m][r][l] == 0:
+                    print 'Warning', m, r, l, 'is 0'
+                z[r][l] =    data[m][r][l]
+                e[r][l] =     err[m][r][l]
+
+        do_plot(cores_remote, cores_local, z, e, history[m], data, m, machine)
 
 
 
@@ -299,6 +329,19 @@ machines = _all_machines if not arg.machines else arg.machines.split()
 
 for m in machines:
     try:
+
+        # Initialize machine to get pairwise send costs
+        import config
+        from netos_machine import NetosMachine
+        from server import SimArgs
+
+        # Set machine name
+        config.args = SimArgs()
+        config.args.machine = m
+
+        global m_class
+        m_class = NetosMachine()
+
         _name = '%s/%s/multimessage.gz' % (MDB, m)
         print _name
         f = gzip.open(_name, 'r')
