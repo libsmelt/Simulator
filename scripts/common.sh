@@ -12,9 +12,6 @@ function download_model() {
 
     mkdir -p 'visu/' 'graphs/'
 
-    download_model
-    ls -R $MACHINEDB
-
     # Clean model directory
     rm -rf $MACHINEDB
     mkdir -p $MACHINEDB
@@ -22,6 +19,8 @@ function download_model() {
     # Download and install model
     wget 'http://people.inf.ethz.ch/skaestle/machinemodel.gz' -O "machinemodel.gz"
     tar -xzf "machinemodel.gz" -C $MACHINEDB
+
+    ls -R $MACHINEDB
 }
 
 
