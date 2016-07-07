@@ -256,14 +256,13 @@ class Model(object):
                 self.recv_cost[(src, dest)] = cost
 
     def _parse_send_result_file(self):
-        """
-        Parse pairwise send cost results measure with the UMP send
-        benchmark in the Barrelfish tree.
+        """Parse pairwise send cost results.
 
-        We then use these measurements for the send cost in the simulator
+        For each pair of cores, the input values indicate the cost of
+        sending a message between that pair of cores.
 
         """
-        fname = '%s/%s/pairwise_send' % \
+        fname = '%s/%s/pairwise-nsend_send' % \
                 (config.MACHINE_DATABASE, self.get_name())
         f = open(fname)
         assert not self.send_cost
