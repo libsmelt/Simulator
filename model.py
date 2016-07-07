@@ -97,7 +97,24 @@ class Model(object):
         """
         return self._get_send_cost(src, dest, batchsize)
 
-    
+
+    def get_send_history_cost(self, sender, cores):
+        """Return the send cost for the given history of cores.
+
+        @param sender int The core ID of the sender.
+        @param cores list(int) The cores in the send history.
+
+        """
+        cost = 0
+
+        print "Determining the cost of history", str(cores)
+
+        for c in cores:
+            cost += self.query_send_cost(sender, c)
+
+        return cost
+
+
     def get_send_cost(self, src, dest, batchsize=1):
         """
         The cost of the send operation (e.g. to work to done on the
