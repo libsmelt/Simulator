@@ -7,6 +7,8 @@ echo "--------------------------------------------------"
 # PID of the Simulator server
 SERVER_PID=0
 
+LOG="simulator-server.log"
+
 SCRIPTDIR=$(dirname $0)
 F=$SCRIPTDIR/common.sh
 echo "sourcing common files $F"
@@ -17,7 +19,7 @@ function terminate() {
     echo "Shutdown requested"
     echo "Dumping Simulator log"
     echo "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
-    cat "simulator-server.log"
+    cat $LOG
     echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
     kill $SERVER_PID > /dev/null 2>&1;
 }
@@ -52,7 +54,7 @@ get_model
 
 # Execute Simulator in background
 echo " --> Starting Simulator server"
-python ./simulator.py --server 2>&1  &
+python ./simulator.py --server 2>&1 >$LOG &
 SERVER_PID=$!
 
 # Wait for Simulator to come up
