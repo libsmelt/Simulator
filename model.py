@@ -23,7 +23,6 @@ class Model(object):
 
         self.evaluation = None
         self.send_cost = {}
-        self.send_cost_batch = {}
         self.recv_cost = {}
 
         assert graph == None
@@ -40,7 +39,6 @@ class Model(object):
         # build the graph with the pairwise measurements.
         self._parse_receive_result_file()
         self._parse_send_result_file()
-        self._parse_send_result_file_batch()
 
         self.graph = self._build_graph()
 
@@ -278,40 +276,6 @@ class Model(object):
                 self.send_cost[(src, dest)] = cost
 
 
-    def _parse_send_result_file_batch(self):
-        """
-        Parse pairwise send cost results measure with the UMP send
-        benchmark in the Barrelfish tree.
-
-        We then use these measurements for the send cost in the simulator
-
-        """
-        fname = '%s/%s/pairwise_send_batch' % \
-                (config.MACHINE_DATABASE, self.get_name())
-        try:
-            f = open(fname)
-        except:
-            for ((src,dest), cost) in self.send_cost.items():
-                self.send_cost_batch[(src,dest,1)] = cost
-            return
-            
-        assert not self.send_cost_batch
-        print 'Reading batched send costs'
-        for l in f.readlines():
-            l = l.rstrip()
-            m = re.match('(\d+)\s+(\d+)\s+(\d+)\s+([0-9.]+)\s+([0-9.]+)', l)
-            if m:
-                (src, dest, batchsize, cost, stderr) = (int(m.group(1)),
-                                                        int(m.group(2)),
-                                                        int(m.group(3)),
-                                                        float(m.group(4)),
-                                                        float(m.group(5)))
-                assert (src, dest, batchsize) not in self.send_cost_batch
-                self.send_cost_batch[(src, dest, batchsize)] = cost
-                logging.info(('Adding %d -> %d - batchsize %d - cost %d' % \
-                    (src, dest, batchsize, cost)))
-
-
     def _get_receive_cost(self, src, dest):
         """
         Return the receive cost for a pair (src, dest) of cores
@@ -326,26 +290,19 @@ class Model(object):
 
 
     def _get_send_cost(self, src, dest, batchsize=1):
-        """
-        Return the send cost for a pair (src, dest) of cores
+        """Return the send cost for a pair (src, dest) of cores
+
+        @param batchsize Batches are now captured in the multimessage
+        benchmark.
 
         """
         if (src==dest):
             return 0
 
-        if batchsize==1:
-            assert (src, dest) in self.send_cost
-            return self.send_cost[(src, dest)]
+        assert (src, dest) in self.send_cost
+        return self.send_cost[(src, dest)]
 
-        else:
-            # High numbers of batches might not be in the pairwise results
-            while not (src, dest, batchsize) in self.send_cost_batch and batchsize>1:
-                batchsize -= 1
-                
-            assert (src, dest, batchsize) in self.send_cost_batch
-            return self.send_cost_batch[(src, dest, batchsize)]/batchsize
 
-        
     def get_receive_send_ratio(self):
         """Get ratio of receive and send costs
 
