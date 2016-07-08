@@ -130,6 +130,7 @@ class AB(Protocol):
             # Send a message
             # --------------------------------------------------
 
+            # Select the node to send to
             dest = nb_filtered[0]
 
             # Determine the cost of the send operation. This is needed
@@ -778,7 +779,7 @@ class Evaluate():
 
         """
         (p, e) = heapq.heappop(self.event_queue)
-        assert(p>=self.sim_round)
+        assert(p>=self.sim_round) # Otherwise, we pick up events that should have happened in the past
         self.sim_round = p
 
         d = int(e.dest) if e.dest != None else -1

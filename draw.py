@@ -119,7 +119,7 @@ class Output():
         settings = [""]
         if not self.model.on_same_numa_node(core, sender):
             settings.append('semithick')
-            settings.append('color=red')
+            settings.append('color=color6')
         # Arrow indicating flow
         self.f.write("\\draw[->%s] ($(s_%s_%s.east)-(1\\sku,0\\sku)$) -- ($(r_%s_%s.west)+(1\\sku,0\\sku)$); \n" % \
                          (','.join(settings), sender, core, sender, core))

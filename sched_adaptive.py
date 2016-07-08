@@ -275,6 +275,11 @@ class SchedAdaptive(scheduling.Scheduling):
         @param cores_active List of active nodes
         @return A list containing all inactive nodes sorted by cost.
         """
+
+        # We calculate the adaptive tree only once. After we finished
+        # this, we just return whatever tree was generated in the
+        # first iteration.
+
         if self.finished:
             return self.store[sending_node]
 
