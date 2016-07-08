@@ -11,6 +11,8 @@ from pygraph.algorithms.minmax import shortest_path
 from pygraph.classes.graph import graph
 from pygraph.classes.digraph import digraph
 
+import itertools
+
 import gzip
 from multimessage import MultiMessage
 
@@ -92,18 +94,25 @@ class Model(object):
         return None
 
     def get_num_numa_nodes(self):
-        return None
+        """Get the number of NUMA nodes
+        """
+        return len(self.machine_topology['NUMA'].get())
+
 
     def get_num_cores(self):
-        return None
+        return self.machine_topology['numcpus']
+
 
     def get_cores_per_node(self):
-        print helpers.bcolors.WARNING + "Warning: Deprecated?" + helpers.bcolors.ENDC
-        assert self.get_num_numa_nodes() is not None # Should be overriden in childs
-        if self.get_num_numa_nodes()>0:
-            return self.get_num_cores() / self.get_num_numa_nodes()
-        else:
-            return self.get_num_cores()
+        """Deprecated: This should ONLY be used for visualization purposes,
+        and never for actually generating the model (use pairwise
+        measurements for that)
+
+
+        Assumptions: All NUMA nodes have the same number of cores.
+        """
+        return len(self.machine_topology['NUMA'].get()[0])
+
 
     # Transport cost
     def get_cost_within_numa(self):
@@ -201,7 +210,8 @@ class Model(object):
         list. Every element of the outer list represents a NUMA node
         and the inner list the cores in that NUMA node.
         """
-        return None
+        return self.machine_topology['NUMA'].get()
+
 
     # --------------------------------------------------
     # Helpers
@@ -212,9 +222,9 @@ class Model(object):
         participate in multicast.
 
         """
-        n = [ c for c in range(self.get_num_cores()) ]
-        n = self.filter_active_cores(n, only_active)
-        return n
+        c = list(itertools.chain.from_iterable(self.machine_topology['NUMA'].get()))
+        c = self.filter_active_cores(c, only_active)
+        return c
 
 
     def filter_active_cores(self, n, only_active):
@@ -255,6 +265,13 @@ class Model(object):
                 return core2 in node
         return None
 
+
+    def get_numa_node_by_id(self, nidx):
+        """Get all cores on the given NUMA node
+        """
+        return self.machine_topology['NUMA'].get()[nidx]
+
+
     def get_numa_node(self, core1):
         """Return all cores that are on the same NUMA node then the given core.
 
@@ -267,13 +284,15 @@ class Model(object):
                 numa_node.append(node)
         return numa_node
 
-    def get_numa_id(self, core1):
+
+    def get_numa_id(self, c):
+        """Determine ID of the NUMA node <core1> resides on.
         """
-        Determine NUMA node for the given core
-        """
-        print helpers.bcolors.WARNING + "Warning: Deprecated: get_numa_id" \
-            + helpers.bcolors.ENDC
-        return core1 / self.get_cores_per_node()
+        nodes = self.machine_topology['NUMA'].get()
+        for (n, i) in zip(nodes, range(len(nodes))):
+            if c in n:
+                return i
+
 
     # --------------------------------------------------
 
@@ -376,7 +395,7 @@ class Model(object):
         if (src==dest):
             return 0
         assert (src, dest) in self.recv_cost
-        return self.recv_cost[(src, dest)] # - self.mm.tsc_overhead
+        return self.recv_cost[(src, dest)]
 
 
     def get_receive_send_ratio(self):
