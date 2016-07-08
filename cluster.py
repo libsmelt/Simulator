@@ -61,6 +61,7 @@ class Cluster(overlay.Overlay):
                 if co<c:
                     weight = self.mod.get_graph().edge_weight((c, co))
                     g_numa.add_edge((c, co), weight)
+                    g_numa.add_edge((co, c), weight)
                     logging.info(("Adding edge to NUMA node %d %d, "
                                   "with weight %d") % (c, co, weight))
 
