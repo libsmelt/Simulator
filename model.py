@@ -123,19 +123,6 @@ class Model(object):
         print helpers.bcolors.WARNING + "Warning: Deprecated?" + helpers.bcolors.ENDC
         return 10
 
-    # Node processing cost
-    def get_receive_cost(self, src, dest):
-        """
-        The cost of receive operations on dest for messages from
-        src. This is essentially the time required for the memory read
-        in case of a new message, which in turn is the time required
-        by the cache-coherency protocol to update the (at this point
-        invalid) cache-line in the local cache with the updates
-        version in the senders cache.
-        """
-        return self._get_receive_cost(src, dest)
-
-
     def get_send_history_cost(self, sender, cores, corrected=False):
         """Return the send cost for the given history of cores.
 
@@ -385,7 +372,7 @@ class Model(object):
                 self.send_cost[(src, dest)] = cost
 
 
-    def _get_receive_cost(self, src, dest):
+    def get_receive_cost(self, src, dest):
         """
         Return the receive cost for a pair (src, dest) of cores
 

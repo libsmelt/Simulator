@@ -59,7 +59,9 @@ class NetosMachine(model.Model):
         machine.
 
         The cost of communication for each pair of cores is the
-        send_cost + receive_cost on that link.
+        send_cost + receive_cost on that link. This is set as edge
+        weight and used by the sort_longest scheduler when sorting
+        edges.
 
         """
 
@@ -73,7 +75,7 @@ class NetosMachine(model.Model):
             for rcv in _c_list:
                 if snd!=rcv:
                     snd_cost = self.get_send_cost(snd, rcv)
-                    rcv_cost = self._get_receive_cost(snd, rcv)
+                    rcv_cost = self.get_receive_cost(snd, rcv)
                     gr.add_edge((snd, rcv), snd_cost + rcv_cost)
 
         return gr
