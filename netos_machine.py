@@ -76,7 +76,7 @@ class NetosMachine(model.Model):
                 if snd!=rcv:
                     snd_cost = self.get_send_cost(snd, rcv)
                     rcv_cost = self.get_receive_cost(snd, rcv)
-                    gr.add_edge((snd, rcv), snd_cost + rcv_cost)
+                    gr.add_edge((snd, rcv), rcv_cost)
 
         return gr
 
