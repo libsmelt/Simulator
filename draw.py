@@ -94,7 +94,7 @@ class Output():
         "Visualize send operation"
         name = 's_%s_%s' % (core, to)
 
-        self.f.write("\\node[draw,fill=color2!50,minimum width=%d\\sku, minimum height=%d\\sku,anchor=west] "\
+        self.f.write("\\node[draw,fill=color2!50,inner sep=0,minimum width=%d\\sku, minimum height=%d\\sku,anchor=west] "\
                          "(%s) at (%d\\sku,%d\\sku) {};\n" % \
                          (self._scale_cost(cost), self._scale_height(1), name, \
                           self._scale_time(time), \
