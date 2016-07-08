@@ -117,11 +117,9 @@ class Output():
 
         # Iteratively add settings for drawing the connection
         settings = [""]
-        import numa_model
-        if isinstance(self.model, numa_model.NUMAModel):
-            if not self.model.on_same_numa_node(core, sender):
-                settings.append('semithick')
-                settings.append('color=red')
+        if not self.model.on_same_numa_node(core, sender):
+            settings.append('semithick')
+            settings.append('color=red')
         # Arrow indicating flow
         self.f.write("\\draw[->%s] ($(s_%s_%s.east)-(1\\sku,0\\sku)$) -- ($(r_%s_%s.west)+(1\\sku,0\\sku)$); \n" % \
                          (','.join(settings), sender, core, sender, core))
