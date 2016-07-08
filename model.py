@@ -11,6 +11,9 @@ from pygraph.algorithms.minmax import shortest_path
 from pygraph.classes.graph import graph
 from pygraph.classes.digraph import digraph
 
+import gzip
+from multimessage import MultiMessage
+
 # --------------------------------------------------
 class Model(object):
 
@@ -26,23 +29,55 @@ class Model(object):
         self.recv_cost = {}
 
         self.send_history = {}
+        self.mm = None # MultiMessage benchmark - see NetosMachine
 
         assert graph == None
 
+        # Topology parser
+        # --------------------------------------------------
         try:
             self.machine_topology = topology_parser.parse_machine_db(self.get_name())
         except:
             helpers.warn('Warning: topology parser did not find machine data')
             self.machine_topology = {}
             raise
-#            pass
+
+
+        # Pairwise
+        # --------------------------------------------------
 
         # Parse pairwise send and receive costs. We need this to
         # build the graph with the pairwise measurements.
         self._parse_receive_result_file()
         self._parse_send_result_file()
 
+
+        # Multimessage
+        # --------------------------------------------------
+        mm_fname = '%s/%s/multimessage.gz' % \
+                   (config.MACHINE_DATABASE, self.get_name())
+
+        # These will be enabled from overlay.py
+        self.enable_mm = False
+        self.mm_last = False
+
+        self.mm = None
+
+        print 'Reading multimessage data: ', mm_fname
+        try:
+            f = gzip.open(mm_fname, 'r')
+            self.mm = MultiMessage(f, self)
+            f.close()
+        except IOError:
+            print 'No multimessage data for this machine'
+        except:
+            raise
+
+        # Build graph and reset
+        # --------------------------------------------------
         self.graph = self._build_graph()
+        self.reset()
+
 
     def reset(self):
         """Reset the model:
@@ -341,7 +376,7 @@ class Model(object):
         if (src==dest):
             return 0
         assert (src, dest) in self.recv_cost
-        return self.recv_cost[(src, dest)]
+        return self.recv_cost[(src, dest)] # - self.mm.tsc_overhead
 
 
     def get_receive_send_ratio(self):

@@ -5,10 +5,7 @@ import sys
 
 import model
 import config
-import topology_parser
 import itertools
-import gzip
-from multimessage import MultiMessage
 
 from pygraph.classes.digraph import digraph
 
@@ -39,17 +36,6 @@ class NetosMachine(model.Model):
     # Machine name
     name = None
 
-    # Enable multimessage support
-    enable_mm = False
-
-    # Choose type of multimessage benchmark to use
-    # Default: all - can be selected with topology:
-    #    mm      --> use multimessage with "last"
-    #    mm_last --> use multimessage with "all"
-    mm_last = False
-
-    opt_reverse_recv = False
-
     def __init__(self):
         """Initialize the Simulator for a NetOS machine.
 
@@ -64,29 +50,6 @@ class NetosMachine(model.Model):
 
         # Build a graph model
         super(NetosMachine, self).__init__()
-
-        # Read multimessage data
-        fname = '%s/%s/multimessage.gz' % \
-                (config.MACHINE_DATABASE, self.get_name())
-
-        # These will be enabled from overlay.py
-        self.enable_mm = False
-        self.mm_last = False
-        self.opt_reverse_recv = False
-
-        self.mm = None
-
-        print 'Using Multimessage data', fname
-        try:
-            f = gzip.open(fname, 'r')
-            self.mm = MultiMessage(f, self)
-            f.close()
-        except IOError:
-            print 'No multimessage data for this machine'
-        except:
-            raise
-
-        self.reset()
 
     def get_num_numa_nodes(self):
         """Get the number of NUMA nodes
