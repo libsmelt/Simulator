@@ -125,7 +125,7 @@ class SchedAdaptive(scheduling.Scheduling):
                     print 'Warning', child, 'not yet in queue'
                     all_children = False
                     break
-                c_cost += self.mod.query_send_cost(c, child)
+                c_cost += self.mod.get_send_cost(c, child, corrected=True)
                 c_cost += cost[child]
 
                 # Note: core c will not be in the FIFO queue any
@@ -222,7 +222,7 @@ class SchedAdaptive(scheduling.Scheduling):
             for _, child in self.store[c]:
 
                 # global time, increases with each child
-                time += self.mod.query_send_cost(c, child)
+                time += self.mod.get_send_cost(c, child, corrected=True)
 
                 # XXX propagate here
 
@@ -358,7 +358,7 @@ class SchedAdaptive(scheduling.Scheduling):
                 # looking for a metric that estimates the total cost of
                 # sending a message across - not just from the perspective
                 # if the sender
-                inactive_nodes.append((self.mod.query_send_cost(sending_node, c)+\
+                inactive_nodes.append((self.mod.get_send_cost(sending_node, c, False, False)+\
                                        self.mod.get_receive_cost(sending_node, c), c))
 
             logging.info('%s %d -> %d, as node_active=%d and same_node=%d' % \
@@ -393,14 +393,21 @@ class SchedAdaptive(scheduling.Scheduling):
         # spent on the sender
 
         if self.mod.on_same_numa_node(next_r, sending_node):
-            next_hop = (self.mod.query_send_cost(sending_node, next_r), next_r)
+            # LOCAL SEND
+            # --------------------------------------------------
+            next_hop = (self.mod.get_send_cost(sending_node, next_r, False, False), next_r)
 
         else:
-            # Add other cores from same node, but ONLY if they are
-            # multicast members
+            # REMOTE SEND
+            # --------------------------------------------------
+            # Add other cores from same remote node, but ONLY if they are
+            # multicast members. Essentiall, this means that we selected
+            # the NUMA node to send to and now, we want to select the
+            # cheapest core on that node.
+            # --------------------------------------------------
             c_all = self.mod.filter_active_cores(self.mod.get_numa_node(next_r), True)
             c_all = [ c for c in c_all if not c in cores_active ]
-            c_cost = [ (self.mod.query_send_cost(sending_node, r), r) \
+            c_cost = [ (self.mod.get_send_cost(sending_node, r, False, False), r) \
                        for r in c_all if r != sending_node ]
             # Sort, cheapest node first
             c_cost.sort(key=lambda tup: tup[0])
