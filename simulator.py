@@ -274,6 +274,7 @@ def build_and_simulate():
 if __name__ == "__main__":
 
     import netos_machine
+    print 'Starting Simulator v%s' % helpers.git_version()
 
     # Append NetOS machines
     config.machines += netos_machine.get_list()

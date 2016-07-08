@@ -3,6 +3,7 @@
 import socket
 import sys
 import json
+import helpers
 
 from StringIO import StringIO
 
@@ -66,6 +67,7 @@ def handle_request(r):
     res['model'] = config.models[0]
     res['last_node'] = last_nodes[0]
     res['leaf_nodes'] = leaf_nodes[0]
+    res['git-version'] = helpers.git_version()
 
     print 'Responding with >>>'
     print json.dumps(res)

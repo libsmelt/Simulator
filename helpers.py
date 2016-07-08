@@ -603,3 +603,15 @@ class bcolors:
 
 def warn(msg):
     print bcolors.WARNING + msg + bcolors.ENDC
+
+
+
+
+def git_version():
+    """Determine and return the GIT version
+
+    """
+    from subprocess import Popen, PIPE
+    gitproc = Popen(['git', 'rev-parse','HEAD'], stdout = PIPE)
+    (stdout, _) = gitproc.communicate()
+    return stdout.strip()
