@@ -10,6 +10,7 @@ import matplotlib
 import re
 import helpers
 import config
+import logging
 
 MAX=1000 # choose bigger than #local and #remote
 
@@ -44,7 +45,7 @@ class MultiMessage(object):
                 l_cores = []
                 r_cores = []
 
-                print 'Found cores', str(cores)
+                logging.info('Found cores' + str(cores))
                 assert sender_core != None
 
                 local = False # we execute remote sends first
@@ -58,15 +59,15 @@ class MultiMessage(object):
                     else:
                         r_cores.append(c)
 
-                print 'local', l_cores
-                print 'remote', r_cores
+                logging.info(('local', l_cores))
+                logging.info(('remote', r_cores))
 
                 l = len(l_cores)
                 r = len(r_cores)
 
                 mode = m.group(2).rstrip()
-                print 'found l=', l, 'r=', r, 'sender=', sender_core, \
-                               'cores=', cores, 'mode=', mode, 'value=', int(m.group(3))
+                logging.info(('found l=', l, 'r=', r, 'sender=', sender_core, \
+                              'cores=', cores, 'mode=', mode, 'value=', int(m.group(3))))
 
                 if not mode in data:
                     continue
@@ -78,7 +79,7 @@ class MultiMessage(object):
 
             m = re.match('Calibrating TSC overhead is (\d+) cycles', line)
             if m:
-                print "TSC " + m.group(1)
+                logging.info("TSC " + m.group(1))
                 tsc_overhead = int(m.group(1))
 
             # num_cores: local=7 remote=3
@@ -86,8 +87,8 @@ class MultiMessage(object):
             if m:
                 cores_local = int(m.group(1)) + 1
                 cores_remote = int(m.group(2)) + 1
-                print "num_local_cores "  + str(cores_local)
-                print "num_remote_cores " + str(cores_remote)
+                logging.info("num_local_cores "  + str(cores_local))
+                logging.info("num_remote_cores " + str(cores_remote))
 
                 for l in mode_list: # arr[r][l]
                     data[l] =    [[0  for i in range(cores_local)] for j in range(cores_remote)]
@@ -98,7 +99,7 @@ class MultiMessage(object):
             m = re.match('sender: (\d+)', line)
             if m:
                 sender_core = int(m.group(1))
-                print "sender is: ", sender_core
+                logging.info("sender is: " + str(sender_core))
 
         return (sender_core, cores_local, cores_remote, tsc_overhead, data, err, history)
 
