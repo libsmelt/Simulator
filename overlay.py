@@ -5,6 +5,7 @@ import sort_longest
 import sched_adaptive
 import config
 import helpers
+import naive
 
 import hybrid_model
 import logging
@@ -42,6 +43,7 @@ class Overlay(object):
         @param args list of strings
         """
         for a in args:
+            print 'Overlay: activating argument: [%s]' % a
             self.options[a] = True
             # Some options have to be passed to the Machine
             if a == 'mm' or a == 'mmlast':
@@ -203,7 +205,14 @@ class Overlay(object):
         """Return a scheduler for the given topology and graph.
         """
         print "Initializing scheduler in overlay: %s" % str(final_graph)
-        return sort_longest.SortLongest(final_graph)
+
+
+        if self.options.get('naive', False):
+            return naive.Naive(final_graph)
+
+        else:
+            return sort_longest.SortLongest(final_graph)
+
 
     @staticmethod
     def get_overlay_class(overlay_name):

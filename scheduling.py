@@ -14,7 +14,7 @@ class Scheduling(object):
         @param graph An instance of digraph representing the tree
         topology for which to search a model for.
         """
-        print "Initializing scheduler with %s" % str(graph)
+        print "Initializing scheduler %s with %s" % (str(self), str(graph))
         self.graph = graph
 
     def find_schedule(self, sending_node, active_nodes):
@@ -40,14 +40,17 @@ class Scheduling(object):
         """
         return self.find_schedule(sending_node, active_nodes)
 
-    def _return_neighbors(self, src):
+    def _return_neighbors(self, src, active_nodes):
         """
         Create list of children first, and the cost of the message list
 
+        @param active_nodes List of already active nodes, ignore these.
         """
+        exclude = active_nodes if active_nodes != None else []
         nb = []
         for dest in self.graph.neighbors(src):
-            nb.append((model.edge_weight((src, dest)), dest))
+            if not dest in exclude:
+                nb.append((self.graph.edge_weight((src, dest)), dest))
         return nb
 
     def next_eval(self):

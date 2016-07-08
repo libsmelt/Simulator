@@ -19,5 +19,9 @@ do
     python ./simulator.py gruyere $t || error "Failed for topo $t"
 done
 
+
+# Test naive scheduler
+python ./simulator.py gruyere cluster-naive || error "Failed to execute naive scheduler"
+
 # Everything fine, indicate success
 exit 0
