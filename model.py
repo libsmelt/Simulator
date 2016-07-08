@@ -25,8 +25,10 @@ class Model(object):
         self.send_cost = {}
         self.recv_cost = {}
 
+        self.send_history = {}
+
         assert graph == None
-        
+
         try:
             self.machine_topology = topology_parser.parse_machine_db(self.get_name())
         except:
@@ -43,12 +45,12 @@ class Model(object):
         self.graph = self._build_graph()
 
     def reset(self):
-        """Reset the model: 
+        """Reset the model:
         - history of sends
 
         """
-        return 
-        
+        return
+
     # --------------------------------------------------
     # Characteritics of model
     def get_name(self):
@@ -89,14 +91,6 @@ class Model(object):
         """
         return self._get_receive_cost(src, dest)
 
-    
-    def query_send_cost(self, src, dest, batchsize=1):
-        """In difference to get_send_cost, query_send_cost just retrieves the
-        send cost without adding the message to the history.
-
-        """
-        return self._get_send_cost(src, dest, batchsize)
-
 
     def get_send_history_cost(self, sender, cores, corrected=False):
         """Return the send cost for the given history of cores.
@@ -111,7 +105,7 @@ class Model(object):
         cost = 0
 
         for c in cores:
-            cost += self.query_send_cost(sender, c)
+            cost += self.get_send_cost(sender, c, False, False)
 
         # Correct if requested
         if corrected and self.mm:
@@ -120,23 +114,51 @@ class Model(object):
         return cost
 
 
+    def get_send_cost(self, sender, receiver, corrected=False, add_history=False):
+        """Determine the send cost for a single message on the link <sender>
+        to <receiver> given the sender's previous history.
+
+        @param corrected If corrected is True, correct the send cost
+        based on the previous history
+
+        """
+        if (sender==receiver):
+            return 0
+
+        cost = -1
+
+        if corrected:
+            cost = self.get_send_cost_for_history(sender, receiver,
+                                                  self.send_history.get(sender, []))
+
+        else:
+            cost = self.send_cost[(sender, receiver)]
+
+        if add_history:
+            self.add_send_history(sender, receiver)
+
+        assert cost>0
+        return cost
+
+
     def get_send_cost_for_history(self, sender, receiver, cores):
-        """Determine the cost of sending a message from <sender> to <receiver>
-        given the previous send history <cores>
+
+        """Determine the cost of sending one individual message from <sender>
+        to <receiver> given the previous send history <cores>
+
+        Read from pairwise n-receive and scale by the factor given in
+        multimessage.
 
         """
-        return get_send_history_cost(sender, cores + [receiver], True) - \
-            get_send_history_cost(sender, cores, True)
 
+        cost = self.get_send_cost(sender, receiver, False, False)
 
+        if len(cores) > 0:
+            assert not receiver in cores
+            cost /= self.mm.get_factor(sender, cores + [receiver])
 
-    def get_send_cost(self, src, dest, batchsize=1):
+        return cost
 
-        """
-        The cost of the send operation (e.g. to work to done on the
-        sending node) when sending a message to core dest
-        """
-        return self._get_send_cost(src, dest, batchsize)
 
     def get_numa_information(self):
         """
@@ -161,7 +183,7 @@ class Model(object):
 
 
     def filter_active_cores(self, n, only_active):
-        
+
         if config.args.multicast and only_active:
             n = [ n_ for n_ in n if n_ in map(int, config.get_mc_group()) ]
 
@@ -322,32 +344,18 @@ class Model(object):
         return self.recv_cost[(src, dest)]
 
 
-    def _get_send_cost(self, src, dest, batchsize=1):
-        """Return the send cost for a pair (src, dest) of cores
-
-        @param batchsize Batches are now captured in the multimessage
-        benchmark.
-
-        """
-        if (src==dest):
-            return 0
-
-        assert (src, dest) in self.send_cost
-        return self.send_cost[(src, dest)]
-
-
     def get_receive_send_ratio(self):
         """Get ratio of receive and send costs
 
         """
 
         import tools
-        
+
         cmax = self.get_num_cores()
-        
+
         sends = []
         recvs = []
-        
+
         for s in range(cmax):
             for r in range(cmax):
                 sends.append(self.query_send_cost(s, r))
@@ -358,3 +366,23 @@ class Model(object):
 
 
         return s_avg/r_avg, s_max/r_max, s_min/r_min
+
+
+    def reset(self):
+        ## XXX Also need to reset send history on an individual node
+        ## for barriers etc, when reverting from reduction to ab
+        if self.send_history:
+            print 'Resetting send history', self.send_history
+        self.send_history = {}
+
+
+    def add_send_history(self, src, dest):
+        """Add the given <src> to <dest> communication to the send
+        history. This is triggered when a message as actually going to
+        be sent.
+
+        @param src  Source core
+        @param dest Destination core
+
+        """
+        self.send_history[src] = self.send_history.get(src, []) + [dest]

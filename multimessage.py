@@ -121,6 +121,7 @@ class MultiMessage(object):
 
         self.init_matrix()
 
+
     def init_matrix(self):
         """Initiliaze the multimessage matrix.
 
@@ -171,5 +172,15 @@ class MultiMessage(object):
                 c_remote += 1
                 if c_local > 0:
                     helpers.warn('mm: adding remote communication AFTER local communication')
+
+        assert c_local>0 or c_remote>0
+
+        while c_local >= self.cores_local:
+            helpers.warn('mm matrix local exceeded %d -> %d' % (c_local, self.cores_local))
+            c_local -= 1
+
+        while c_remote >= self.cores_remote:
+            helpers.warn('mm matrix remote exceeded %d -> %d' % (c_remote, self.cores_remote))
+            c_remote -= 1
 
         return self.matrix[c_remote][c_local]

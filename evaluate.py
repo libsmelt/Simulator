@@ -69,6 +69,12 @@ class Protocol(object):
         """
         return True
 
+    def send_last_node(self):
+        """Should a message be sent from the last node.
+
+        """
+        return False
+
 
 class AB(Protocol):
     """Atomic broadcast protocol
@@ -91,6 +97,9 @@ class AB(Protocol):
 
     def get_name(self):
         return 'atomic broadcast'
+
+    def send_last_node(self):
+        return True
 
     def set_initial_state(self, eval_context, root):
         """Evaluate cost starting at root of overlay
@@ -116,8 +125,19 @@ class AB(Protocol):
         nb_filtered = [ tmp for (_, tmp) in nb if tmp not in self.cores_active ]
 
         if len(nb_filtered) > 0:
+
+            # --------------------------------------------------
+            # Send a message
+            # --------------------------------------------------
+
             dest = nb_filtered[0]
-            cost = eval_context.get_send_cost(core, dest)
+
+            # Determine the cost of the send operation. This is needed
+            # for two reasons:
+            #
+            # - visualization: the size of the send box to be drawn
+            # - event scheduling: when is the node free again after sending
+            cost = eval_context.model.get_send_cost(core, dest, True, True)
 
             # Adaptive models: need to add edge
             if not eval_context.topology.has_edge((core,dest)):
@@ -129,6 +149,7 @@ class AB(Protocol):
             print '% 5d   Send(%s,%s) - cost % 4d   done=% 5d' % \
                 (eval_context.sim_round, str(core), str(dest), cost, cost+eval_context.sim_round)
 
+            # Calculate when node is free again
             send_compl = time + cost
 
             # Make receiver active
@@ -340,7 +361,11 @@ class Reduction(Protocol):
         if num >= num_children:
             print 'Sending to parent', parent
 
-            send_compl = time + eval_context.get_send_cost(core, parent)
+            # Send history should be empty, as only one message is
+            # sent per node (to its parent)
+            assert len(eval_context.model.send_history.get(core,[])) == 0
+
+            send_compl = time + eval_context.model.get_send_cost(core, parent, True, True)
 
             # Note: don't have to enqueue the same core as sender again
             eval_context.schedule_node(parent, send_compl, core)
@@ -431,7 +456,7 @@ class Barrier(Protocol):
             if num >= num_children:
                 print '%d: Sending to parent %d (%d/%d)' % (core, parent, num, num_children)
 
-                cost = eval_context.get_send_cost(core, parent)
+                cost = eval_context.model.get_send_cost(core, parent, True, True)
 
                 print 'Send(%d,%s,%s) - Barrier - Reduce - NBs=%d - cost %d' % \
                     (eval_context.sim_round, str(core), str(parent), 1, cost)
@@ -449,7 +474,7 @@ class Barrier(Protocol):
             print 'Node %d is in broadcast state and received a message ' % core
 
             dest = nb_filtered[0]
-            cost = eval_context.get_send_cost(core, dest)
+            cost = eval_context.model.get_send_cost(core, dest, True, True)
 
             # Adaptive models: need to add edge
             if not eval_context.topology.has_edge((core,dest)):
@@ -699,13 +724,20 @@ class Evaluate():
         while not self.terminate():
             self.consume_event()
 
-        # Add cost for communication last_node -> root, since we will
-        # evaluate the cost of the protocol in real hardware starting
-        # at the last node
-        # * Send cost
         final_time = self.sim_round
         r = Result(self.sim_round, self.last_node, visu_name)
-        send_feedback = self.model.query_send_cost(self.last_node, root)
+
+        # Add cost for communication last_node -> root, since we will
+        # evaluate the cost of the protocol in real hardware starting
+        # at the last node. Do so only if the protocol requires it.
+        if self.protocol.send_last_node():
+
+            # If the last node would send further messages, it would not be the last node ..
+            assert len(self.model.send_history.get(self.last_node, []))==0
+            send_feedback = self.model.get_send_cost(self.last_node, root, True, True)
+
+        else:
+            send_feedback = 0
 
         print "Terminating(%d,%s,%s) - cost %d for last_node -> root" % \
             (self.sim_round, str(self.last_node), str(root),
@@ -959,18 +991,3 @@ class Evaluate():
         logging.info('activate_node %d, generating event %s' % (node, str(ev)))
 
         heapq.heappush(self.event_queue, (time, ev))
-
-
-    def get_send_cost(self, sender, receiver):
-
-        _batchsize = self.node_state[sender].send_batch + 1
-
-        import model
-        assert isinstance (self.model, model.Model)
-
-        cost = self.model.get_send_cost(sender, receiver, batchsize=_batchsize)
-
-        logging.info(('Send: Getting send cost %d->%d for batchsize %d = %d' % \
-            (sender, receiver, _batchsize, cost)))
-
-        return cost

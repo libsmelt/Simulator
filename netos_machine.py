@@ -65,8 +65,6 @@ class NetosMachine(model.Model):
         # Build a graph model
         super(NetosMachine, self).__init__()
 
-        self.send_history = {}
-
         # Read multimessage data
         fname = '%s/%s/multimessage.gz' % \
                 (config.MACHINE_DATABASE, self.get_name())
@@ -89,14 +87,6 @@ class NetosMachine(model.Model):
             raise
 
         self.reset()
-
-    def reset(self):
-        ## XXX Also need to reset send history on an individual node
-        ## for barriers etc, when reverting from reduction to ab
-        if self.send_history:
-            print 'Resetting send history', self.send_history
-        self.send_history = {}
-
 
     def get_num_numa_nodes(self):
         """Get the number of NUMA nodes
@@ -163,7 +153,7 @@ class NetosMachine(model.Model):
         for snd in _c_list:
             for rcv in _c_list:
                 if snd!=rcv:
-                    snd_cost = self._get_send_cost(snd, rcv)
+                    snd_cost = self.get_send_cost(snd, rcv)
                     rcv_cost = self._get_receive_cost(snd, rcv)
                     gr.add_edge((snd, rcv), snd_cost + rcv_cost)
 
@@ -179,53 +169,6 @@ class NetosMachine(model.Model):
                 return i
 
 
-    def query_send_cost(self, src, dest, batchsize=1, add_history=False):
-        """In difference to get_send_cost, query_send_cost just retrieves the
-        send cost without adding the message to the history.
-
-        """
-        _send_history = self.send_history.get(src, [])
-        if self.opt_reverse_recv :
-            if len(_send_history) == 0 :
-                cost = self._get_send_cost(src, dest, batchsize)
-            else :
-                prev_src, prev_dst = self.send_history[src]
-                cost = self._get_receive_cost(prev_dst, prev_src)
-
-            # Add to the history if requested
-            if add_history:
-                self.send_history[src] = (src, dest)
-
-        elif self.enable_mm :
-            num_l = len([ b for b in _send_history if b ])
-            num_r = len([ b for b in _send_history if not b ])
-            l = self.get_numa_id(src) == self.get_numa_id(dest)
-
-            if len(_send_history) == 0 :
-                cost = self._get_send_cost(src, dest, batchsize)
-            else :
-                if self.mm_last:
-                    cost = self.mm[1].get_factor(num_r, num_l, l)
-                else:
-                    cost = self.mm[0].get_factor(num_r, num_l, l)
-
-            # Add to history on request
-            if add_history:
-                self.send_history[src] = _send_history + [l]
-        else :
-            cost = self._get_send_cost(src, dest, batchsize)
-
-        return cost
-
-
-    def get_send_cost(self, src, dest, batchsize=1):
-        """The cost of the send operation (e.g. to work to done on the
-        sending node) when sending a message to core dest
-
-        """
-        return self.query_send_cost(src, dest, batchsize, True)
-
-
     def __repr__(self):
         return self.name
 
@@ -235,7 +178,6 @@ class NetosMachine(model.Model):
 def get_list():
     """Get list of NetOS machines
     """
-
     sys.path.append(config.MACHINE_DATABASE)
     from machineinfo import machines
 
