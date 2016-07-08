@@ -336,8 +336,8 @@ class Model(object):
         """
         fname = '%s/%s/pairwise-nsend_receive' % \
                 (config.MACHINE_DATABASE, self.get_name())
+        print 'Reading receive costs from %s' % fname
         f = open(fname)
-        assert not self.recv_cost
         for l in f.readlines():
             l = l.rstrip()
             m = re.match('(\d+)\s+(\d+)\s+([0-9.]+)\s+([0-9.]+)', l)
@@ -348,6 +348,7 @@ class Model(object):
                                              float(m.group(4)))
                 assert (src, dest) not in self.recv_cost
                 self.recv_cost[(src, dest)] = cost
+        assert len(self.recv_cost.items())>0
 
     def _parse_send_result_file(self):
         """Parse pairwise send cost results.
@@ -358,8 +359,8 @@ class Model(object):
         """
         fname = '%s/%s/pairwise-nsend_send' % \
                 (config.MACHINE_DATABASE, self.get_name())
+        print 'Reading send costs from %s' % fname
         f = open(fname)
-        assert not self.send_cost
         for l in f.readlines():
             l = l.rstrip()
             m = re.match('(\d+)\s+(\d+)\s+([0-9.]+)\s+([0-9.]+)', l)
@@ -370,6 +371,7 @@ class Model(object):
                                              float(m.group(4)))
                 assert (src, dest) not in self.send_cost
                 self.send_cost[(src, dest)] = cost
+        assert len(self.send_cost.items())>0
 
 
     def get_receive_cost(self, src, dest):
