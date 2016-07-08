@@ -7,7 +7,7 @@ import logging
 
 import tools
 
-def binary_tree(m, nodes=[], out_degree=2):
+def binary_tree(m, nodes=[]):
     """
     Construct a binary tree for the given g
     XXX Currently, this works only for out_degree=2
@@ -20,32 +20,40 @@ def binary_tree(m, nodes=[], out_degree=2):
     @param nodes: list of nodes to build a binary tree for. If list is
         empty, it will default to m.nodes()
 
-    @type out_degree: number
-    @param out_degree: outdegree of nodes in the generated graph. Currently,
-        this is ignored
-
     @return g digraph storing the binary graph
     """
     assert(len(m.nodes())>0) # graph has nodes
-    assert out_degree == 2 # others NYI
 
     g = digraph()
     if len(nodes)==0:
         nodes = m.nodes()
     num = len(nodes)
 
+    # Adding nodes
+    # --------------------------------------------------
     for n in nodes:
         g.add_node(n)
-    
+
+    # Adding edges
+    # --------------------------------------------------
     for i in range(num):
         p = 2*(i+1)-1
         pp = 2*(i+1)
+
+        # ------------------------------
         if p < num:
-            g.add_edge((nodes[i],  nodes[p]), \
-                           m.edge_weight((nodes[i], nodes[p])))
+            e = (nodes[i], nodes[p])
+            assert e in m.edges()
+            g.add_edge(e)
+            g.set_edge_weight(e, m.edge_weight(e))
+            assert (m.edge_weight(e))>1
+
+            # ------------------------------
             if pp < num:
-                g.add_edge((nodes[i], nodes[pp]), \
-                               m.edge_weight((nodes[i], nodes[pp])))
+                assert e in m.edges()
+                e = (nodes[i], nodes[pp])
+                g.add_edge(e)
+                g.set_edge_weight(e, m.edge_weight(e))
 
     return g
 
@@ -133,12 +141,12 @@ def merge_graphs(g1, g2):
         try: 
             g.add_edge(e, g1.edge_weight(e))
         except:
-            logging.info("merge_graphs: adding edge %d %d" % (e[0], e[1]))
+            logging.info("merge_graphs: adding edge %d %d failed" % (e[0], e[1]))
     for e in g2.edges():
         try: 
             g.add_edge(e, g2.edge_weight(e))
         except:
-            logging.info("merge_graphs: adding edge %d %d" % (e[0], e[1]))
+            logging.info("merge_graphs: adding edge %d %d failed" % (e[0], e[1]))
     return g
 
 
