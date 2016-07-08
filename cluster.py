@@ -46,13 +46,18 @@ class Cluster(overlay.Overlay):
         :param graph g: Graph for which to build the cluster tree.
 
         """
+
+        print '--------------------------------------------------'
+        print '-- BUILD CLUSTER TOPLOGY'
+        print '--------------------------------------------------'
+
         coords = self.get_coordinators()
 
         # Build NUMA node graph with weights first
         g_numa = digraph()
         for c in coords:
             g_numa.add_node(c)
-            for co in self.get_coordinators():
+            for co in coords:
                 if co<c:
                     weight = self.mod.get_graph().edge_weight((c, co))
                     g_numa.add_edge((c, co), weight)
@@ -62,36 +67,13 @@ class Cluster(overlay.Overlay):
         # Print graph
         helpers.output_graph(g_numa, 'cluster_numa', 'dot')
 
-        # Now: find a tree for this graph
-        # Observation: Machines today typically don't have more than 8 nodes
-        # core 0 sends one message "across" the machine, all others: MST
-
-        # max-hops: 3
-        # core 0 histogram (question: why would we start at 0?)
-        # - 1 hops: 2
-        # - 2 hops: 2
-        # - 3 hops: 3
-        # core 2 histogram
-        # - 1 hops: 4
-        # - 2 hops: 2
-        # - 3 hops: 1
-
-        # might be able to do some clustering: split up nodes such
-        # that half of them are in one cluster afterwards, the the
-        # other half in another. Split them up such that the number of
-        # links connecting the two clusters is minimal. Trying this
-        # bruteforce would require n! / ((n/2)!) I think .. 
-
-        # I think it might be best to cust construct a binary-tree!
-        # except for contention
-        # but if we send a message far away, with many hops, that is kind of stupid (or is it?)
-
+        # Outer NUMA graph
         g_outer = binary_tree(g_numa)
-        
+
         for c in self.get_coordinators():
             numa_node = [ n for n in self.mod.get_numa_node(c) if n in g.nodes() ]
             g_simple = sequential(self.mod.get_graph(), numa_node, c)
-            g_outer = merge_graphs(g_simple, g_outer)
+            g_outer = merge_graphs(g_outer, g_simple)
             print "%s" % str(numa_node)
 
         helpers.output_graph(g_outer, 'cluster_outer_bin', 'neato')
