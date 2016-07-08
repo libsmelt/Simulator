@@ -214,7 +214,6 @@ class Overlay(object):
 
         import mst
         import cluster
-        import ring 
         import binarytree
         import sequential
         import badtree
@@ -224,7 +223,6 @@ class Overlay(object):
         d = {
             'mst': mst.Mst,
             'cluster': cluster.Cluster,
-            'ring': ring.Ring,
             'bintree': binarytree.BinaryTree,
             'sequential': sequential.Sequential,
             'badtree': badtree.BadTree,
@@ -306,9 +304,8 @@ class Overlay(object):
                     # - sequential
                     # - fibonacci
                     # - mst
+                    # - badtree
 
-                    # Untested: badtree, ring
-                    
                     l = [ y for (x,y) in tree.edges() if x == n ]
 
                     # For some Overlays, it seems that there are edges

@@ -2,7 +2,6 @@
 
 # Overlays
 import cluster
-import ring
 import binarytree
 import sequential
 import badtree
