@@ -114,15 +114,6 @@ class Model(object):
         return len(self.machine_topology['NUMA'].get()[0])
 
 
-    # Transport cost
-    def get_cost_within_numa(self):
-        print helpers.bcolors.WARNING + "Warning: Deprecated?" + helpers.bcolors.ENDC
-        return 1
-
-    def get_cost_across_numa(self):
-        print helpers.bcolors.WARNING + "Warning: Deprecated?" + helpers.bcolors.ENDC
-        return 10
-
     def get_send_history_cost(self, sender, cores, corrected=False):
         """Return the send cost for the given history of cores.
 
@@ -280,48 +271,6 @@ class Model(object):
             if c in n:
                 return i
 
-
-    # --------------------------------------------------
-
-    def _add_numa(self, graph, node1, node2, cost):
-        """
-        Wrapper function to add edges between two NUMA nodes.
-        """
-        n1 = node1*self.get_cores_per_node()
-        n2 = node2*self.get_cores_per_node()
-        for c1 in range(self.get_cores_per_node()):
-            for c2 in range(self.get_cores_per_node()):
-                src = (n1+c1)
-                dest = (n2+c2)
-                if src < dest:
-                    logging.info("Adding edge %d -> %d with weight %d" % \
-                                     (src, dest, cost))
-                    graph.add_edge((src, dest), cost)
-
-    def _connect_numa_nodes(self, g, g_numa, src, ):
-        """
-        Assuming that routing is taking the shortes path, NOT true on
-         e.g. SCC
-        """
-        self._connect_numa_internal(g, src)
-        cost = shortest_path(g_numa, src)[1]
-        logging.info("connect numa nodes for %d: cost array size is: %d" % \
-                         (src, len(cost)))
-        for trg in range(len(cost)):
-            if src!=trg:
-                self._add_numa(g, src, trg,
-                               cost[trg]*self.get_cost_across_numa())
-
-    def _connect_numa_internal(self, graph, numa_node):
-        """
-        fully connect numa islands!
-        """
-        for i in range(self.get_cores_per_node()):
-            for j in range(self.get_cores_per_node()):
-                if j>i:
-                    node1 = numa_node*self.get_cores_per_node() + i
-                    node2 = numa_node*self.get_cores_per_node() + j
-                    graph.add_edge((node1, node2), self.get_cost_within_numa())
 
     def get_root_node(self):
         return None
