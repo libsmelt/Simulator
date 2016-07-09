@@ -364,6 +364,40 @@ class Model(object):
         return s_avg/r_avg, s_max/r_max, s_min/r_min
 
 
+    def update_edge(self, src, dest, topology):
+        """Modifies the topolgy by adding a new edge.
+
+        Adds edge src -> dest and removing any old eges n ->
+        dest. Also updates the send history.
+
+        @param topolgy The topology to update
+
+        """
+        num = 0
+        prev_parent = None
+
+        for c in self.get_cores():
+
+            # Delete existing edge
+            if topology.has_edge((c, dest)):
+
+                prev_parent = c
+                topology.del_edge((c, dest))
+                num += 1
+
+        assert num == 1 # Make sure we only deleted one edge
+
+        # Add new one
+        topology.add_edge((src, dest), \
+            self.graph.edge_weight((src, dest)))
+
+        # Update the send history
+        assert dest in self.send_history[prev_parent]
+        self.send_history[prev_parent].remove(dest)
+
+        self.add_send_history(src, dest)
+
+
     def reset(self):
         ## XXX Also need to reset send history on an individual node
         ## for barriers etc, when reverting from reduction to ab

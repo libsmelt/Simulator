@@ -7,6 +7,7 @@ import logging
 import random
 import model
 import Queue
+import config
 
 from pygraph.algorithms.minmax import shortest_path
 from pygraph.classes.graph import graph
@@ -66,12 +67,14 @@ class SchedAdaptive(scheduling.Scheduling):
         for s, children in self.store.items():
             for (_, child) in children:
                 assert not child in _p # Each core has only one parent
-                print 'Found parent of', child, 'to be', s
                 _p[child] = s
         return _p
 
     def get_root(self):
         """Returns the root of the current tree
+
+        The root does not have a parent. So we need to find a node
+        without parents.
 
         """
         parent = self.get_parents()
@@ -81,74 +84,125 @@ class SchedAdaptive(scheduling.Scheduling):
         raise Exception('Could not find root')
 
 
-    def cost_subtree(self):
+    def assert_faster(self, cost_prev):
+        """Check if a new send scheduler is faster than the previous one.
+
+        @param cost_prev The cost for the previous schedule, as
+        returned by cost_subtree()
+
+        """
+        cost_new = self.cost_subtree()
+        assert cost_new[self.get_root()] <= cost_prev[self.get_root()]
+
+
+
+    def assert_history(self):
+        """Sanity check to verify that the send history as known to the
+        machine model matches the order as given from the adaptivetree.
+
+        If this is true, we can use the build-in function
+        get_send_cost() with the corrected option, as the send history
+        as stored in the model matches the one in the adaptive tree.
+
+        """
+
+        for sender, children in self.store.items():
+
+            # Retrieve send history for that node
+            sh_them = self.mod.send_history.get(sender, [])
+
+            # Drop the costs
+            sh_us = [ n for (_, n) in children ]
+
+            assert len(sh_them) == len(sh_us) # same number of children
+            for us, them in zip(sh_us, sh_them):
+                assert us == them # send history matches in each element
+
+        print 'Send history is correct :-)'
+
+
+    def cost_tree(self):
+        return self.cost_subtree()[self.get_root()]
+
+
+    def cost_subtree(self, node=None):
         """Determine the cost of each node as the cost of the entire subtree
         starting in that node.
-
 
         Returns the cost as a dictionary core -> cost at subtree.
 
         """
 
-        leafs = self.get_leafs()
-        parent = self.get_parents()
+        if node == None:
+            node = self.get_root()
 
-        # Calculate cost of subtree
+        _, t_avail = self.simulate_current()
+
+        # Determine maximum cost
+        # --------------------------------------------------
+
+        cost_st = {}
+
+        cost_max = 0
+
         q = Queue.Queue()
-        for l in leafs:
-            q.put(l)
-
-        # Directonary core c -> cost of subtree of core c including
-        # the receive from parent
-        cost = {}
+        q.put(node)
 
         while not q.empty():
             c = q.get() # caluclate next core
+            cost_max = max(cost_max, t_avail[c])
 
-            # It is possible that the same core is added to the queue
-            # repeatedly from several children
-            if c in cost:
+            # Get an order list of neighbors
+            for _, nb in self.store[c]:
+
+                q.put(nb)
+
+        # Determine cost of subtree backwards
+        # --------------------------------------------------
+
+
+        q = Queue.Queue()
+        for l in self.get_leafs():
+            q.put(l)
+
+        while not q.empty():
+
+            core = q.get()
+            if core in cost_st:
                 continue
 
-            print 'Looking at core', c
+            c_cost = 0
 
-            # Determine parent node
-            c_parent = parent[c] if c in parent else None
-
-            # Receive from parent
-            c_cost = self.mod.get_receive_cost(c_parent, c) if c_parent else 0
-
-            # Add cost of all children's subtrees, if available
             all_children = True
-            for _, child in self.store[c]:
-                if not child in cost:
-                    print 'Warning', child, 'not yet in queue'
-                    all_children = False
-                    break
-                c_cost += self.mod.get_send_cost(c, child, corrected=True)
-                c_cost += cost[child]
+            for _, cld in self.store[core]:
+                all_children &= cld in cost_st
 
-                # Note: core c will not be in the FIFO queue any
-                # longer, but added again later by the at least one
-                # remaining child
+            if not all_children:
+                continue
 
-            if all_children:
-                # Store cost of now compete subtree
-                assert not c in cost
-                cost[c] = c_cost
+            # Calculate the time difference for each child and take the max
+            for _, cld in self.store[core]:
 
-                # Put parent into FIFO queue
-                if c_parent != None:
-                    q.put(c_parent)
-                else:
-                    print 'Core', c, 'does not have a parent'
+                assert t_avail[cld] > t_avail[core]
+                cost_child_subtree = cost_st[cld]
+                cost_connection = (t_avail[cld] - t_avail[core])
+                c_cost = max(c_cost,  cost_child_subtree + cost_connection)
+
+            cost_st[core] = c_cost
+
+            for _, cld in self.store[core]:
+                assert cost_st[core] > cost_st[cld]
+
+            prt = self.get_parents()
+            if core in prt:
+                q.put(prt[core])
 
 
+        # Root's subtree is the entire tree, i.e. the roots subtree
+        # should equal the maximum cost of the entire tree
+        assert (cost_max == cost_st[self.get_root()])
 
-        assert (len(cost)==len(self.store)) # Otherwise tree is not connected
-        print cost
-
-        return cost
+        return cost_st
 
 
     def reorder(self):
@@ -160,12 +214,26 @@ class SchedAdaptive(scheduling.Scheduling):
         first, as generated in the initial unoptimized adaptive tree,
         we here changed the schedule to send to the most expensive
         _subtree_ of each child first
+
+        However, the send history is affected by this. So, this
+        function rewrites it while "simulating".
+
+        Needs to be executed in 2 steps in order for the send
+        histories to be consistent.
+
         """
 
+        # Determine the cost of each subtree
         cost = self.cost_subtree()
-        old_store = self.store.items()
 
-        for core, _children in old_store:
+        # reset send history in machine model
+        self.mod.reset()
+
+        new_store = {}
+
+        # Find new order
+        # ------------------------------
+        for core, _children in self.store.items():
 
             # Determin children of a node
             children = [ c for (_, c) in _children ]
@@ -177,16 +245,103 @@ class SchedAdaptive(scheduling.Scheduling):
             children_sorted = sorted(zip(children, children_cost), \
                                      key=lambda x: x[1], reverse=True)
 
-            self.store[core] = [ (0, c) for (c, _) in children_sorted ]
-            print 'Storing new send order', self.store[core]
+            new_store[core] = [ (_cost, _node) for (_node, _cost) in children_sorted ]
+
+
+        self.store = {key: [] for key in range(self.mod.get_num_cores())}
+
+        # Apply new order
+        # ------------------------------
+        for core, _children in new_store.items():
+
+            for (cost, node) in _children:
+                self.mod.add_send_history(core, node)
+                self.store[core] = self.store.get(core, []) + [(cost, node)]
+
+            logging.info(('Storing new send order', self.store.get(core, [])))
+
+        assert self.get_root()
+
+        # Fix send history
+        self.assert_history()
+
+
+    def get_slowest(self):
+
+        _, t_avail = self.simulate_current()
+        return sorted(t_avail.items(), key=lambda x: x[1], reverse=True)[0]
+
+
+    def simulate_current(self, visu=None):
+
+        # Send history
+        send_history = {}
+
+        # Calculate cost of subtree
+        q = Queue.Queue()
+        q.put((self.get_root(), 0))
+
+        # Dictionary core c -> time when message is availabe on each
+        # core, after receiving
+        t_avail = {}
+
+        # Dictionary core c -> time when core is idle, i.e. after
+        # sending the last message. If no message is sent, this equals t_avail
+        t_idle = {}
+
+        # Determine the time where the message is available in each node
+        # --------------------------------------------------
+
+        while not q.empty():
+            c, time = q.get() # caluclate next core
+
+            assert not c in t_avail
+            t_avail[c] = time
+
+            # Get an order list of neighbors
+            for _, nb in self.store[c]:
+
+                # Send time as perceived by the client
+                t_send = self.mod.get_send_cost_for_history(c, nb, send_history.get(c, []))
+                assert t_send > 0
+
+                # Actul send time
+                t_send_propagate = max(self.mod.get_send_cost(c, nb, False, False), t_send)
+                t_receive = self.mod.get_receive_cost(c, nb)
+
+                # Visualize send and receive events
+                if visu:
+                    assert time + t_send <= time + t_send_propagate
+                    visu.send(c, nb, time, t_send)
+                    visu.receive(nb, c, time + t_send_propagate, t_receive)
+
+                q.put((nb, time + t_send_propagate + t_receive))
+                time += t_send
+                send_history[c] = send_history.get(c, []) + [nb]
+
+            assert not c in t_idle
+            t_idle[c] = time # time after sending all messages OR
+                             # after receiving if no message is sent.
+
+
+        assert (len(t_avail)==len(self.store)) # Otherwise tree is not connected
+        assert (len(t_idle) ==len(self.store)) # Otherwise tree is not connected
+
+        return t_idle, t_avail
 
 
     def optimize_scheduling(self):
+        """Find optimizations for current schedule.
 
-        """Optimizes the current scheduling.
+        This is a 2-step process:
 
-        Instead of sending on the most expensive link first, we should
-        send to the most expensive subtree first"""
+        1) Optimize the schedule - sort by cost of subtree rather than
+        cost of individual link's cost. The send history is rebuild
+        after this.
+
+        Invariant: send history remains intact.
+
+        """
 
         assert (len(self.store) == sum([len(c) for (s, c) in self.store.items()])+1)
 
@@ -194,77 +349,39 @@ class SchedAdaptive(scheduling.Scheduling):
         for core, children in self.store.items():
             print core, '->', [ core for (_, core) in children ]
 
-        # This does not work with results from the multi-message bench yet
-        assert self.mod.mm == None
-
         # --------------------------------------------------
         # REORDER - for each core, reorder messages
         #           most expensive subgraph first
         # --------------------------------------------------
 
         self.reorder()
+        self.assert_history()
 
-        # --------------------------------------------------
-        # RECALCULATE - when do cores first receive a message
-        # --------------------------------------------------
+        return self.simulate_current()
 
-        log_first_message = {}
-        log_idle = {}
-
-        ac = Queue.Queue()
-        ac.put((self.get_root(), 0))
-
-        while not ac.empty():
-
-            c, time = ac.get()
-            log_first_message[c] = time
-
-            for _, child in self.store[c]:
-
-                # global time, increases with each child
-                time += self.mod.get_send_cost(c, child, corrected=True)
-
-                # XXX propagate here
-
-                # happens asynchronously, so we don't update the time
-                cost = self.mod.get_receive_cost(c, child)
-
-                # append new event
-                ac.put((child, time + cost))
-
-            # this core is idle now
-            log_idle[c] = time
-
-
-        print "log idle"
-        print log_idle
-
-        print "log first message"
-        print log_first_message
-
-        assert len(log_idle) == len(self.store)
-        assert len(log_first_message) == len(self.store)
-
-        return log_idle, log_first_message
 
     def replace(self, sender, receiver):
         """Updates the adaptive tree
 
         Remove (x, receiver) and add (sender, receiver) instead.
         """
-        print 'ADAPTIVE before' + str(self.store)
+        logging.info(('ADAPTIVE before' + str(self.store)))
 
+        # Determine send cost before messing around with the send histories
+        self.assert_history() # still intact, but we also don't use them elsewehere
+        cost = self.mod.get_send_cost(sender, receiver)
 
-        # Find previous sender
+        # Remove previous sender
         for (s, l_receivers) in self.store.items():
-            print 'ADAPTIVE', 'looking for ', receiver, 'in', l_receivers
+            logging.info(('ADAPTIVE', 'looking for ', receiver, 'in', l_receivers))
             self.store[s] = [ (cost, r) for (cost, r) in l_receivers if \
                               r != receiver ]
 
         # Add new pair
-        self.store[sender].append((0, receiver))
+        self.store[sender].append((cost, receiver))
 
-        print 'ADAPTIVE after' + str(self.store)
+        logging.info(('ADAPTIVE after' + str(self.store)))
+
 
     def find_schedule(self, sending_node, cores_active=None):
 

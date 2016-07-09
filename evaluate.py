@@ -6,7 +6,8 @@ import pdb
 import logging
 import sched_adaptive
 import copy # for heapq
-
+import helpers
+import logging
 
 # We assume that the propagation time is zero. The cost for
 # transporting messages is captured in t_send and t_receive.
@@ -129,7 +130,11 @@ class AB(Protocol):
             #
             # - visualization: the size of the send box to be drawn
             # - event scheduling: when is the node free again after sending
+            _cost_real = eval_context.model.get_send_cost(core, dest, False, False)
             cost = eval_context.model.get_send_cost(core, dest, True, True)
+            cost_real = max(_cost_real, cost)
+
+            print 'Correcting cost %2d %2d cost %7.2f %7.2f -> %7.2f' % (core, dest, cost, _cost_real, cost_real)
 
             # Adaptive models: need to add edge
             if not eval_context.topology.has_edge((core,dest)):
@@ -143,9 +148,10 @@ class AB(Protocol):
 
             # Calculate when node is free again
             send_compl = time + cost
+            send_compl_real = time + cost_real
 
             # Make receiver active
-            eval_context.schedule_node(dest, send_compl, core)
+            eval_context.schedule_node(dest, send_compl_real, core)
             self.cores_active.append(dest)
 
             # Add send event to signal that further messages can be
@@ -165,11 +171,31 @@ class AB(Protocol):
 
         return True
 
+    def draw(self, e):
+
+        e.schedule.visualize(e.model, e.topo)
 
     def is_terminated(self, eval_context):
         """Protocol is terminated, output core timing
 
+        We can now try to optimize the tree if either "shuffle" or
+        "sort" is given as an option for the topology.
+
         """
+
+        self.draw(eval_context)
+        num_reorders = 0
+
+        # --------------------------------------------------
+        # Step 2:
+        # --------------------------------------------------
+
+        print '--------------------------------------------------'
+        print '-- TERMINATED evaluation'
+        print '--------------------------------------------------'
+
+        # First, ensure that the send histories match
+        eval_context.schedule.assert_history()
 
         if not eval_context.topo.options.get('shuffle', False):
             return True
@@ -179,96 +205,132 @@ class AB(Protocol):
 
         while optimize:
 
+            # Determine the old slack
             # --------------------------------------------------
+            c_idle, c_activated = eval_context.schedule.simulate_current()
+            cost_tree = eval_context.schedule.cost_tree()
+
             # Reorder tree FIRST
             # --------------------------------------------------
-
+            # Since we reorder the tree first, we have to update our
+            # slack-window, i.e. the first idle and last terminated
+            # cores.
             if eval_context.topo.options.get('sort', False):
 
-                # Optimize the send order within each node!
-                _log_idle, _log_fist_message = eval_context.schedule.optimize_scheduling()
+                # ------------------------------
+                # Update schedule
+                # ------------------------------
+                # Optimize schedule and return new idel and activated time
+                # (from determine_slack)
+                c_idle_new, c_activated_new = eval_context.schedule.optimize_scheduling()
 
-                # Make sure new Schedule is _actually_ better
-                _slowest_old = sorted(self.log_first_message.items(), key=lambda x: x[1], reverse=True)
-                _slowest_new = sorted(_log_fist_message.items(), key=lambda x: x[1], reverse=True)
+                # Make sure new Schedule is _actually_ better - here, we
+                # determine the nodes in last node receiving a message
+                # in both schedules
+                slowest_old = sorted(c_activated.items(), key=lambda x: x[1], reverse=True)
+                slowest_new = sorted(c_activated_new.items(), key=lambda x: x[1], reverse=True)
 
-                # Only reorder in case the new schedule is faster:
-                # this is a bit weird, I though we would _always_ be
-                # faster with this.
-                if abs(_slowest_new[0][1]-_slowest_old[0][1])<1 or True:
+                # Activate the new schedule
+                c_idle, c_activated = c_idle_new, c_activated_new
+                t_old = slowest_old[0][1]
+                t_new = slowest_new[0][1]
 
-                    # I'm already scared of this!
-                    self.log_idle = _log_idle
-                    self.log_first_message = _log_fist_message
+                print 'OPT sort %2d - %8.2f to %8.2f' % (num_reorders, t_old, t_new)
+                num_reorders += 1
+
+                # Sanity checks
+                assert t_new - t_old <= 0
+                assert eval_context.schedule.cost_tree() <= cost_tree
+
+                self.draw(eval_context)
 
 
-            # These are the ones that we want to optimize, that's the time
-            # at which cores first receive a message
-            _first = sorted(self.log_first_message.items(), key=lambda x: x[1], reverse=True)
-            for (core, time) in _first:
-                print 'first seen: %2d %8.2f' % (core, time)
+            # Find LAST node
+            # ------------------------------
+            _last_node = sorted(c_activated.items(), key=lambda x: x[1], reverse=True)
+            last_node, t_last_node = _last_node[0]
 
+            for (core, time) in _last_node:
+                logging.info(( 'first seen: %2d %8.2f' % (core, time)))
+
+
+            # Find IDLE node that can deliver the message first
+            # --------------------------------------------------
+
+            # Calculate for each core how long it would take it to
+            # deliver a message to (last) after finishing sending it's
+            # current schedule
+            #
+            # Since we are interested in the latency, we should NOT
+            # use the corrected times here. They are most likely
+            # caused by some hardware optimization (write-buffer) and
+            # just hide the cost of sending a message from the
+            # sender. The latency of the send should be the same
+            #
+            # Generate tupple:
+            # core         = the core ID
+            # time         = time at wich idle
+            # available_at = time at which message can be available at receiver
+            fastest_send = [ (core, time, time  + \
+                              eval_context.model.get_send_cost(core, last_node, False, False) + \
+                              eval_context.model.get_receive_cost(core, last_node))
+                for (core, time) in c_idle.items() ]
 
             # That's the time at which a core is done sending a
             # messages. Cores that finish early have some slack to send to others
-            _log_idle = sorted(self.log_idle.items(), key=lambda x: x[1])
-            for (core, time) in _log_idle:
-                print 'idle: %2d %8.2f' % (core, time)
+            fastest_send = sorted(fastest_send, key=lambda x: x[2])
+            for (core, time, available_at) in fastest_send:
+                logging.info(('could send from %2d at %8.2f starting %8.2f' \
+                                % (core, available_at, time)))
 
-            ((first, f_time), (last, l_time)) = (_first[0], _log_idle[0])
-
-            # Check if (first->last) would optimize the tree
-            slack = (f_time-l_time)
-
-            t_send = eval_context.model.get_send_cost(first, last)
-            t_receive = eval_context.model.get_receive_cost(first, last)
-
-            cost_direct =  t_send + t_receive
+            # Select best fitting sender core (first) and last core to
+            # finish (last)
+            first, f_time, f_available_at = fastest_send[0]
 
             # Replace if:
             # 1) we have enough slack for an additonal message and
             # 2) the additional message is not already part of the schedule
             #
-            if cost_direct <= slack and \
-               not eval_context.topology.has_edge((last, first)):
+            # Check if (first->last) would optimize the tree
+            if f_available_at < t_last_node and \
+               not eval_context.topology.has_edge((last_node, first)):
 
                 optimize = True
-                print 'schedule: replacing', last, first
 
-                # Replace in schedule
-                eval_context.schedule.replace(last, first)
+                # Sanity check
+                c_slowest, t_slowest = eval_context.schedule.get_slowest()
+                assert (last_node == c_slowest)
+                assert (t_last_node == t_slowest)
 
-                # Remove exising edges from topology
-                num = 0
-                for c in eval_context.model.get_cores():
-                    if eval_context.topology.has_edge((c, first)):
-                        eval_context.topology.del_edge((c, first))
-                        num += 1
-                assert num == 1
-                # Add new one
-                eval_context.topology.add_edge((last, first),
-                                               eval_context.model.graph.edge_weight((last, first)))
+                # Determine cost of OLD tree
+                cost_prev = eval_context.schedule.cost_tree()
+                cost_send_corrected = eval_context.model.get_send_cost(first, last_node, corrected=True)
 
-                # the first core now is busy for longer
-                self.log_idle[last] = l_time + t_send
+                # ------------------------------
+                # Replace edge
+                #
+                # This is a complicated task:
+                #
+                # 1. Update topology itself
+                # 2. Update adaptive tree internal data structure
+                # 3. Update the send history in the machine model
+                # 4. Update the send history in the adaptie tree scheduler
+                # ------------------------------
+                eval_context.schedule.replace(first, last_node) # 2 + 4
+                eval_context.model.update_edge(first, last_node, eval_context.topology) # 1 + 3
+                # With 1-4, the send histories should be consistent again
+                eval_context.schedule.assert_history()
 
-                # the receiving core is done earlier
-                _first_new = l_time + t_send + t_receive + T_PROPAGATE
+                cost_tree_new = eval_context.schedule.cost_tree()
 
-                # Floating point comparison - make sure the two ways
-                # of calculating are (approximately) the same
-                c1 = self.log_first_message[first] - (slack-cost_direct)
-                c2 = _first_new
-                assert abs(c1-c2) < 1.0
+                print 'OPT: shuffle %2d -> %2d - cost %8.2f to %8.2f' % \
+                    (first, last_node, cost_tree, cost_tree_new)
 
-                self.log_first_message[first] = _first_new
-
-                print 'slack: %2d %2d %10.2f %10.2f %5s' % \
-                    (first, last, slack, cost_direct, 'yes' if optimize else 'no')
+                # Evaluate cost of new topology - should be FASTER now
+                assert cost_tree_new < cost_tree
 
             else:
                 optimize = False
-
 
         return True
 
