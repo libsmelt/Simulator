@@ -85,15 +85,6 @@ class AB(Protocol):
         #  -> received the message already (cores_active)
         self.cores_active = []
 
-        # dictionary of core -> time tuples indicating the order in which
-        # cores become active (e.g. receive the message first)
-        #
-        # This is AFTER receiving the initial message
-        self.log_first_message = {}
-
-        # dictionary of core -> time tuples indicating the order in which
-        # cores become idle (e.g. are done sending)
-        self.log_idle = {}
 
     def get_name(self):
         return 'atomic broadcast'
@@ -164,9 +155,6 @@ class AB(Protocol):
                 eval_context.event_queue, \
                     (send_compl, events.Send(core, None)))
 
-        else:
-            assert not core in self.log_idle
-            self.log_idle[core] = time
 
 
     def receive_handler(self, eval_context, core, from_core, time):
@@ -175,8 +163,6 @@ class AB(Protocol):
         """
         time += eval_context.model.get_receive_cost(from_core, core)
 
-        assert not core in self.log_first_message
-        self.log_first_message[core] = time
         return True
 
 
