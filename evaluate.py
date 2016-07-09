@@ -271,10 +271,24 @@ class AB(Protocol):
             # core         = the core ID
             # time         = time at wich idle
             # available_at = time at which message can be available at receiver
-            fastest_send = [ (core, time, time  + \
-                              eval_context.model.get_send_cost(core, last_node, False, False) + \
-                              eval_context.model.get_receive_cost(core, last_node))
-                for (core, time) in c_idle.items() ]
+            fastest_send = []
+
+            for (core, time) in c_idle.items():
+
+                if eval_context.topology.has_edge((core, last_node)) or \
+                   core == last_node:
+
+                    continue
+
+                t_prop = max(\
+                    eval_context.model.get_send_cost(core, last_node, False, False),\
+                    eval_context.model.get_send_cost(core, last_node, corrected=True))
+
+                fastest_send.append((core, time, time + t_prop + \
+                    eval_context.model.get_receive_cost(core, last_node)))
+
+            print 'eligible sender nodes' + str(fastest_send)
+
 
             # That's the time at which a core is done sending a
             # messages. Cores that finish early have some slack to send to others
@@ -293,7 +307,7 @@ class AB(Protocol):
             #
             # Check if (first->last) would optimize the tree
             if f_available_at < t_last_node and \
-               not eval_context.topology.has_edge((last_node, first)):
+               not eval_context.topology.has_edge((first, last_node)):
 
                 optimize = True
 
