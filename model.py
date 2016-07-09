@@ -175,9 +175,13 @@ class Model(object):
 
         cost = self.get_send_cost(sender, receiver, False, False)
 
-        if len(cores) > 0:
-            assert not receiver in cores
-            cost /= self.mm.get_factor(sender, cores + [receiver])
+        assert not receiver in cores # otherwise, we would repeatedly
+                                     # send to the same core (chances
+                                     # are the receiving core has been
+                                     # added to the send history
+                                     # before actually sending to it)
+
+        cost /= self.mm.get_factor(sender, cores + [receiver])
 
         return cost
 
