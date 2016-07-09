@@ -166,7 +166,7 @@ def output_quorum_configuration(model, hierarchies, root, sched, topo, midx,
                 mat[reader][writer] = cidx + SHM_SLAVE_START
 
             cidx += 1
-            
+
             if cidx == SHM_REGIONS_OFFSET:
                 raise Exception('Too many shared memory regions')
 
@@ -602,9 +602,7 @@ class bcolors:
     UNDERLINE = '\033[4m'
 
 def warn(msg):
-    print bcolors.WARNING + msg + bcolors.ENDC
-
-
+    print bcolors.WARNING + 'WARNING: ' + msg + bcolors.ENDC
 
 
 def git_version():
