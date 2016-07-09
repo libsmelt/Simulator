@@ -449,3 +449,20 @@ class SchedAdaptive(scheduling.Scheduling):
         print 'FINISHED'
         print '--------------------------------------------------'
         self.finished = True
+
+
+    def visualize(self, m, topo):
+
+        if not config.args.debug:
+            return
+
+        import draw
+        d = draw.Output('visu.tex', m, topo)
+        _, t_avail = self.simulate_current(d)
+        d.finalize(int(max([ t for (_, t) in t_avail.items()])))
+        d.generate_image()
+
+        raw_input("Press the <ENTER> key to continue...")
+
+        import subprocess, shlex
+        subprocess.check_call(shlex.split('cp visu.png visu-old.png'))

@@ -196,7 +196,7 @@ class Output():
 
         # Generate a PNG? Currently, this works only for atomic broadcasts
         if config.args.visu and 'atomic_broadcast' in self.name:
-            self.__generate_image()
+            self.generate_image()
 
 
     def __core_label_to_y_index(self):
@@ -204,7 +204,7 @@ class Output():
 
 
 
-    def __generate_image(self):
+    def generate_image(self):
 
         with open('test.tex', 'w') as f:
 
