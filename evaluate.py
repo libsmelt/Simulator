@@ -239,7 +239,7 @@ class AB(Protocol):
                 num_reorders += 1
 
                 # Sanity checks
-                assert t_new - t_old <= 0
+                assert t_new - t_old <= 0.1 # rounding errors
                 assert eval_context.schedule.cost_tree() <= cost_tree
 
                 self.draw(eval_context)
@@ -339,6 +339,8 @@ class AB(Protocol):
 
                 print 'OPT: shuffle %2d -> %2d - cost %8.2f to %8.2f' % \
                     (first, last_node, cost_tree, cost_tree_new)
+
+                self.draw(eval_context)
 
                 # Evaluate cost of new topology - should be FASTER now
                 assert cost_tree_new < cost_tree

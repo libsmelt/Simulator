@@ -59,3 +59,9 @@ class Scheduling(object):
         This is important for dynamic schedulers, such as the adaptive
         tree, to signal that the tree has been completly generated.
         """
+
+    def visualize(self, model, topo):
+        return None
+
+    def assert_history(self):
+        return True

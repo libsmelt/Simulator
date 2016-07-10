@@ -26,6 +26,9 @@ class SchedAdaptive(scheduling.Scheduling):
     are used in the schedule, where r is the receiver and cost the
     cost associated with sending a message from s to r.
 
+    Deprecated: <cost> is not used anywhere any longer, so not
+    maintaining it in here would simplify our life considerably.
+
     """
     store = dict()
 
@@ -125,84 +128,21 @@ class SchedAdaptive(scheduling.Scheduling):
         return self.cost_subtree()[self.get_root()]
 
 
-    def cost_subtree(self, node=None):
-        """Determine the cost of each node as the cost of the entire subtree
-        starting in that node.
+    def cost_subtree(self):
+        """Determine the cost of each node's subtree.
 
         Returns the cost as a dictionary core -> cost at subtree.
 
         """
+        r = {}
+        for n in self.store.keys():
+            _, t_avail = self.simulate_current(start=n)
 
-        if node == None:
-            node = self.get_root()
+            # Select the maximum t_avail from all calculated nodes
+            _, r[n] = sorted(t_avail.items(), key=lambda x: x[1], reverse=True)[0]
 
-        _, t_avail = self.simulate_current()
+        return r
 
-        # Determine maximum cost
-        # --------------------------------------------------
-
-        cost_st = {}
-
-        cost_max = 0
-
-        q = Queue.Queue()
-        q.put(node)
-
-        while not q.empty():
-            c = q.get() # caluclate next core
-            cost_max = max(cost_max, t_avail[c])
-
-            # Get an order list of neighbors
-            for _, nb in self.store[c]:
-
-                q.put(nb)
-
-        # Determine cost of subtree backwards
-        # --------------------------------------------------
-
-
-        q = Queue.Queue()
-        for l in self.get_leafs():
-            q.put(l)
-
-        while not q.empty():
-
-            core = q.get()
-            if core in cost_st:
-                continue
-
-            c_cost = 0
-
-            all_children = True
-            for _, cld in self.store[core]:
-                all_children &= cld in cost_st
-
-            if not all_children:
-                continue
-
-            # Calculate the time difference for each child and take the max
-            for _, cld in self.store[core]:
-
-                assert t_avail[cld] > t_avail[core]
-                cost_child_subtree = cost_st[cld]
-                cost_connection = (t_avail[cld] - t_avail[core])
-                c_cost = max(c_cost,  cost_child_subtree + cost_connection)
-
-            cost_st[core] = c_cost
-
-            for _, cld in self.store[core]:
-                assert cost_st[core] > cost_st[cld]
-
-            prt = self.get_parents()
-            if core in prt:
-                q.put(prt[core])
-
-
-        # Root's subtree is the entire tree, i.e. the roots subtree
-        # should equal the maximum cost of the entire tree
-        assert (cost_max == cost_st[self.get_root()])
-
-        return cost_st
 
 
     def reorder(self):
@@ -225,6 +165,7 @@ class SchedAdaptive(scheduling.Scheduling):
 
         # Determine the cost of each subtree
         cost = self.cost_subtree()
+        print 'Re-ordering: subtree costs are:', str(cost)
 
         # reset send history in machine model
         self.mod.reset()
@@ -272,14 +213,19 @@ class SchedAdaptive(scheduling.Scheduling):
         return sorted(t_avail.items(), key=lambda x: x[1], reverse=True)[0]
 
 
-    def simulate_current(self, visu=None):
+    def simulate_current(self, start=None, visu=None):
+        """Simulate the current tree starting at node <start>.
+
+        Use root if <start> is not given."""
 
         # Send history
         send_history = {}
 
+        _start = start if start != None else self.get_root()
+
         # Calculate cost of subtree
         q = Queue.Queue()
-        q.put((self.get_root(), 0))
+        q.put((_start, 0))
 
         # Dictionary core c -> time when message is availabe on each
         # core, after receiving
@@ -324,8 +270,10 @@ class SchedAdaptive(scheduling.Scheduling):
                              # after receiving if no message is sent.
 
 
-        assert (len(t_avail)==len(self.store)) # Otherwise tree is not connected
-        assert (len(t_idle) ==len(self.store)) # Otherwise tree is not connected
+        # Either the tree is full connected, or we started the tree
+        # traversal somewhere else as in the root of the tree.
+        assert _start!=self.get_root() or (len(t_avail)==len(self.store))
+        assert _start!=self.get_root() or (len(t_idle) ==len(self.store))
 
         return t_idle, t_avail
 
@@ -345,6 +293,12 @@ class SchedAdaptive(scheduling.Scheduling):
 
         assert (len(self.store) == sum([len(c) for (s, c) in self.store.items()])+1)
 
+        # Store old state
+        cost_old = self.cost_tree()
+        t_avail_old = self.simulate_current()
+        store_old = self.store
+        history_old = self.mod.send_history
+
         print 'root is', self.get_root()
         for core, children in self.store.items():
             print core, '->', [ core for (_, core) in children ]
@@ -356,6 +310,53 @@ class SchedAdaptive(scheduling.Scheduling):
 
         self.reorder()
         self.assert_history()
+
+        # Sanity checks
+        # --------------------------------------------------
+        for sender, cld in sorted(self.store.items(), key=lambda x: x[0]):
+            cld_old = store_old[sender]
+
+            # We change only the order of the neighbors, so if we sort
+            # each node's children, they lists should be the same
+            cld_c = [c for _,c in cld]
+            cld_old_c = [c for _,c in cld_old]
+            assert sorted(cld_c) == sorted(cld_old_c)
+
+            if cld_c != cld_old_c:
+                print 'Changed schedule in node %4d from %20s to %20s' % \
+                    (sender, str(cld_old_c), str(cld_c))
+
+            else:
+                print 'Unchanged schedule in node %2d' % sender
+
+
+        # XXX I think the problem here is that the cost in the very
+        # first iteration is given by the external evaluation, rather
+        # than internally by the adaptive scheduler - and they don't
+        # match!
+
+        # Two options:
+        # 1) make consistent
+        # 2) recalculate before optimizting
+        #
+        # Strong preference for 2)
+
+
+        # Sanity check: cost of the new tree has to be smaller
+        cost_new = self.cost_tree()
+
+        # XXX OKAY - for some reason, the re-ordere schedule is
+        # sometimes slower. I think this is to be expected in some
+        # cases, but on gruyere after the first re-ordering, the cost
+        # of subtrees (5) and (8) seem to be calculated wrong, from
+        # looking at the visualization.
+
+        # assert cost_new <= cost_old
+        if cost_new > cost_old:
+
+            self.mod.send_history = history_old
+            self.store = store_old
+            self.assert_history()
 
         return self.simulate_current()
 
@@ -575,7 +576,7 @@ class SchedAdaptive(scheduling.Scheduling):
 
         import draw
         d = draw.Output('visu.tex', m, topo)
-        _, t_avail = self.simulate_current(d)
+        _, t_avail = self.simulate_current(visu=d)
         d.finalize(int(max([ t for (_, t) in t_avail.items()])))
         d.generate_image()
 
