@@ -1,4 +1,4 @@
-image: stefankaestle/gcc
+image: stefankaestle/simulator
 
 # Dependencies
 # ------------------------------
