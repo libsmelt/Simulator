@@ -17,7 +17,6 @@ import pdb
 import traceback
 import re
 import general
-import overlay
 
 from config import topologies, machines, get_ab_machine_results, get_machine_result_suffix
 import config
@@ -47,8 +46,6 @@ from pygraph.algorithms.minmax import shortest_path
 # For printing clusters
 import networkx as nx
 from networkx.drawing.nx_agraph import to_agraph
-
-from overlay import Overlay
 
 class bcolors:
     HEADER = '\033[95m'
@@ -123,6 +120,7 @@ def output_quorum_configuration(model, hierarchies, root, sched, topo, midx,
     @param shm_clusters: list(list(int)) Shared memory clusters to be added to the model
     @param shm_writers: list(int) Writers, one of each list
     """
+    from overlay import Overlay
     from model import Model
     assert isinstance(model, Model)
     assert isinstance(topo, Overlay)
@@ -298,9 +296,10 @@ def draw_final(mod, sched, topo):
     import scheduling
 
     from model import Model
+    from overlay import Overlay
     assert isinstance(mod, model.Model)
     assert isinstance(sched, scheduling.Scheduling)
-    assert isinstance(topo, overlay.Overlay)
+    assert isinstance(topo, Overlay)
 
     print 'Name of machine is:', mod.get_name()
     print 'Name of topology is:', topo.get_name()
