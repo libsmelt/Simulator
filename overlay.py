@@ -46,10 +46,8 @@ class Overlay(object):
             print 'Overlay: activating argument: [%s]' % a
             self.options[a] = True
             # Some options have to be passed to the Machine
-            if a == 'mm' or a == 'mmlast':
-                assert self.mod.enable_mm == False
-                self.mod.enable_mm = True
-                self.mod.mm_last = a == 'mmlast'
+            if a == 'nomm':
+                self.mod.nomm = True
             if a == 'rev':
                 self.mod.opt_reverse_recv = True
 

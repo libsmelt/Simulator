@@ -14,7 +14,7 @@ class AdapativeTree(overlay.Overlay):
 
     """
 
-    supported_args = [ "shuffle", "sort", "min", "rev", "mm", "mmlast" ]
+    supported_args = [ "shuffle", "sort", "nomm" ]
 
     def __init__(self, mod):
         """
