@@ -9,7 +9,7 @@ from pygraph.algorithms.minmax import shortest_path
 from pygraph.classes.graph import graph
 from pygraph.classes.digraph import digraph
 
-SORT_SUBTREE=True
+SORT_SUBTREE=False
 
 # --------------------------------------------------
 class SortLongest(scheduling.Scheduling):
