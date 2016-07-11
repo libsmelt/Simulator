@@ -56,7 +56,11 @@ python ./simulator.py --server 2>&1  &
 SERVER_PID=$!
 
 # Wait for Simulator to come up
-sleep 5
+until netstat -tulpen | grep 25041
+do
+    sleep 2
+    echo 'waiting for Simulator'
+done
 
 # --------------------------------------------------
 # Execute tests
