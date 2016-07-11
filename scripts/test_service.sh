@@ -70,7 +70,7 @@ assert_sim_running
 
 # Request something from the Simulator
 echo " --> Executing tests"
-python server-test.py sgs-r815-03 adaptivetree "1,2,3-4,5"; [[ $? -eq 0 ]] || error "Simulator request failed"
+python server-test.py gruyere adaptivetree "1,2,3-4,5"; [[ $? -eq 0 ]] || error "Simulator request failed"
 assert_sim_running
 
 # --------------------------------------------------
