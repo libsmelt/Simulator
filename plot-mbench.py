@@ -11,6 +11,8 @@ import plotsetup
 import json
 import gzip
 
+import helpers
+
 import sys
 import os
 from extract_ab_bench import parse_simulator_output, parse_log
@@ -56,6 +58,61 @@ label_lookup = {
     'barriers': 'barrier',
     'agreement': '2PC'
 }
+
+def print_res(plotdata, machine):
+
+    global arg
+
+    print
+    print helpers.bcolors.HEADER + helpers.bcolors.UNDERLINE + \
+        machine + helpers.bcolors.ENDC
+    print
+
+
+    for t in [ 'ab', 'reduction', 'barriers', 'agreement' ]:
+
+        if arg.algorithm and arg.algorithm!=t:
+            continue
+
+        print
+        print '------------------------------'
+        print t
+        print '------------------------------'
+        print
+
+        val = plotdata[t].items()
+        val = sorted(val, key=lambda x: x[1][0])
+
+        best_other = ('n.a.', sys.maxint)
+        (baseline, _, _) = plotdata[t][arg.normalize]
+        baseline = float(baseline)
+
+        for topo, (m, e, pred) in val:
+
+            if arg.topology_ignore and arg.topology_ignore in topo:
+                continue
+
+            fac = -1
+
+            if arg.normalize:
+                fac = m/baseline
+
+            if not 'adaptivetree' in topo and m<best_other[1]:
+                best_other = (topo, min(best_other[1], m))
+
+            color = helpers.bcolors.OKGREEN if fac>=1.01 else \
+                    (helpers.bcolors.FAIL if fac<=0.99 else '')
+
+            s = '%-30s %5d %8.2f %s %8.2f %s' % \
+                (topo, m, e, color, fac, helpers.bcolors.ENDC)
+
+            if arg.highlight and topo == arg.highlight:
+                print helpers.bcolors.BOLD + s + helpers.bcolors.ENDC
+            else:
+                print s
+
+        print 'Best other: %30s %8.2f %8.2f' % \
+            (best_other[0], best_other[1], best_other[1]/baseline)
 
 #
 # Barchart
@@ -190,7 +247,8 @@ def generate_machine(m):
         if arg.force:
             raise Exception('Ignoring json file - force reload')
         with open(_json, 'r') as f:
-            mbench = json.loads(f.read())
+            _mbench = json.loads(f.read())
+            mbench = { a: { title: (v, e, 0) for (title, v, e, _) in x } for (a, x) in _mbench }
             print 'json summary exists, reading from there .. '
             f.close()
     except:
@@ -202,14 +260,19 @@ def generate_machine(m):
         f.close()
 
     import ast
-    multi_bar_chart(mbench, m)
+    print_res(mbench, m)
+#    multi_bar_chart(mbench, m)
 
-
+global arg
 
 import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument('--machines')
 parser.add_argument('--showadaptive', dest='showadaptive', action='store_false')
+parser.add_argument('--normalize', help='Which measurement should we normalize to?')
+parser.add_argument('--highlight', help='Which measurement should be highlighted?')
+parser.add_argument('--algorithm', help='Algorithm to evaluate. Default: all')
+parser.add_argument('--topology-ignore', help='Topology pattern to ingore. Default: all')
 parser.add_argument('-f', dest='force', action='store_true')
 parser.set_defaults(showadaptive=True, force=False)
 arg = parser.parse_args()
@@ -222,6 +285,12 @@ machines = ['gruyere', 'nos4', 'pluton', 'sbrinz1',
 SHOW_ADAPTIVE = arg.showadaptive
 
 for m in machines:
-    generate_machine(m)
+    try:
+        generate_machine(m)
+    except IOError as e:
+        print 'IOError - probably measurment file does not exist'
+    except Exception as e:
+        print 'Failed for machine %s' % m
+        raise
 
 exit(0)
