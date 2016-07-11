@@ -131,7 +131,7 @@ def do_plot(cores_remote, cores_local, z, e, h, d, mode, machine, show_accurracy
                 continue
 
             color = 'black'
-            pairwise_cost = m_class.get_send_history_cost(SENDER_CORE, h[r][l])
+            pairwise_cost = m_class.get_send_history_cost(SENDER_CORE, h[r][l], corrected=False)
 
             x = l
             y = r
@@ -167,12 +167,20 @@ def do_plot(cores_remote, cores_local, z, e, h, d, mode, machine, show_accurracy
     plt.xlabel('number of local messages')
     plt.ylabel('number of remote messages')
 
+    plt.title(('cost of sending the last message [cycles] displayed '
+               'as (measured cost, prediction pairwise-n w/o, '
+               'rel error)'))
+
 
     # OUTPUT
     # --------------------------------------------------
     plt.tight_layout() # re-create bounding-box
 
-    f = '%s/%s/multimessage-%s.pdf' % (MDB, machine, mode)
+    global read_stdin
+    if read_stdin:
+        f = '/tmp/multimessage-%s.pdf' % (mode)
+    else:
+        f = '%s/%s/multimessage-%s.pdf' % (MDB, machine, mode)
     print 'Writing output', f
     plt.savefig(f)
 
@@ -264,6 +272,8 @@ parser.set_defaults(Accuracy=False)
 global arg
 arg = parser.parse_args()
 
+global read_stdin
+
 from tableau20 import tab_cmap, colors
 import machineinfo
 _all_machines = [ s for (s, _, _) in machineinfo.machines ]
@@ -277,18 +287,30 @@ for m in machines:
         from netos_machine import NetosMachine
         from server import SimArgs
 
+        read_stdin = False
+        if m.endswith('-stdin'):
+            m = m.replace('-stdin', '')
+            read_stdin = True
+
         # Set machine name
         config.args = SimArgs()
         config.args.machine = m
 
         m_class = NetosMachine()
 
-        _name = '%s/%s/multimessage.gz' % (MDB, m)
-        print _name
-        f = gzip.open(_name, 'r')
-        print 'Generating machine', m
-        plot_multimesage(m, f, False, True)
-    except IOError:
+        if read_stdin:
+            m = m.replace('-stdin', '')
+            import fileinput
+            print 'Reading from stdin'
+            plot_multimesage(m, sys.stdin, False, True)
+        else:
+            _name = '%s/%s/multimessage.gz' % (MDB, m)
+            print _name
+            f = gzip.open(_name, 'r')
+            print 'Generating machine', m
+            plot_multimesage(m, f, False, True)
+    except IOError as e:
         print 'No multimessage data for machine', m, ' - ignoring'
+        print str(e)
 
 exit(0)
