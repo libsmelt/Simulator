@@ -5,6 +5,9 @@ source $SCRIPTDIR/common.sh
 
 get_model
 
+mkdir graphs/
+mkdir visu/
+
 python ./simulator.py gruyere adaptivetree --visu; RC=$?
 
 if [[ ! -f visu/visu_gruyere_adaptivetree_atomic_broadcast.png ]];
