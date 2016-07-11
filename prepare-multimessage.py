@@ -30,13 +30,24 @@ def prepare_multimessage(machine):
 
     node_avg = sorted(node_avg, key=lambda x: x[1], reverse=True)[:2]
     n1 = machine.get_numa_node_by_id(node_avg[0][0])
-    n2 = machine.get_numa_node_by_id(node_avg[1][0])
 
-    # http://stackoverflow.com/questions/3471999/how-do-i-merge-two-lists-into-a-single-list
-    remote = [str(j) for i in zip(n1,n2) for j in i]
 
-    print root, ','.join(local), ','.join(remote)
+    if num_nodes>2:
 
+        n2 = machine.get_numa_node_by_id(node_avg[1][0])
+
+        # http://stackoverflow.com/questions/3471999/how-do-i-merge-two-lists-into-a-single-list
+        remote = [str(j) for i in zip(n1,n2) for j in i]
+
+    else:
+        remote = [str(j) for j in n1]
+
+
+    s = ('%s)\n'
+         '  ARGS=\"%d %s %s\"\n'
+         '  ;;') % (machine.get_name(), root, ','.join(local), ','.join(remote))
+
+    print >> sys.stderr,  s
 
 
 import argparse
@@ -46,7 +57,6 @@ parser.add_argument('--machines')
 global arg
 arg = parser.parse_args()
 
-from tableau20 import tab_cmap, colors
 import machineinfo
 all_machines = [ s for (s, _, _) in machineinfo.machines ]
 machines = all_machines if not arg.machines else arg.machines.split()
