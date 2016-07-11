@@ -74,7 +74,7 @@ class Model(object):
         except IOError:
             print 'No multimessage data for this machine'
         except:
-            raise
+            helpers.warn('Unable to read multimessage data')
 
         # Build graph and reset
         # --------------------------------------------------
