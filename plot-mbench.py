@@ -17,6 +17,8 @@ import sys
 import os
 from extract_ab_bench import parse_simulator_output, parse_log
 
+import debug
+
 PRESENTATION=False
 SHOW_ADAPTIVE=None # given as argument
 
@@ -63,11 +65,6 @@ def print_res(plotdata, machine):
 
     global arg
 
-    print
-    print helpers.bcolors.HEADER + helpers.bcolors.UNDERLINE + \
-        machine + helpers.bcolors.ENDC
-    print
-
 
     for t in [ 'ab', 'reduction', 'barriers', 'agreement' ]:
 
@@ -79,6 +76,9 @@ def print_res(plotdata, machine):
         print t
         print '------------------------------'
         print
+
+        if not isinstance(plotdata, dict):
+            plotdata = { a: { title: (v, e, 0) for (title, v, e, _) in x } for (a, x) in plotdata }
 
         val = plotdata[t].items()
         val = sorted(val, key=lambda x: x[1][0])
@@ -277,7 +277,7 @@ parser.add_argument('-f', dest='force', action='store_true')
 parser.set_defaults(showadaptive=True, force=False)
 arg = parser.parse_args()
 
-machines = ['gruyere', 'nos4', 'pluton', 'sbrinz1',
+machines = ['gruyere', 'nos4', 'pluton', 'sbrinz1', 'appenzeller',
             'sgs-r815-03', 'sgs-r820-01', 'tomme1', 'vacherin',
             'ziger2', 'gruyere', 'gottardo' ] \
            if not arg.machines else arg.machines.split()
@@ -285,12 +285,25 @@ machines = ['gruyere', 'nos4', 'pluton', 'sbrinz1',
 SHOW_ADAPTIVE = arg.showadaptive
 
 for m in machines:
+
+    print
+    print helpers.bcolors.HEADER + helpers.bcolors.UNDERLINE + \
+        m + helpers.bcolors.ENDC
+    print
+
+    done = False
+
     try:
         generate_machine(m)
+        done = True
     except IOError as e:
         print 'IOError - probably measurment file does not exist'
     except Exception as e:
         print 'Failed for machine %s' % m
         raise
+
+    if not done:
+        print helpers.bcolors.FAIL + 'Failed for machine ' + helpers.bcolors.UNDERLINE\
+            + m + helpers.bcolors.ENDC
 
 exit(0)
