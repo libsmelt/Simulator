@@ -100,17 +100,22 @@ class Model(object):
         return len(self.machine_topology['NUMA'].get())
 
 
-    def get_num_cores(self):
-        return self.machine_topology['numcpus']
+    def get_num_cores(self, only_mc=False):
+        """Get number of cores.
+
+        param only_mc: only return the cores that are active in the
+        multicast.
+
+        """
+        if only_mc:
+            return len(self.get_cores(True))
+        else:
+            return self.machine_topology['numcpus']
 
 
     def get_cores_per_node(self):
-        """Deprecated: This should ONLY be used for visualization purposes,
-        and never for actually generating the model (use pairwise
-        measurements for that)
+        """Assumptions: All NUMA nodes have the same number of cores.
 
-
-        Assumptions: All NUMA nodes have the same number of cores.
         """
         return len(self.machine_topology['NUMA'].get()[0])
 
@@ -199,15 +204,15 @@ class Model(object):
 
     # --------------------------------------------------
     # Helpers
-    def get_cores(self, only_active=False):
+    def get_cores(self, only_mc=False):
         """Return a list of cores
 
-        @param only_active If set to true, only return nodes that
+        @param only_mc If set to true, only return nodes that
         participate in multicast.
 
         """
         c = list(itertools.chain.from_iterable(self.machine_topology['NUMA'].get()))
-        c = self.filter_active_cores(c, only_active)
+        c = self.filter_active_cores(c, only_mc)
         return c
 
 
