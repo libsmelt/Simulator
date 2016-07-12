@@ -43,7 +43,7 @@ class SortLongest(scheduling.Scheduling):
             nb.sort(self.__search)
         else:
             nb=self.__sort_edge_weight(sending_node, active_nodes)
-            nb.sort(self.__search, reverse=True)
+            nb.sort(self.__search)
         return nb
 
 
