@@ -81,7 +81,7 @@ class SchedAdaptive(scheduling.Scheduling):
 
         """
         parent = self.get_parents()
-        for s, children in self.store.items():
+        for s in self.mod.get_cores(True):
             if not s in parent:
                 return s
         raise Exception('Could not find root')
@@ -201,8 +201,6 @@ class SchedAdaptive(scheduling.Scheduling):
 
             logging.info(('Storing new send order', self.store.get(core, [])))
 
-        assert self.get_root()
-
         # Fix send history
         self.assert_history()
 
@@ -272,8 +270,8 @@ class SchedAdaptive(scheduling.Scheduling):
 
         # Either the tree is full connected, or we started the tree
         # traversal somewhere else as in the root of the tree.
-        assert _start!=self.get_root() or (len(t_avail)==len(self.store))
-        assert _start!=self.get_root() or (len(t_idle) ==len(self.store))
+        assert _start!=self.get_root() or (len(t_avail)==len(self.store)) or len(t_avail)==self.mod.get_num_cores(True)
+        assert _start!=self.get_root() or (len(t_idle) ==len(self.store)) or len(t_avail)==self.mod.get_num_cores(True)
 
         return t_idle, t_avail
 
@@ -291,8 +289,8 @@ class SchedAdaptive(scheduling.Scheduling):
 
         """
 
-        assert (len(self.store) == sum([len(c) for (s, c) in self.store.items()])+1)
-
+        assert (len(self.store) == sum([len(c) for (s, c) in self.store.items()])+1) or \
+            (self.mod.get_num_cores(True) == sum([len(c) for (s, c) in self.store.items()])+1)
         # Store old state
         cost_old = self.cost_tree()
         t_avail_old = self.simulate_current()
