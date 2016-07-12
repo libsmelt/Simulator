@@ -65,20 +65,24 @@ class Fibonacci(overlay.Overlay):
         # Sort nodes such that nodes further up in the tree come first
         nodes = sorted(nodes, cmp=lambda x, y: cmp(len(x),len(y)))
 
+        # Shorten nodes so that we have just enough cores
+        nodes = nodes[:num_cores]
+
         # Build dictionary with node name translations
         d = {}
-        for (idx, n) in enumerate(nodes):
-            if idx<num_cores:
-                d[n] = idx
-            else:
-                break
+        cores = sorted(g.nodes())
+
+        for (n, idx) in zip(nodes, cores):
+            d[n] = idx
 
         # Build tree
         g = digraph()
-        map(g.add_node, [ d[key] for key in nodes if key in d ])
-        map(g.add_edge, [ (d[s],d[e])
-                          for (s,e) in edges if s in d and e in d ])
+        for n in [ d[key] for key in nodes ]:
+            g.add_node(n)
+
+        for (s,e) in edges:
+            if s in d and e in d:
+                g.add_edge((d[s],d[e]))
+
 
         return g
-
-
