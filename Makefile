@@ -10,8 +10,7 @@ graph: visu.tex $(DEP_PYTHON)
 
 .PHONY: results/ab-bench.dat
 results/ab-bench.dat:
-	./plot-mbench.py --normalize adaptivetree-nomm-shuffle-sort \
-		--highlight cluster --algorithm ab --topology-ignore naive > $@
+	./plot-mbench.py --normalize adaptivetree-nomm-shuffle-sort --highlight cluster --algorithm ab --topology-ignore naive > $@
 
 
 .PHONY: visu visu_all.pdf

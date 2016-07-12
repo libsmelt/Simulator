@@ -64,6 +64,7 @@ label_lookup = {
 def print_res(plotdata, machine):
 
     global arg
+    global bl_comp
 
 
     for t in [ 'ab', 'reduction', 'barriers', 'agreement' ]:
@@ -114,6 +115,7 @@ def print_res(plotdata, machine):
         print 'Best other: %30s %8.2f %8.2f' % \
             (best_other[0], best_other[1], best_other[1]/baseline)
 
+        bl_comp.append((best_other[1]/baseline, best_other[1], best_other[0], t))
 #
 # Barchart
 #
@@ -284,6 +286,10 @@ machines = ['gruyere', 'nos4', 'pluton', 'sbrinz1', 'appenzeller',
 
 SHOW_ADAPTIVE = arg.showadaptive
 
+# Comparison with baselines
+global bl_comp
+bl_comp = []
+
 for m in machines:
 
     print
@@ -305,5 +311,25 @@ for m in machines:
     if not done:
         print helpers.bcolors.FAIL + 'Failed for machine ' + helpers.bcolors.UNDERLINE\
             + m + helpers.bcolors.ENDC
+
+
+select_algo = arg.algorithm if arg.algorithm else 'ab'
+
+best_other = {}
+bl_ab = [ (a, b, c, topo) for (a, b, c, topo) in bl_comp if topo == select_algo ]
+avg_rel_slowdown = 0.0
+for (rel_slowdown, _, name, _) in bl_ab:
+    best_other[name] = best_other.get(name, 0) + 1
+    avg_rel_slowdown += rel_slowdown
+
+print
+print helpers.bcolors.HEADER + helpers.bcolors.UNDERLINE + \
+    'STATISTICS' + helpers.bcolors.ENDC
+print
+
+
+print 'Average relative slowdown of next best %8.2f' % (avg_rel_slowdown/float(len(bl_ab)))
+print best_other
+
 
 exit(0)
