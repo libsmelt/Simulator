@@ -298,7 +298,14 @@ class AB(Protocol):
                                 % (core, available_at, time)))
 
             # Select best fitting sender core (first) and last core to
-            # finish (last)
+            # finish (last) - when only two cores are participating in
+            # a broadcast, it is possible that fastest_send is empty
+            # because there already is an edge between these two
+            # nodes. In that case, we simply abort.
+            if len(fastest_send)<1:
+                optimize = False
+                continue
+
             first, f_time, f_available_at = fastest_send[0]
 
             # Replace if:
