@@ -74,7 +74,14 @@ num_cores_ordered = { machine: idx for ((machine, numcores), idx) in \
                       zip(sorted(num_cores.items(), key=lambda x: x[1]), \
                           range(len(num_cores))) }
 
-fontsize = 14 if not PRESENTATION else 12
+fontsize = 12
+
+import matplotlib
+plt.rc('legend',**{'fontsize':fontsize, 'frameon': 'false'})
+matplotlib.rc('font', family='serif')
+matplotlib.rc('font', serif='Times New Roman')
+matplotlib.rc('text', usetex='true')
+matplotlib.rcParams.update({'font.size': fontsize, 'xtick.labelsize':fontsize, 'ytick.labelsize':fontsize})
 
 def machine_name_translation(_in):
 
@@ -84,18 +91,7 @@ def machine_name_translation(_in):
     return val
 
 
-import matplotlib
-matplotlib.rcParams['figure.figsize'] = 8.0, 4.5
-plt.rc('legend',**{'fontsize':fontsize, 'frameon': 'false'})
-
-
-matplotlib.rcParams.update({'font.size': fontsize, 'xtick.labelsize':fontsize, 'ytick.labelsize':fontsize})
-
-from matplotlib import rc
-
-matplotlib.rc('font', family='serif')
-matplotlib.rc('font', serif='Times')
-matplotlib.rc('text', usetex='true')
+matplotlib.rcParams['figure.figsize'] = 8.0, 3.5
 
 # Directory from which to read the measurements
 MDIR='machinedb/'
@@ -112,7 +108,7 @@ label_lookup = {
     'agreement': '2PC'
 }
 
-from tableau20 import tab_cmap, colors
+from tableau20 import tab_cmap, colors, tab2_cmap
 ADAPTIVE=None # set by arg
 
 #
@@ -178,7 +174,7 @@ def heatmap(data, args):
                         adaptive = val
                     else:
                         # Ignore 'naive' measurements, inogre other 'adapative'
-                        if 'adaptive' in topo or not 'naive' in topo:
+                        if 'adaptive' in topo or 'naive' in topo:
                             continue
                         else:
                             _min = min(_min, val)

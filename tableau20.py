@@ -23,8 +23,8 @@ import matplotlib
 # Which colors to pick ..
 # compare with https://owncloud.mad-kow.de/s/psgMnvnKGyT3ac2
 # a value of X equals colorX
-C_TOP_IDX=7
-C_BOTTOM_IDX=1
+C_TOP_IDX=1
+C_BOTTOM_IDX=6
 
 # http://matplotlib.org/api/colors_api.html?highlight=linearsegmentedcolormap#matplotlib.colors.LinearSegmentedColormap
 def _generate_cmap(idx):
@@ -60,3 +60,5 @@ cdict2 = {'red': _generate_cmap_2(0),
 }
 tab1_cmap = matplotlib.colors.LinearSegmentedColormap('tab1_cmap', cdict1, 256)
 tab2_cmap = matplotlib.colors.LinearSegmentedColormap('tab2_cmap', cdict2, 256)
+
+tab_cmap = tab1_cmap
