@@ -27,6 +27,7 @@ machines = [
 # to make generated models available for sending back to the
 # requesting client when acting as a RPC server.
 models = []
+running_as_server = False
 
 # Path to the machine database.
 MACHINE_DATABASE='machinedb/'

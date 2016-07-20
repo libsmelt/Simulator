@@ -180,7 +180,8 @@ def simulate(args):
                 # Output final graph: we have to do this here, as the
                 # final topology for the adaptive tree is not known before
                 # simulating it.
-                helpers.draw_final(m, sched, topo)
+                if not config.running_as_server:
+                    helpers.draw_final(m, sched, topo)
 
             num_models += 1
 

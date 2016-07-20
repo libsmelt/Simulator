@@ -4,6 +4,7 @@ import socket
 import sys
 import json
 import helpers
+import config
 
 from StringIO import StringIO
 
@@ -100,6 +101,8 @@ def write_statistics(machine):
 
 
 def server_loop():
+
+    config.running_as_server = True
     print 'Starting server'
 
     # Create a TCP/IP socket
