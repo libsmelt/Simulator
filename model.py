@@ -409,7 +409,7 @@ class Model(object):
         ## XXX Also need to reset send history on an individual node
         ## for barriers etc, when reverting from reduction to ab
         if self.send_history:
-            print 'Resetting send history', self.send_history
+            logging.info(('Resetting send history' + str(self.send_history)))
         self.send_history = {}
 
 
