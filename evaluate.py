@@ -7,7 +7,6 @@ import logging
 import sched_adaptive
 import copy # for heapq
 import helpers
-import logging
 
 # We assume that the propagation time is zero. The cost for
 # transporting messages is captured in t_send and t_receive.
@@ -134,7 +133,8 @@ class AB(Protocol):
             cost = eval_context.model.get_send_cost(core, dest, True, True)
             cost_real = max(_cost_real, cost)
 
-            print 'Correcting cost %2d %2d cost %7.2f %7.2f -> %7.2f' % (core, dest, cost, _cost_real, cost_real)
+            logging.info(('Correcting cost %2d %2d cost %7.2f %7.2f -> %7.2f' %\
+                              (core, dest, cost, _cost_real, cost_real)))
 
             # Adaptive models: need to add edge
             if not eval_context.topology.has_edge((core,dest)):
@@ -143,8 +143,9 @@ class AB(Protocol):
                     eval_context.model.graph.edge_weight((core, dest)))
 
             eval_context.visu.send(core, dest, time, cost)
-            print '% 5d   Send(%s,%s) - cost % 4d   done=% 5d' % \
-                (eval_context.sim_round, str(core), str(dest), cost, cost+eval_context.sim_round)
+            logging.info(('% 5d   Send(%s,%s) - cost % 4d   done=% 5d' % \
+                (eval_context.sim_round, str(core), str(dest), cost,
+                 cost+eval_context.sim_round)))
 
             # Calculate when node is free again
             send_compl = time + cost
@@ -190,9 +191,9 @@ class AB(Protocol):
         # Step 2:
         # --------------------------------------------------
 
-        print '--------------------------------------------------'
-        print '-- TERMINATED evaluation'
-        print '--------------------------------------------------'
+        logging.info(('--------------------------------------------------'))
+        logging.info(('-- TERMINATED evaluation'))
+        logging.info(('--------------------------------------------------'))
 
         # First, ensure that the send histories match
         eval_context.schedule.assert_history()
@@ -235,7 +236,8 @@ class AB(Protocol):
                 t_old = slowest_old[0][1]
                 t_new = slowest_new[0][1]
 
-                print 'OPT sort %2d - %8.2f to %8.2f' % (num_reorders, t_old, t_new)
+                logging.info(('OPT sort %2d - %8.2f to %8.2f' % \
+                                  (num_reorders, t_old, t_new)))
                 num_reorders += 1
 
                 # Sanity checks
@@ -287,7 +289,7 @@ class AB(Protocol):
                 fastest_send.append((core, time, time + t_prop + \
                     eval_context.model.get_receive_cost(core, last_node)))
 
-            print 'eligible sender nodes' + str(fastest_send)
+            logging.info(('eligible sender nodes' + str(fastest_send)))
 
 
             # That's the time at which a core is done sending a
@@ -344,8 +346,8 @@ class AB(Protocol):
 
                 cost_tree_new = eval_context.schedule.cost_tree()
 
-                print 'OPT: shuffle %2d -> %2d - cost %8.2f to %8.2f' % \
-                    (first, last_node, cost_tree, cost_tree_new)
+                logging.info(('OPT: shuffle %2d -> %2d - cost %8.2f to %8.2f' %\
+                    (first, last_node, cost_tree, cost_tree_new)))
 
                 self.draw(eval_context)
 
@@ -378,13 +380,13 @@ class Reduction(Protocol):
         """Evaluate cost starting at root of overlay
         """
         leaf_nodes = eval_context.topo.get_leaf_nodes(eval_context.schedule)
-        print 'Leaf nodes are', str(leaf_nodes)
+        logging.info(('Leaf nodes are', str(leaf_nodes)))
 
         for l in leaf_nodes:
             eval_context.schedule_node(l)
 
         self.parents = eval_context.topo.get_parents(eval_context.schedule)
-        print 'Parent relationship: ', self.parents
+        logging.info(('Parent relationship: ', self.parents))
 
         self.root = root
 
@@ -396,10 +398,10 @@ class Reduction(Protocol):
 
         num_children = len([ x for (x, p) in self.parents.items() if p == int(core) ])
 
-        print bcolors.OKBLUE + \
-            ('%d: Core %d receiving message %d/%d' %
-             (time, core, num, num_children)) + \
-            bcolors.ENDC
+        logging.info((bcolors.OKBLUE + \
+                          ('%d: Core %d receiving message %d/%d' %
+                           (time, core, num, num_children)) + \
+                          bcolors.ENDC))
 
         assert num<=num_children
         return num>=num_children
@@ -428,10 +430,10 @@ class Reduction(Protocol):
         # Each core has only one parent - send a message there
         parent = self.parents.get(core, None)
         assert parent != None # Unless we are the root, we have a parent
-        print 'Count on', core, 'out of', num_children, 'is', num
+        logging.info(('Count on', core, 'out of', num_children, 'is', num))
 
         if num >= num_children:
-            print 'Sending to parent', parent
+            logging.info(('Sending to parent', parent))
 
             # Send history should be empty, as only one message is
             # sent per node (to its parent)
@@ -454,7 +456,7 @@ class Barrier(Protocol):
     BC = 2
 
     def __init__(self):
-        print 'Initializing new Barrier'
+        logging.info(('Initializing new Barrier'))
         self.state = {}
         self.leaf_nodes = {}
         # Keep track of which nodes are active
@@ -478,14 +480,14 @@ class Barrier(Protocol):
 
         """
         leaf_nodes = eval_context.topo.get_leaf_nodes(eval_context.schedule)
-        print 'Leaf nodes are', str(leaf_nodes)
+        logging.info(('Leaf nodes are', str(leaf_nodes)))
 
         for l in leaf_nodes:
             self.state[l] = Barrier.REDUCE
             eval_context.schedule_node(l)
 
         self.parents = eval_context.topo.get_parents(eval_context.schedule)
-        print 'Parent relationship: ', self.parents
+        logging.info(('Parent relationship: ', self.parents))
 
         self.root = root
 
@@ -506,8 +508,8 @@ class Barrier(Protocol):
         # Reduce state
         if self.state.get(core, Barrier.IDLE) == Barrier.REDUCE:
 
-            print ('Node %d is in reduce state and received a message '
-                   'or no neighbors (%d)') % (core, len(nb_filtered))
+            logging.info((('Node %d is in reduce state and received a message '
+                   'or no neighbors (%d)') % (core, len(nb_filtered))))
 
             # There is nothing to do for the root
             if core == self.root:
@@ -523,15 +525,16 @@ class Barrier(Protocol):
             # Each core has only one parent - send a message there
             parent = eval_context.topo.get_parents(eval_context.schedule).get(core, None)
             assert parent != None # Unless we are the root, we have a parent
-            print 'Count on', core, 'out of', num_children, 'is', num
+            logging.info(('Count on', core, 'out of', num_children, 'is', num))
 
             if num >= num_children:
-                print '%d: Sending to parent %d (%d/%d)' % (core, parent, num, num_children)
+                logging.info(('%d: Sending to parent %d (%d/%d)' %\
+                                  (core, parent, num, num_children)))
 
                 cost = eval_context.model.get_send_cost(core, parent, True, True)
 
-                print 'Send(%d,%s,%s) - Barrier - Reduce - NBs=%d - cost %d' % \
-                    (eval_context.sim_round, str(core), str(parent), 1, cost)
+                logging.info(('Send(%d,%s,%s) - Barrier - Reduce - NBs=%d - cost %d' % \
+                    (eval_context.sim_round, str(core), str(parent), 1, cost)))
 
                 send_compl = time + cost
 
@@ -543,7 +546,7 @@ class Barrier(Protocol):
         elif len(nb_filtered) > 0:
 
             assert self.state[core] == Barrier.BC
-            print 'Node %d is in broadcast state and received a message ' % core
+            logging.info(('Node %d is in broadcast state and received a message ' % core))
 
             dest = nb_filtered[0]
             cost = eval_context.model.get_send_cost(core, dest, True, True)
@@ -555,9 +558,9 @@ class Barrier(Protocol):
                     eval_context.model.graph.edge_weight((core, dest)))
 
             eval_context.visu.send(core, dest, time, cost)
-            print 'Send(%d,%s,%s) - Barrier - BC - NBs=%d - cost %d' % \
+            logging.info(('Send(%d,%s,%s) - Barrier - BC - NBs=%d - cost %d' % \
                 (eval_context.sim_round, str(core), str(dest),
-                 len(nb_filtered), cost)
+                 len(nb_filtered), cost)))
 
             send_compl = time + cost
 
@@ -579,7 +582,7 @@ class Barrier(Protocol):
 
         State diagram.
         """
-        print 'Receiving message on core %d' % core
+        logging.info(('Receiving message on core %d' % core))
 
         curr_core_state = self.state.get(core, Barrier.IDLE)
 
@@ -628,7 +631,7 @@ class Barrier(Protocol):
         The barrier is finished after each node is in .. state
         """
 
-        print 'Checking if Barrier is terminated - %d' % len(self.state)
+        logging.info(('Checking if Barrier is terminated - %d' % len(self.state)))
 
         reduce_done = True
         finished = True
@@ -640,9 +643,9 @@ class Barrier(Protocol):
 
         if reduce_done:
 
-            print '------------------------------'
-            print 'REDUCE --> BROADCAST (from %d)' % self.root
-            print '------------------------------'
+            logging.info(('------------------------------'))
+            logging.info(('REDUCE --> BROADCAST (from %d)' % self.root))
+            logging.info(('------------------------------'))
 
             # Activate BC for root
             self.state[self.root] = Barrier.BC
@@ -715,8 +718,8 @@ class Evaluate():
 
         for protocol in prots:
 
-            print 'Evaluating protocol %s' % \
-                protocol.get_name()
+            logging.info(('Evaluating protocol %s' % \
+                protocol.get_name()))
 
             ev = Evaluate(protocol)
             # import cProfile
@@ -766,8 +769,8 @@ class Evaluate():
         import overlay
 
         assert isinstance(topo, overlay.Overlay)
-        print 'Evaluate overlay', str(topo), 'using scheduler', str(sched), \
-            'tree is', str(topo.get_tree())
+        logging.info(('Evaluate overlay', str(topo), 'using scheduler', str(sched), \
+            'tree is', str(topo.get_tree())))
 
         assert len(topo.get_tree())==1 # Don't support evaluation for Hybrid models yet
         for l in topo.get_tree():
@@ -874,10 +877,10 @@ class Evaluate():
         if isinstance(e, events.Receiving):
             ev_type = "receive done"
 
-        print bcolors.OKGREEN + \
+        logging.info((bcolors.OKGREEN + \
             ('% 5d   core %d - %s -> Core %d' %
              (self.sim_round, s, e.get_type(), d)) + \
-            bcolors.ENDC
+            bcolors.ENDC))
 
 
     def propagate(self, src, dest):
@@ -897,18 +900,19 @@ class Evaluate():
             (ts, ev) = he
 
             if ev.dest == dest:
-                print bcolors.BOLD + \
+                logging.info((bcolors.BOLD + \
                     ('%d: Core %d propagete, found existing event %s at %d %d -> %d - ' %
                      (self.sim_round, dest, ev.get_type(), ts, ev.src, ev.dest)) + \
-                    bcolors.ENDC
+                    bcolors.ENDC))
 
                 if isinstance(ev, events.Receiving):
 
                     _new = max(enqueue_at, ts)
 
-                    print bcolors.BOLD + bcolors.FAIL + \
+                    logging.info((bcolors.BOLD + bcolors.FAIL + \
                         ('%d: Core %d is already receiving %d -> %d' %
-                         (self.sim_round, dest, enqueue_at, _new)) + bcolors.ENDC
+                         (self.sim_round, dest, enqueue_at, _new)) +
+                                  bcolors.ENDC))
 
                     assert ts >= enqueue_at
                     enqueue_at = _new
@@ -919,7 +923,8 @@ class Evaluate():
         # Node (src) has just sent a message, increment send batch size
         self.node_state[src].send_batch += 1
 
-        print "% 5d   Propagate(%s->%s) - cost % 4d   done=% 5d" % (self.sim_round, str(src), str(dest), w, w + self.sim_round)
+        logging.info(("% 5d   Propagate(%s->%s) - cost % 4d   done=% 5d" %\
+                          (self.sim_round, str(src), str(dest), w, w + self.sim_round)))
 
     def receive(self, src, dest):
         """Receive a message on dest XXX This is a bit of a misnomer. _dest_
@@ -937,8 +942,8 @@ class Evaluate():
         # Get receive cost
         cost = self.model.get_receive_cost(src, dest)
         self.visu.receive(dest, src, self.sim_round, cost)
-        print "% 5d   Receive(%s->%s)  - cost % 4d   done=% 5d" \
-                         % (self.sim_round, str(src), str(dest), cost, cost+self.sim_round)
+        logging.info(("% 5d   Receive(%s->%s)  - cost % 4d   done=% 5d" \
+                         % (self.sim_round, str(src), str(dest), cost, cost+self.sim_round)))
 
         # Node (src) has just received a mesage, reset send batch
         self.node_state[dest].send_batch = 0
@@ -960,21 +965,21 @@ class Evaluate():
 
             if ev.dest == dest or ev.src == dest:
 
-                print bcolors.WARNING + \
+                logging.info((bcolors.WARNING + \
                     ('%d: Core %d found another event %s at %d %d -> %d - ' %
                      (self.sim_round, dest, ev.get_type(), ts, ev.src, ev.dest)) + \
-                    bcolors.ENDC
+                    bcolors.ENDC))
 
             if ev.dest == dest and isinstance(ev, events.Receive):
 
                 assert (ev.src != src) # this should be from a different source
 
-                print bcolors.WARNING + \
+                logging.info((bcolors.WARNING + \
                     ('%d: Core %d found another event %s at %d from %d - '
                      'cost: %d - new ts %d' %
                      (self.sim_round, dest, ev.get_type(), ts, ev.src,
                       cost, ts + cost)) + \
-                    bcolors.ENDC
+                    bcolors.ENDC))
                 # assert (ts>=self.sim_round) # otherwise, we'd have an
                 #                             # event on the queue that
                 #                             # should have been
@@ -999,20 +1004,20 @@ class Evaluate():
         if schedule_send:
 
             recv_cmpl = self.sim_round + cost
-            print bcolors.OKBLUE + \
+            logging.info((bcolors.OKBLUE + \
                 ('% 5d   Core %d is scheduling a send operation %d at %d' %
                  (self.sim_round, dest, src, recv_cmpl)) + \
-                 bcolors.ENDC
+                 bcolors.ENDC))
 
             heapq.heappush(self.event_queue, (recv_cmpl, events.Send(dest, None)))
 
         else:
 
             recv_cmpl = self.sim_round + cost
-            print bcolors.OKBLUE + \
+            logging.info((bcolors.OKBLUE + \
                 ('% 5d   Core %d is scheduling a DUMMY operation %d at %d' %
                  (self.sim_round, dest, src, recv_cmpl)) + \
-                 bcolors.ENDC
+                 bcolors.ENDC))
 
             heapq.heappush(self.event_queue, (recv_cmpl, events.Receiving(src, dest)))
 
