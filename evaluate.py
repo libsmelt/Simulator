@@ -357,6 +357,13 @@ class AB(Protocol):
             else:
                 optimize = False
 
+        # FINISHED OPTIMIZING
+        # --------------------------------------------------
+        # Update last node
+        _, c_activated = eval_context.schedule.simulate_current()
+        ln, _ = sorted(c_activated.items(), key=lambda x: x[1], reverse=True)[0]
+        eval_context.last_node = ln
+
         return True
 
 
