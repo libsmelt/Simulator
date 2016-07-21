@@ -4,6 +4,7 @@ matplotlib.use('Agg')
 
 import numpy
 import matplotlib.pyplot as plt
+import json
 from matplotlib.backends.backend_pdf import PdfPages
 
 import brewer2mpl
@@ -53,14 +54,21 @@ def multi_bar_chart(plotdata, machine, alg):
     import os
     sys.path.append(os.getenv('HOME') + '/papers/oracle/scripts/')
 
+    # Determine all the topologies in the data set
+    # The first one is ours, labeled AnonTree
+    _, l = plotdata[0]
+    topos = list(set([ t.rstrip('0123456789') for (t, _, _, _) in l ]))
+    # Filter out anything containing --topology-ignore
+    topos = [ x for x in topos if not arg.topology_ignore in x ]
+    # Filter out other adaptive trees
+    topos = [ x for x in topos if not 'adaptivetree' in x or x == arg.adaptive_tree ]
+    print 'Plotting data', l # Array of values for the first algorithm listed
+
     N = len(plotdata)
     ind = numpy.arange(N)
 
     # Plot the datall
     f = 'scalebench-%s-%s' % (alg, machine)
-
-  #  topos = ['adaptivetree','cluster','bintree','badtree','mst']
-    topos = ['adaptivetree','cluster','bintree','mst']
 
     max_cores = 0
 
@@ -92,18 +100,19 @@ def multi_bar_chart(plotdata, machine, alg):
 
         signs = ['-.x','-.+','-.o','-^']
         signs_pos = 0
+
         steps.sort()
         for topo in topos:
-            if topo == "adaptivetree":
+            if topo == topos[0] and False:
                 plt.errorbar(range(2, max_cores+1, 1),
                          mean[topo], yerr=stdv[topo],
                          fmt=signs[signs_pos], label="anontree")
-                signs_pos += 1
             else:
+                label = topo.replace('adaptivetree', 'at')
                 plt.errorbar(range(2, max_cores+1, 1),
-                         mean[topo], yerr=stdv[topo],
-                         fmt=signs[signs_pos], label=topo)
-                signs_pos += 1;
+                             mean[topo], yerr=stdv[topo],
+                             fmt=signs[signs_pos], label=label)
+            signs_pos = (signs_pos + 1) % len(signs)
 
         plt.legend(ncol=2)
         plt.xlabel('Number of cores')
@@ -141,11 +150,11 @@ def generate_machine(m):
             raise Exception('Ignoring json file - force reload')
         with open(_json, 'r') as f:
             _mbench = json.loads(f.read())
-            mbench = { a: { title: (v, e, 0) for (title, v, e, _) in x } for (a, x) in _mbench }
+            mbench = _mbench #{ a: { title: (v, e, 0) for (title, v, e, _) in x } for (a, x) in _mbench }
             print 'json summary exists, reading from there .. '
             f.close()
     except:
-        print 'json summary does not exist, generating .. '
+        print 'json summary does not exist, generating .. from ', _raw
 
         mbench = parse_log(gzip.open(_raw), True)
         f = open(_json, 'w')
@@ -166,6 +175,8 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--machines')
 parser.add_argument('--no-mbench', dest='mbench', action='store_false')
 parser.add_argument('-f', dest='force', action='store_true')
+parser.add_argument('--topology-ignore', help='Topology pattern to ingore. Default: naive', default='naive')
+parser.add_argument('--adaptive-tree', help='Which version of the adaptive tree should be shown: adaptivetree-nomm-shuffle-sort', default='adaptivetree-nomm-shuffle-sort')
 parser.set_defaults(sim=True, mbench=True, bfcomp=False, force=False)
 arg = parser.parse_args()
 
