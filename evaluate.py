@@ -741,6 +741,12 @@ class Evaluate():
             # Reset send history
             m.reset()
 
+
+        # Dump tree
+        for c in m.get_cores():
+            print '%d -> %s' % \
+                (c, ','.join([ str(x) for (_, x) in sched.find_schedule(c) ]))
+
         return res
 
 
