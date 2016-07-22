@@ -57,7 +57,7 @@ def multi_bar_chart(plotdata, machine, alg):
     # Determine all the topologies in the data set
     # The first one is ours, labeled AnonTree
     _, l = plotdata[0]
-    topos = list(set([ t.rstrip('0123456789') for (t, _, _, _) in l ]))
+    topos = list(set([ t.rstrip('0123456789-') for (t, _, _, _) in l ]))
     # Filter out anything containing --topology-ignore
     topos = [ x for x in topos if not arg.topology_ignore in x ]
     # Filter out other adaptive trees
@@ -72,27 +72,29 @@ def multi_bar_chart(plotdata, machine, alg):
 
     max_cores = 0
 
-    steps = []
+    xticks = []
 
     mean = { s: [] for s in topos }
     stdv = { s: [] for s in topos }
 
 
-    with PdfPages('%s.pdf' % f) as pdf:
+    print 'Generating plot for rr-step', arg.step
+
+    with PdfPages('%s-%d.pdf' % (f, arg.step)) as pdf:
         fig, ax = plt.subplots();
         for topo in topos:
             for cores in range(0, 100):
-                name = '%s%d' %(topo, cores)
                 for (algo, l) in plotdata:
                     if algo == alg:
                         for (t, vmean, stderr, err) in l:
-                            s = '%s%d' % (topo, cores)
+                            s = '%s%d-%d' % (topo, cores, arg.step)
                             if t == s:
+                                print 'Adding ', s
                                 mean[topo].append(vmean/1000)
                                 stdv[topo].append(int(stderr)/1000)
-                                if not cores in steps:
-                                    steps.append(cores);
-                                    if cores > max_cores:
+                                if not cores in xticks:
+                                    xticks.append(cores);
+                                    if cores > max_cores: # Wtf is this?
                                         max_cores = cores;
 
         print(mean)
@@ -101,7 +103,7 @@ def multi_bar_chart(plotdata, machine, alg):
         signs = ['-.x','-.+','-.o','-^']
         signs_pos = 0
 
-        steps.sort()
+        xticks.sort()
         for topo in topos:
             if topo == topos[0] and False:
                 plt.errorbar(range(2, max_cores+1, 1),
@@ -177,6 +179,7 @@ parser.add_argument('--no-mbench', dest='mbench', action='store_false')
 parser.add_argument('-f', dest='force', action='store_true')
 parser.add_argument('--topology-ignore', help='Topology pattern to ingore. Default: naive', default='naive')
 parser.add_argument('--adaptive-tree', help='Which version of the adaptive tree should be shown: adaptivetree-nomm-shuffle-sort', default='adaptivetree-nomm-shuffle-sort')
+parser.add_argument('--step', type=int, help='Which rr-step should I plot?', default=1)
 parser.set_defaults(sim=True, mbench=True, bfcomp=False, force=False)
 arg = parser.parse_args()
 
@@ -191,5 +194,7 @@ rcParams.update({'figure.autolayout': True})
 
 for m in machines:
     generate_machine(m)
+
+print "Used step", arg.step
 
 exit(0)
