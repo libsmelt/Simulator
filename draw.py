@@ -85,7 +85,7 @@ class Output():
         return (time + 50) * self.scale_x
 
     def _scale_cost(self, cost):
-        return cost * self.scale_x * .75
+        return cost * self.scale_x
 
     def _scale_height(self, size):
         return size*self.height_per_core*.7
@@ -121,7 +121,7 @@ class Output():
             settings.append('semithick')
             settings.append('color=color6')
         # Arrow indicating flow
-        self.f.write("\\draw[->%s] ($(s_%s_%s.east)-(1\\sku,0\\sku)$) -- ($(r_%s_%s.west)+(1\\sku,0\\sku)$); \n" % \
+        self.f.write("\\draw[->%s,decorate,decoration={snake,amplitude=.1mm,segment length=2mm}] ($(s_%s_%s.east)-(1\\sku,0\\sku)$) -- ($(r_%s_%s.west)+(1\\sku,0\\sku)$); \n" % \
                          (','.join(settings), sender, core, sender, core))
 
     def finalize(self, final_time):
@@ -169,8 +169,11 @@ class Output():
 
                 self.obj_per_node[i].append('numa_axis_%d.west' % (coreid))
                 nn = [ '(%s)' % x for x in self.obj_per_node[i] ]
-                self.f.write("\\node [yscale=.95,draw=%s!50,fill=%s!10,fit=%s] {};\n" \
-                                 % (color, color, ' '.join(nn)))
+                self.f.write("\\node [yscale=.95,draw=%s!50,fill=%s!10,fit=%s] (node%d) {};\n" \
+                                 % (color, color, ' '.join(nn), i))
+
+                self.f.write("\\node [rotate=90,left=of node%d,anchor=south,yshift=-.8cm] {NUMA %d};\n" \
+                             % (i, i))
 
         # X-axes
         for c in self.model.get_graph().nodes():
