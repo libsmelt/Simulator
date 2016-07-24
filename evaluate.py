@@ -735,7 +735,7 @@ class Evaluate():
 
 
         # Dump tree
-        for c in m.get_cores():
+        for c in m.get_cores(True):
             print '%d -> %s' % \
                 (c, ','.join([ str(x) for (_, x) in sched.find_schedule(c) ]))
 
