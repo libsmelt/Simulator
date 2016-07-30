@@ -94,11 +94,11 @@ class Output():
         "Visualize send operation"
         name = 's_%s_%s' % (core, to)
 
-        self.f.write("\\node[draw,fill=color2!50,inner sep=0,minimum width=%d\\sku, minimum height=%d\\sku,anchor=west] "\
-                         "(%s) at (%d\\sku,%d\\sku) {};\n" % \
+        self.f.write("\\node[draw,fill=color2!50,inner sep=0,minimum width=%d\\sku, minimum height=%d\\sku,anchor=west,font=\\tiny] "\
+                         "(%s) at (%d\\sku,%d\\sku) {%d/%d};\n" % \
                          (self._scale_cost(cost), self._scale_height(1), name, \
                           self._scale_time(time), \
-                          self._y_coord_for_core(core)))
+                          self._y_coord_for_core(core), time, cost) )
         self.__add_object(core, name)
 
 
@@ -107,12 +107,12 @@ class Output():
 
         # Box indicating receive operation
         name = 'r_%s_%s' % (sender, core)
-        self.f.write("\\node[draw,fill=color6!50,minimum width=%d\\sku, minimum height=%d\\sku,anchor=west] "\
-                         "(%s) at (%d\\sku,%d\\sku) {};\n" % \
+        self.f.write("\\node[draw,fill=color6!50,minimum width=%d\\sku, minimum height=%d\\sku,anchor=west,font=\\tiny] "\
+                         "(%s) at (%d\\sku,%d\\sku) {%d/%d};\n" % \
                      (self._scale_cost(cost), self._scale_height(1), \
                       name, \
                       self._scale_time(time), \
-                      self._y_coord_for_core(core)))
+                      self._y_coord_for_core(core),cost,time+cost))
         self.__add_object(core, name)
 
         # Iteratively add settings for drawing the connection
