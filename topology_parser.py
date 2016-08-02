@@ -81,15 +81,18 @@ def on_same_node(res, cpu1, cpu2):
 
 
 
-def parse_machine_db(machine):
+def parse_machine_db(machine, mdb=None):
     '''Returns a dictionary of lists of lists with cores sharing the same
     instance of the resource indicated by the dictionary key
     '''
 
+    if mdb == None:
+        mdb = config.MACHINE_DATABASE
+
     res = { s: Resource(s) for s in resources }
     curr_res = None # Current resource
 
-    stream = open('%s/%s/likwid.txt' % (config.MACHINE_DATABASE, machine))
+    stream = open('%s/%s/likwid.txt' % (mdb, machine))
     res['CPU'] = 'unknown'
 
     for l in stream.readlines():
@@ -130,7 +133,7 @@ def parse_machine_db(machine):
 
     stream.close()
 
-    stream = open('%s/%s/lscpu.txt' % (config.MACHINE_DATABASE, machine))
+    stream = open('%s/%s/lscpu.txt' % (mdb, machine))
     lscpu = StringIO.StringIO(stream.read())
     stream.close()
 
@@ -151,7 +154,7 @@ def parse_machine_db(machine):
 
             res['NUMA'].add_cluster(_cluster)
 
-    stream = open('%s/%s/proc_cpuinfo.txt' % (config.MACHINE_DATABASE, machine))
+    stream = open('%s/%s/proc_cpuinfo.txt' % (mdb, machine))
     cpuinfo = StringIO.StringIO(stream.read())
     stream.close()
 
