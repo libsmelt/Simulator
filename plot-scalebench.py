@@ -13,6 +13,7 @@ import plotsetup
 import sys
 import os
 import gzip
+import helpers
 from extract_ab_bench import parse_simulator_output, parse_log
 
 fontsize = 19
@@ -32,6 +33,9 @@ rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
 rc('text', usetex=True)
 
 MDB='machinedb/'
+EXPORT_LATEX=True
+
+import debug
 
 def configure_plot(ax):
     ax.spines['top'].set_visible(False)
@@ -62,80 +66,101 @@ def multi_bar_chart(plotdata, machine, alg):
     topos = [ x for x in topos if not arg.topology_ignore in x ]
     # Filter out other adaptive trees
     topos = [ x for x in topos if not 'adaptivetree' in x or x == arg.adaptive_tree ]
-    print 'Plotting data', l # Array of values for the first algorithm listed
+    print 'Plotting topos', topos
 
     N = len(plotdata)
     ind = numpy.arange(N)
 
     # Plot the datall
-    f = 'scalebench-%s-%s' % (alg, machine)
+    f = '%s/%s/scalebench-%s-%s-%d.pdf' % (MDB, machine, alg, machine, arg.step)
 
     max_cores = 0
 
     xticks = []
 
-    mean = { s: [] for s in topos }
-    stdv = { s: [] for s in topos }
+    mean  = { s: [] for s in topos }
+    stdv  = { s: [] for s in topos }
+    clst = { s: [] for s in topos }
 
 
     print 'Generating plot for rr-step', arg.step
 
-    with PdfPages('%s-%d.pdf' % (f, arg.step)) as pdf:
-        fig, ax = plt.subplots();
-        for topo in topos:
-            for cores in range(0, 100):
-                for (algo, l) in plotdata:
-                    if algo == alg:
-                        for (t, vmean, stderr, err) in l:
-                            s = '%s%d-%d' % (topo, cores, arg.step)
-                            if t == s:
-                                print 'Adding ', s
-                                mean[topo].append(vmean/1000)
-                                stdv[topo].append(int(stderr)/1000)
-                                if not cores in xticks:
-                                    xticks.append(cores);
-                                    if cores > max_cores: # Wtf is this?
-                                        max_cores = cores;
+    have_data = False
+    fig, ax = plt.subplots();
+    for topo in topos:
+        for cores in range(0, 100):
+            for (algo, l) in plotdata:
+                if algo == alg:
+                    for (t, vmean, stderr, err) in l:
+                        s = '%s%d-%d' % (topo, cores, arg.step)
+                        if t == s:
+                            mean[topo].append(vmean)
+                            stdv[topo].append(stderr)
+                            clst[topo].append(cores)
+                            have_data = True
+                            if not cores in xticks:
+                                xticks.append(cores);
+                                if cores > max_cores: # Wtf is this?
+                                    max_cores = cores;
 
-        print(mean)
-        print(stdv)
 
-        signs = ['-.x','-.+','-.o','-^']
-        signs_pos = 0
+    assert len(set([ len(mean[t]) for t in topos ]))<=1 # Make sure all topo values have the same dimension
+    assert len(set([ len(stdv[t]) for t in topos ]))<=1 # Make sure all topo values have the same dimension
 
-        xticks.sort()
-        for topo in topos:
-            if topo == topos[0] and False:
-                plt.errorbar(range(2, max_cores+1, 1),
-                         mean[topo], yerr=stdv[topo],
-                         fmt=signs[signs_pos], label="anontree")
-            else:
-                label = topo.replace('adaptivetree', 'at')
-                plt.errorbar(range(2, max_cores+1, 1),
-                             mean[topo], yerr=stdv[topo],
-                             fmt=signs[signs_pos], label=label)
-            signs_pos = (signs_pos + 1) % len(signs)
 
-        plt.legend(ncol=2)
-        plt.xlabel('Number of cores')
-        ax.set_ylabel('Execution time [x1000 cycles]')
+    if not have_data:
+        helpers.warn('No data - no plot created')
+        return
 
-        maxi = 0
-        for topo in topos:
-            if max(mean[topo]) > maxi:
-                maxi = max(mean[topo])
+    print 'Mean', mean
+    print 'Std error', stdv
 
-        plt.axis([2, max_cores+1, 0, maxi*1.5])
+    signs = ['-.x','-.+','-.o','-^']
+    signs_pos = 0
 
-        plt.xticks(np.arange(2, max_cores+1, max_cores/16))
-        #plt.title('%s on %s' % (alg, machine.split('_')[0]))
+    xticks.sort()
+    for topo in topos:
+        label = topo.replace('adaptivetree', 'at')
+        print 'plotting', label, mean[topo]
+        xsteps = sorted(set(clst[topo]))
+        plt.errorbar(xsteps,
+                     mean[topo], yerr=stdv[topo],
+                     fmt=signs[signs_pos], label=label)
+        signs_pos = (signs_pos + 1) % len(signs)
 
-        ylticks = [int(i) for i in ax.get_yticks()]
-        ax.set_yticklabels(map(str, ylticks))
+        if EXPORT_LATEX:
+            _f = f + ('_%s.dat' % topo)
+            with open(_f, 'w') as fl:
+                fl.write('x y e\n')
+                for (x,v,e) in zip(xsteps, mean[topo], stdv[topo]):
+                    fl.write('%d %f %f\n' % (x, v, e))
+                fl.close()
 
-        ylticks = [int(i) for i in ax.get_xticks()]
-        ax.set_xticklabels(map(str, ylticks))
 
+    plt.legend(ncol=2)
+    plt.xlabel('Number of cores')
+    ax.set_ylabel('Execution time [x1000 cycles]')
+
+    plt.title('Multicast %s - %i step-size' % (machine, arg.step))
+
+    maxi = 0
+    for topo in topos:
+        if max(mean[topo]) > maxi:
+            maxi = max(mean[topo])
+
+    plt.axis([2, max_cores+1, 0, maxi*1.5])
+
+    plt.xticks(np.arange(2, max_cores+1, max_cores/16))
+    #plt.title('%s on %s' % (alg, machine.split('_')[0]))
+
+    ylticks = [int(i) for i in ax.get_yticks()]
+    ax.set_yticklabels(map(str, ylticks))
+
+    ylticks = [int(i) for i in ax.get_xticks()]
+    ax.set_xticklabels(map(str, ylticks))
+
+    print 'Plotting to', f
+    with PdfPages(f) as pdf:
         plt.savefig(pdf, format='pdf')
 
 
