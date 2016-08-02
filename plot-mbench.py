@@ -271,17 +271,17 @@ import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument('--machines')
 parser.add_argument('--showadaptive', dest='showadaptive', action='store_false')
-parser.add_argument('--normalize', help='Which measurement should we normalize to?')
+parser.add_argument('--normalize', help='Which measurement should we normalize to?', default='adaptivetree-nomm-shuffle-sort')
 parser.add_argument('--highlight', help='Which measurement should be highlighted?')
 parser.add_argument('--algorithm', help='Algorithm to evaluate. Default: all')
-parser.add_argument('--topology-ignore', help='Topology pattern to ingore. Default: all')
+parser.add_argument('--topology-ignore', help='Topology pattern to ingore. Default: naive', default='naive')
 parser.add_argument('-f', dest='force', action='store_true')
 parser.set_defaults(showadaptive=True, force=False)
 arg = parser.parse_args()
 
 machines = ['gruyere', 'nos4', 'pluton', 'sbrinz1', 'appenzeller',
             'sgs-r815-03', 'sgs-r820-01', 'tomme1', 'vacherin',
-            'ziger2', 'gruyere', 'gottardo' ] \
+            'ziger2', 'gruyere', 'gottardo', 'babybel1' ] \
            if not arg.machines else arg.machines.split()
 
 SHOW_ADAPTIVE = arg.showadaptive
