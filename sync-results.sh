@@ -22,7 +22,7 @@ else
     error "Please commit working directory first"
 fi
 
-BENCHMARKS='multimessage ab-bench pairwise ab-bench-scale colbench epcc barbench'
+BENCHMARKS='multimessage ab-bench pairwise ab-bench-scale colbench epcc barbench barrier-throughput streamcluster'
 
 if [[ -n "$1" ]]; then
     BENCHMARKS=$1
@@ -33,7 +33,7 @@ do
     for b in $BENCHMARKS
     do
 	OUT="${m}/${b}.gz"
-	IN="emmentaler:projects/bench-sg-rack/results/${b}_${m}.gz"
+	IN="emmentaler.ethz.ch:projects/bench-sg-rack/results/${b}_${m}.gz"
 
 	(
 	    cd machinedb/
@@ -44,7 +44,7 @@ do
 	    rsync -a "$IN" "$OUT" 2> /dev/null; RC=$?
 	    if [[ $RC -ne 0 || ! -f "$OUT" ]]
 	    then
-		echo "Failed to copy $OUT - does not exist on remote"
+		echo "Failed to copy $IN - does not exist on remote"
 	    else
 
 		if ! sha1sum "$OUT" 2>&1 | diff -q $TMP - >/dev/null; then
