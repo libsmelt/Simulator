@@ -40,12 +40,6 @@ class Resource(object):
             c_ = c.replace('(', '').replace(')', '')
             self.add_cluster(''.join(c_).split())
 
-    def add_core(self, core):
-        self.cluster.append(core)
-
-    def pr(self):
-        print '%s: %s' % (self.name, str(self.all))
-
     def get(self):
         return self.all
 

@@ -10,15 +10,7 @@ T_PROPAGATE = 0
 assert T_PROPAGATE == 0 # Otherwise sched_adaptive's
                         # optimize_scheduling needs an update
 
-class bcolors:
-    HEADER = '\033[95m'
-    OKBLUE = '\033[94m'
-    OKGREEN = '\033[92m'
-    WARNING = '\033[93m'
-    FAIL = '\033[91m'
-    ENDC = '\033[0m'
-    BOLD = '\033[1m'
-    UNDERLINE = '\033[4m'
+from helpers import bcolors
 
 class Protocol(object):
     """Represent a protocol that is executed  by the Simulator
@@ -668,6 +660,7 @@ class Barrier(Protocol):
 
 # ==================================================
 class NodeState(object):
+
     """
     Store node state for evaluation
 
@@ -827,9 +820,6 @@ class Evaluate():
         # * Receive cost
         self.sim_round += self.model.get_receive_cost(self.last_node, root);
         r.time = self.sim_round
-
-        # XXX Check if this includes the receive cost on the last node (it should)
-        self.model.set_evaluation_result(r)
 
         self.visu.finalize(int(final_time))
 

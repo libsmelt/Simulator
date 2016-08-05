@@ -8,8 +8,6 @@ import re
 import helpers
 import logging
 
-MAX=1000 # choose bigger than #local and #remote
-
 from topology_parser import on_same_node
 
 class MultiMessage(object):
@@ -100,11 +98,10 @@ class MultiMessage(object):
         return (sender_core, cores_local, cores_remote, tsc_overhead, data, err, history)
 
 
-    def __init__(self, _input, machine, mmtype='last'):
+    def __init__(self, _input, machine):
         """Initiate the multimessage parser.
 
         @param Instance of the machine to create the multimessage benchmark for
-        @param mmtype: Choose the type of multimessage to use. Supported are: 'last', 'all'
 
         """
 

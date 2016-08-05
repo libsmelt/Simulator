@@ -6,7 +6,6 @@ import pylab
 import re
 import fileinput
 
-num_lines = 0
 G = nx.DiGraph()
 
 def output(l):

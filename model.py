@@ -21,7 +21,6 @@ class Model(object):
 
         print 'Initializing Model()'
 
-        self.evaluation = None
         self.send_cost = {}
         self.recv_cost = {}
 
@@ -54,10 +53,6 @@ class Model(object):
         # --------------------------------------------------
         mm_fname = '%s/%s/multimessage.gz' % \
                    (config.MACHINE_DATABASE, self.get_name())
-
-        # These will be enabled from overlay.py
-        self.enable_mm = False
-        self.mm_last = False
 
         self.mm = None
 
@@ -216,17 +211,6 @@ class Model(object):
         """ Write the graph out to disk as <machine_name>_graph
         """
         helpers.output_graph(self.graph, '%s_graph' % self.get_name())
-
-    # --------------------------------------------------
-    # Results from evaluation
-    def set_evaluation_result(self, ev):
-        """
-        Save the evaluation result as part of the model. The estimated
-        cost should be part of the model
-
-        @param t Result as in evaluate.Result
-        """
-        self.evaluation = ev
 
     # --------------------------------------------------
     # Methods used for building overlay + scheduling

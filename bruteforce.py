@@ -21,6 +21,7 @@ class bfThread(threading.Thread):
     def __init__(self, args):
         threading.Thread.__init__(self)
         self.args = args
+
     def run(self):
         brute_force(*self.args)
 

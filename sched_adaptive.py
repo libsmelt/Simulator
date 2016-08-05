@@ -48,12 +48,6 @@ class SchedAdaptive(scheduling.Scheduling):
                 num += 1
         return num >= NUM_STOP_REMOTE
 
-    def get_leafs(self):
-        """Return a list of all leaf nodes in the current tree
-
-        """
-        _l = [ s for s, children in self.store.items() if len(children)==0 ]
-        return _l
 
     def get_parents(self):
         """Return a dictionary core -> parent identifying each core's parent
@@ -79,18 +73,6 @@ class SchedAdaptive(scheduling.Scheduling):
             if not s in parent:
                 return s
         raise Exception('Could not find root')
-
-
-    def assert_faster(self, cost_prev):
-        """Check if a new send scheduler is faster than the previous one.
-
-        @param cost_prev The cost for the previous schedule, as
-        returned by cost_subtree()
-
-        """
-        cost_new = self.cost_subtree()
-        assert cost_new[self.get_root()] <= cost_prev[self.get_root()]
-
 
 
     def assert_history(self):

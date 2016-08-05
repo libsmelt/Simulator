@@ -4,8 +4,6 @@ from pygraph.classes.graph import graph
 from pygraph.classes.digraph import digraph
 import logging
 
-import tools
-
 def binary_tree(m, nodes=[]):
     """
     Construct a binary tree for the given g
@@ -181,54 +179,13 @@ def connect_graphs(g1, g2, connecting_edge, weight=1):
     return g
 
 
-def _evaluate_cluster_goodness(x, f):
-
-    # Build list of all pairwise links in the cluster
-    c = []
-    for s in x:
-        for r in x:
-            if s != r:
-                c.append(f(s,r))
-
-    if len(c)<1:
-        return -1
-
-    print "Statistics for %s is %s" % (str(x), str(tools.statistics(c)))
-    return tools.statistics_cropped(c)[1]
-
-def _put_same_cluster(cluster, src, dest):
-
-    destcluster = None
-
-    # Find dest's cluster
-    for c in cluster:
-        if dest in c:
-            destcluster = c
-            break
-
-    assert destcluster
-
-    # Don't do anything if nodes are _already_ in same cluster
-    if src in destcluster:
-        return
-    cluster.remove(destcluster)
-
-    # Find src's cluster ..
-    for c in cluster:
-        if src in c:
-            # .. and add nodes fro dest's cluster
-            for d in destcluster:
-                c.append(d)
-            break
-
-
 def F(n):
     if n == 0: return 0
     elif n == 1: return 1
     else: return F(n-1)+F(n-2)
 
 
-def fibonacci(depth, nodes=[], edges=[], s='', side=None):
+def fibonacci(depth, nodes=[], edges=[], s=''):
     thisname = '%s%d' % (s, depth)
 
     num = 0

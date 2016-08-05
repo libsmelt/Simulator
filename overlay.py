@@ -2,14 +2,11 @@
 
 import scheduling
 import sort_longest
-import config
 import helpers
 import naive
 
 import logging
 import hybrid_model
-
-import random
 
 from pygraph.classes.graph import graph
 from pygraph.classes.digraph import digraph
@@ -47,8 +44,6 @@ class Overlay(object):
             # Some options have to be passed to the Machine
             if a == 'nomm':
                 self.mod.nomm = True
-            if a == 'rev':
-                self.mod.opt_reverse_recv = True
 
 
     def _get_broadcast_tree(self):
@@ -143,20 +138,6 @@ class Overlay(object):
         assert not self.tree is None
         return self.tree
 
-    def get_random_multicast_tree(self):
-        """
-        Get a multicast tree for a random set of nodes for this machine.
-
-        """
-        assert config.MULTICAST_RATIO<1 and config.MULTICAST_RATIO>0
-
-        nodes = [ n for n in self.mod.get_graph() \
-                      if random.random()<config.MULTICAST_RATIO ]
-
-        print 'Multicast: using nodes %s' % ','.join(map(str, nodes))
-
-        self.tree = self.get_multicast_tree(nodes)
-        return self.tree
 
     def get_multicast_tree(self, nodes):
         """

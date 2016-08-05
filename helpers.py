@@ -15,10 +15,7 @@ import re
 
 import config
 
-from general import do_pgf_plot
 from datetime import Error
-
-from tools import statistics_cropped
 
 from pygraph.classes.graph import graph
 from pygraph.classes.digraph import digraph
@@ -311,7 +308,7 @@ def draw_final(mod, sched, topo):
         print e
 
 
-def fill_matrix(s, children, parent, mat, sched, core_dict, cost_dict=None):
+def fill_matrix(s, children, parent, mat, sched, core_dict):
     """
     @param s: Sending core
     @param children: Children of sending core
@@ -321,9 +318,6 @@ def fill_matrix(s, children, parent, mat, sched, core_dict, cost_dict=None):
           send to all nodes in children list in given order). If None,
           weights will be read from cost_dict
     @param core_dict: Dictionary for core name mapping
-    @param cost_dict: Dictionary for the integer values to write into matrix
-          rather than an integer reflecting the order given by Scheduler. Key of
-          the dictionary is (sender, receiver).
 
     """
     logging.info("%d -> %s"
@@ -393,137 +387,6 @@ def __c_header_model(stream):
 def __c_footer(stream):
     stream.write("#endif\n")
 
-
-def clear_line(line):
-    """
-    Remove unneeded characters from given string
-    """
-    return line.rstrip('\r\n').replace('\t', '    ')
-
-def _unpack_line_header(header):
-    """
-    Format: sk_m_print(<coreid>,<topology>)
-    """
-    start = "sk_m_print("
-    assert header.startswith(start)
-    assert header.endswith(")")
-    result = str.split((header[len(start): len(header)-1]), ',')
-    return (int(result[0]), result[1])
-
-
-def unpack_line(line):
-    """
-    Unpacks a measurement line
-    Format: sk_m_print(<coreid>,<topology>) idx= <index> tscdiff= <measurement>
-    @return tuple (coreid, topology, index, measurement)
-    """
-    el = str.split(line)
-    assert len(el) == 5
-    return _unpack_line_header(el[0]) + (int(el[2]), int(el[4]))
-
-
-
-def parse_measurement(f, coreids=None):
-    """
-    Parse the given file for measurements
-    """
-
-    print "parse_measurement for file %s" % f
-    dic = dict()
-    coresfound = []
-
-    # If argument is a path (i.e. string), we need to open it
-    if isinstance(f, basestring):
-        f = open(f)
-
-    for line in f:
-        if line.startswith("sk_m"):
-            d = unpack_line(clear_line(line))
-            assert len(d)==4
-            if coreids == None or d[0] in coreids:
-                if not d[0] in dic:
-                    dic[d[0]] = []
-                dic[d[0]].append(d[3])
-                if not d[0] in coresfound:
-                    coresfound.append(d[0])
-    stat = []
-    for c in coresfound:
-        l = len(dic[c])
-        if l > 0:
-            print "core %d, length %d" % (c, len(dic[c]))
-            s = statistics_cropped(dic[c])
-            if s != None:
-                stat.append((c, s[0], s[1]))
-    return stat
-
-
-def parse_and_plot_measurement(coreids, machine, topo, f):
-    stat = parse_measurement(f, coreids)
-    do_pgf_plot(open("../measurements/%s_%s.tex" % (machine, topo), "w+"), stat,
-                "Atomic broadcast on %s with %s topology" % (machine, topo),
-                "coreid", "cost [cycles]")
-
-
-def _output_table_header(f):
-    f.write(("\\begin{table}[htb]\n"
-             "  \\centering\n"
-             "  \\begin{tabular}{lrrrrr}\n"
-             "  \\toprule\n"
-             "  & \\multicolumn{3}{c}{Real hardware [cycles]} & \\multicolumn{2}{c}{Simulation [units]} \\\\\n"
-             "  topology & time & factor & stderr & time & factor \\\\\n"
-             "  \\midrule\n"
-             ))
-
-
-def _output_table_footer(f, label, caption):
-    f.write(("  \\midrule\n"
-             "  \\end{tabular}\n"
-             "  \\caption{%s}\n"
-             "  \\label{tab:%s}\n"
-             "\\end{table}\n") % (caption, label))
-
-
-def _output_table_row(f, item, min_evaluation, min_simulation):
-    assert len(item)==4
-    fac1 = -1 if float(min_evaluation) == 0 else item[1]/float(min_evaluation)
-    fac2 = -1 if float(min_simulation) == 0 else item[3]/float(min_simulation)
-    t_sim = item[3]
-
-    if t_sim == sys.maxint:
-        t_sim = -1
-        fac2 = -1
-
-    f1 = "\colorbox{gray}{%.3f}" % fac1 if fac1 == 1.0 else "%.3f" % fac1
-    f2 = "\colorbox{gray}{%.3f}" % fac2 if fac2 == 1.0 else "%.3f" % fac2
-
-    f.write("  %s & %.2f & %s & %.2f & %.0f & %s \\\\\n" %
-            (item[0], item[1], f1, item[2], t_sim, f2))
-
-def _wiki_output_table_header(f):
-    f.write(("|| ||<-3 :> '''Real hardware''' ||<-3 :> '''Simulation''' ||\n"
-             "|| '''topology''' || '''time [cycles]''' || '''factor''' || '''stderr''' || '''time [units]''' || '''factor''' ||\n"
-             ))
-
-
-def _wiki_output_table_footer(f, label, caption):
-    f.write("||<-7 : style=\"border:none;\"> Figure: %s||\n" % caption)
-
-
-def _wiki_output_table_row(f, item, min_evaluation, min_simulation):
-    assert len(item)==4
-    fac1 = -1 if float(min_evaluation) == 0 else item[1]/float(min_evaluation)
-    fac2 = -1 if float(min_simulation) == 0 else item[3]/float(min_simulation)
-    t_sim = item[3]
-
-    if t_sim == sys.maxint:
-        t_sim = -1
-        fac2 = -1
-
-    f1 = "<#99CCFF )>%.3f" % fac1 if fac1 == 1.0 else "<)>%.3f" % fac1
-    f2 = "<#99CCFF )>%.3f" % fac2 if fac2 == 1.0 else "<)>%.3f" % fac2
-
-    f.write("|| '''%s''' ||<)> %.2f ||%s ||<)> %.2f ||<)> %.0f ||%s ||\n" %
-            (item[0], item[1], f1, item[2], t_sim, f2))
 
 
 # http://stackoverflow.com/questions/4836710/does-python-have-a-built-in-function-for-string-natural-sort
