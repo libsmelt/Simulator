@@ -4,6 +4,8 @@ image: stefankaestle/simulator
 # ------------------------------
 #
 # net-tools       for netstat, required in scripts/test_service.sh
+# pip             for installing vulture (dead code checks)
+# pyflakes        simple checker for Python files
 #
 # The rest is needed as described in the README.
 
@@ -11,7 +13,8 @@ before_script:
   - "apt-get update; apt-get install -y python-networkx python-pygraphviz libgv-python python-numpy python-pygraph python-matplotlib wget net-tools"
   - "(cd /usr/lib/python2.7/dist-packages; ln -s libgv_python27.x86_64-linux-gnu.so _gv.so)"
   - "apt-get install -y texlive-full  imagemagick"
-  - "apt-get install -y pyflakes"
+  - "apt-get install -y pyflakes python-pip"
+  - "pip install -U vulture"
 
 stages:
   - test
