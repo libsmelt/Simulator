@@ -204,12 +204,12 @@ def fibonacci(depth, nodes=[], edges=[], s=''):
         num += 1
         nodes.append(thisname)
 
-        i = fibonacci(depth-1, nodes, edges, thisname, 'l')
+        i = fibonacci(depth-1, nodes, edges, thisname)
         if i>0:
             edges.append((thisname, '%s%d' % (thisname, depth-1)))
             num += i
 
-        i = fibonacci(depth-2, nodes, edges, thisname, 'r')
+        i = fibonacci(depth-2, nodes, edges, thisname)
         if i>0:
             edges.append((thisname, '%s%d' % (thisname, depth-2)))
             num += 1
