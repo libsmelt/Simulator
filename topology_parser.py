@@ -1,6 +1,4 @@
-from string import lstrip
 import re
-import os
 import config
 import StringIO
 

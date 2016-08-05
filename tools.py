@@ -5,8 +5,6 @@ import re
 import os
 import subprocess
 import numpy
-import fileinput
-from datetime import *
 
 ## NOTE: We want this file with only dependencies on standart-library things
 ## Dependencies to own files are an absolut no-go
@@ -15,7 +13,7 @@ def parse_sk_m(line):
     """
     Parse sk_m measurements.
 
-    This is a line having this format:     
+    This is a line having this format:
     $ sk_m_print(6,shm_fifo) idx= 249 tscdiff= 1969
 
     @return None, in case the lines is not an sk_m, a tuple (core, title, idx, tscdiff) otherwise
@@ -45,7 +43,7 @@ def parse_sk_m_input(stream=sys.stdin):
     for l in stream:
         if len(l)<1:
             break
-        
+
         o = parse_sk_m(l)
         if not o:
             continue
@@ -57,7 +55,7 @@ def parse_sk_m_input(stream=sys.stdin):
 
     return d
 
-    
+
 def statistics_cropped(l, r=.1):
     """
     Print statistics for the given list of integers
@@ -174,6 +172,7 @@ def do_pgf_3d_plot(f, datafile, caption='', xlabel=None, ylabel=None, zlabel=Non
     @param f File to write the code to
     @param data Data points to print as list of tuples (x, y, err)
     """
+    import datetime
     attr = ['scaled z ticks=false',
             'z tick label style={/pgf/number format/fixed}']
     if zlabel:
@@ -203,6 +202,6 @@ def dump_stdin_no_colors():
     for line in fileinput.input('-'):
         print remove_ascii(line)
 
-def remove_ascii(line):        
+def remove_ascii(line):
     ansi_escape = re.compile(r'\x1b[^m]*m')
     return ansi_escape.sub('', line.rstrip())

@@ -5,7 +5,6 @@ import os
 sys.path.append(os.getenv('HOME') + '/bin/')
 
 import subprocess
-import tools
 
 def main():
     import config
@@ -13,7 +12,6 @@ def main():
     sys.path.append(config.MACHINE_DATABASE)
     from machineinfo import machines
 
-    out = []
     topos = [ 'adaptivetree-min', \
               'adaptivetree-shuffle', \
               'adaptivetree-shuffle-sort' ] # Don't include adaptivetree itself
@@ -24,7 +22,7 @@ def main():
     print ''
 
     for s in [ s for (s, _, _) in machines ]:
-        
+
         res = {}
         complete = True
 
@@ -34,7 +32,7 @@ def main():
         # cases, ab is executed twice and we actually want index 1
         # (i.e. the second cost)
         for t in topos + [ 'adaptivetree' ]:
-    
+
             cmd = [ './simulator.py', s, t ] #, '--visu']
 
             try:
@@ -52,12 +50,12 @@ def main():
 
         if not 'adaptivetree' in res:
             continue
-        
+
         # Print machine name
         print '%-30s ' % s,
 
         if complete:
-        
+
             # Print cost of basic adaptive tree
             baseline = res['adaptivetree']
             print '%6d' % baseline,
@@ -68,7 +66,7 @@ def main():
                 print '    %6d %5.2f' % (cost, factor),
 
         print ''
-            
+
 
 if __name__ == "__main__":
     main()

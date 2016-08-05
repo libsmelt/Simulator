@@ -1,17 +1,5 @@
 # Copyright (c) 2007, 2008, 2009, 2010, 2011, 2012, 2013 ETH Zurich.
 
-# Import graphviz
-import sys
-sys.path.append('..')
-sys.path.append('/usr/lib/graphviz/python/')
-sys.path.append('/usr/lib64/graphviz/python/')
-
-from pygraph.algorithms.utils import heappush, heappop
-from pygraph.classes.exceptions import NodeUnreachable
-from pygraph.classes.exceptions import NegativeWeightCycleError
-from pygraph.classes.digraph import digraph
-import bisect
-
 # Minimal spanning tree
 # This is based on original maxmin implementation of the python-graph project.
 # See https://code.google.com/p/python-graph/source/browse/trunk/core/pygraph/algorithms/minmax.py
@@ -24,7 +12,7 @@ def minimal_spanning_tree(graph, root=None):
 
     @type  graph: graph
     @param graph: Graph.
-    
+
     @type  root: node
     @param root: Optional root node (will explore only root's connected component)
 
@@ -42,7 +30,7 @@ def minimal_spanning_tree(graph, root=None):
         spanning_tree[root] = None
     else:
         nroot = 1
-    
+
     # Algorithm loop
     while (nroot is not None):
         ledge = _lightest_edge(graph, visited, d)
@@ -67,13 +55,13 @@ def minimal_spanning_tree(graph, root=None):
 def _first_unvisited(graph, visited):
     """
     Return first unvisited node.
-    
+
     @type  graph: graph
     @param graph: Graph.
 
     @type  visited: list
     @param visited: List of nodes.
-    
+
     @rtype:  node
     @return: First unvisited node.
     """
@@ -86,7 +74,7 @@ def _first_unvisited(graph, visited):
 def _lightest_edge(graph, visited, d):
     """
     Return the lightest edge in graph going from a visited node to an unvisited one.
-    
+
     @type  graph: graph
     @param graph: Graph.
 

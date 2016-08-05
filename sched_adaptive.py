@@ -2,16 +2,10 @@
 
 import scheduling
 
-import pdb
 import logging
-import random
 import model
 import Queue
 import config
-
-from pygraph.algorithms.minmax import shortest_path
-from pygraph.classes.graph import graph
-from pygraph.classes.digraph import digraph
 
 # Number of messages to send to a remote NUMA node before stopping to
 # do so
@@ -293,7 +287,6 @@ class SchedAdaptive(scheduling.Scheduling):
             (self.mod.get_num_cores(True) == sum([len(c) for (s, c) in self.store.items()])+1)
         # Store old state
         cost_old = self.cost_tree()
-        t_avail_old = self.simulate_current()
         store_old = self.store
         history_old = self.mod.send_history
 
@@ -575,7 +568,7 @@ class SchedAdaptive(scheduling.Scheduling):
         import draw
         d = draw.Output('visu.tex', m, topo)
         _, t_avail = self.simulate_current(visu=d)
-        d.finalize(int(max([ t for (_, t) in t_avail.items()])))
+        d.finalize(int(max([ t for (__, t) in t_avail.items()])))
         d.generate_image()
 
         raw_input("Press the <ENTER> key to continue...")

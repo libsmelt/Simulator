@@ -1,22 +1,12 @@
 # Copyright (c) 2007, 2008, 2009, 2010, 2011, 2012, 2013 ETH Zurich.
 
 # Overlays
-import cluster
-import binarytree
-import sequential
-import badtree
-import mst
-import adaptive
 import hybrid_model
 import hybrid
 import config
 
-import helpers
 import evaluate
 import overlay
-
-from pygraph.classes.graph import graph
-from pygraph.classes.digraph import digraph
 
 def _simulation_wrapper(ol, m, gr, multicast=False):
     """
@@ -37,7 +27,7 @@ def _simulation_wrapper(ol, m, gr, multicast=False):
     root = r.get_root_node()
 
     if multicast:
-        
+
         # Multicast, group membership given
         n = config.get_mc_group()
 
@@ -78,7 +68,7 @@ def _simulation_wrapper(ol, m, gr, multicast=False):
                 print 'Getting scheduler for topology', str(r), \
                     'graph is', str(final_graph), \
                     'overlay is', str(mp_ol)
-                
+
                 # XXX r here is a class, and not an instance of the class
 
                 sched = r.get_scheduler(final_graph)
@@ -97,7 +87,7 @@ def _simulation_wrapper(ol, m, gr, multicast=False):
             tmp.time_no_ab = 0;
             tmp.last_node = 0;
             ev.append(('dummy',tmp))
-            
+
         # Return result
         if r_tmp:
             r = r_tmp

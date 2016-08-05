@@ -2,14 +2,13 @@
 
 import scheduling
 import sort_longest
-import sched_adaptive
 import config
 import helpers
 import naive
 
-import hybrid_model
 import logging
- 
+import hybrid_model
+
 import random
 
 from pygraph.classes.graph import graph
@@ -24,7 +23,7 @@ class Overlay(object):
     """Broadcast tree - expressed as a hybrid model. List of hybrid_model.MPTree
     """
     tree = None
-    
+
     def __init__(self, mod):
         """
         Initialize
@@ -69,7 +68,7 @@ class Overlay(object):
         Return the multicast tree for the given subtree of the original model
 
         :param graph g: Input graph as subset of model to build the MC for
-        :returns graph: Multicast tree as graph 
+        :returns graph: Multicast tree as graph
 
         """
         return self._build_tree(g)
@@ -78,7 +77,7 @@ class Overlay(object):
         """
         Actual implementation of getting a {multi,broad}cast-tree.
 
-        This includes the edge weight, which is the propagation time. 
+        This includes the edge weight, which is the propagation time.
         :TODO: Make sure _build_tree returns a bigraph, also, make sure it has weights!
 
         :param graph g: A graph with group members as nodes and weighted edges expressing the cost of sending a message
@@ -99,11 +98,11 @@ class Overlay(object):
 
     def get_name(self):
         return None
-    
+
     def get_tree(self):
         """
         Return previously generated tree. Functions generating a tree are:
-        :py:func:`get_broadcast_tree`, :py:func:`get_random_multicast_tree` 
+        :py:func:`get_broadcast_tree`, :py:func:`get_random_multicast_tree`
         or :py:func:`get_multicast_tree`.
 
         :returns: Previously generated tree
@@ -115,7 +114,7 @@ class Overlay(object):
     def get_broadcast_tree(self):
         """
         Return broadcast tree
-        
+
         Will call _get_broadcast_tree on first execution and store
         tree in broadcast_tree.
 
@@ -123,10 +122,10 @@ class Overlay(object):
         if self.tree is None:
 
             print "Generating model"
-            
+
             # Get tree
             tmp = self._get_broadcast_tree()
-            
+
             # Debug output of tree
             fname = '%s_%s' % (self.mod.get_name(), self.get_name())
             helpers.output_clustered_graph(tmp, fname, self.mod.get_numa_information())
@@ -156,7 +155,6 @@ class Overlay(object):
 
         print 'Multicast: using nodes %s' % ','.join(map(str, nodes))
 
-        import hybrid_model
         self.tree = self.get_multicast_tree(nodes)
         return self.tree
 
@@ -176,15 +174,13 @@ class Overlay(object):
         for (s,d) in self.mod.get_graph().edges():
             if s in nodes and d in nodes:
                 mctree.add_edge((s,d), self.mod.get_graph().edge_weight((s,d)))
-            
-        import hybrid_model
 
         self.tree = [ hybrid_model.MPTree(self._get_multicast_tree(mctree), self) ]
         return self.tree
 
     def get_coordinators(self):
         """
-        Selects one coordinator per node for given model. 
+        Selects one coordinator per node for given model.
         """
         coordinators=[]
         for core in range(len(self.mod.get_graph())):
@@ -239,14 +235,14 @@ class Overlay(object):
 
         if overlay_name in d:
             r = d[overlay_name]
-        
+
         else:
             supported = ', '.join([ x for (x, _) in d.items()])
             raise Exception('Unknown topology %s - Supported are: %s' % \
                             (overlay_name, supported))
 
         return r
-        
+
     @staticmethod
     def get_overlay(overlay_name, topo):
         """
@@ -288,9 +284,9 @@ class Overlay(object):
         """
 
         assert isinstance(sched, scheduling.Scheduling)
-        
+
         leaf_nodes = []
-        
+
         for x in self.tree:
             if isinstance(x, hybrid_model.MPTree):
 
@@ -325,7 +321,7 @@ class Overlay(object):
 
                     if len(l) != len(l_):
                         helpers.warn('Overlay contains edged that are not in final schedule. This is a bug')
-                    
+
                     if len(l_)==0:
                         logging.info((n, 'is a leaf node'))
                         leaf_nodes.append(n)
@@ -340,7 +336,7 @@ class Overlay(object):
 
         assert isinstance(sched, scheduling.Scheduling)
         parents = {}
-        
+
         for x in self.tree:
             if isinstance(x, hybrid_model.MPTree):
 
@@ -362,10 +358,9 @@ class Overlay(object):
 
                     if len(l) != len(l_):
                         helpers.warn('Overlay contains edged that are not in final schedule. This is a bug')
-                    
+
                     logging.info(('Found children for', n, ' to ', str(l)))
                     for child in l:
                         parents[child] = n
 
         return parents
-        

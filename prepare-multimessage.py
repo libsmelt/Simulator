@@ -8,7 +8,6 @@ MDB= '%s/' % MACHINE_DATABASE
 sys.path.append(MDB)
 import machineinfo
 
-
 def prepare_multimessage(machine):
 
     root = 0
@@ -57,7 +56,6 @@ parser.add_argument('--machines')
 global arg
 arg = parser.parse_args()
 
-import machineinfo
 all_machines = [ s for (s, _, _) in machineinfo.machines ]
 machines = all_machines if not arg.machines else arg.machines.split()
 

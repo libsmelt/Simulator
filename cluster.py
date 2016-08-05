@@ -1,24 +1,11 @@
 # Copyright (c) 2007, 2008, 2009, 2010, 2011, 2012, 2013 ETH Zurich.
 
-# Import graphviz
-import sys
-sys.path.append('..')
-sys.path.append('/usr/lib/graphviz/python/')
-sys.path.append('/usr/lib64/graphviz/python/')
-import gv
+# Import pygraph
+from pygraph.classes.digraph import digraph
+
 import logging
 
-# Import pygraph
-from pygraph.classes.graph import graph
-from pygraph.classes.digraph import digraph
-from pygraph.algorithms.searching import breadth_first_search
-from pygraph.readwrite.dot import write
-from pygraph.algorithms.minmax import shortest_path
-from pygraph.algorithms.minmax import minimal_spanning_tree
-
 # Import own code
-import evaluate
-import model
 import helpers
 from algorithms import binary_tree, sequential, merge_graphs
 import overlay
@@ -28,13 +15,13 @@ class Cluster(overlay.Overlay):
     Build a cluster topology for a model
 
     """
-    
+
     def __init__(self, mod):
         """
         Initialize the clustering algorithm
         """
         super(Cluster, self).__init__(mod)
-        
+
     def get_name(self):
         return "cluster"
 

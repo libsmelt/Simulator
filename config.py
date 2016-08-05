@@ -29,8 +29,11 @@ machines = [
 models = []
 running_as_server = False
 
+# Find config.py's working directory
+dir_path = os.path.dirname(os.path.realpath(__file__))
+
 # Path to the machine database.
-MACHINE_DATABASE='machinedb/'
+MACHINE_DATABASE='%s/machinedb/' % dir_path
 
 def result_suffix():
     return _result_suffix(USE_UMP_NUMA, USE_UMPQ)
@@ -86,7 +89,7 @@ def arg_machine_class(machine):
     """
     import netos_machine
     return netos_machine.NetosMachine
-    
+
 
 
 
@@ -95,7 +98,6 @@ def arg_machine(machine_name):
     Return instance of the machine given as argument
 
     """
-    import rack
     machine_name = translate_machine_name(machine_name)
 
     if machine_name == 'rack':

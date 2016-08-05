@@ -1,14 +1,9 @@
 #!/usr/bin/env python
 
 import networkx as nx
-import matplotlib
 import matplotlib.pyplot as plt
 import pylab
-import subprocess
 import re
-import threading
-import numpy as np
-from time import sleep
 import fileinput
 
 num_lines = 0
@@ -63,4 +58,3 @@ print "Enabling interactive mode"
 pylab.ion()
 
 draw_loop()
-    

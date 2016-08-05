@@ -10,52 +10,24 @@ sys.path.append('/home/skaestle/bin/')
 sys.path.append(os.getenv('HOME') + '/bin/')
 import gv
 import Queue
-import numpy
-import subprocess
 import logging
-import pdb
-import traceback
 import re
-import general
 
-from config import topologies, machines, get_ab_machine_results, get_machine_result_suffix
 import config
 
-from general import _pgf_header, \
-    _pgf_plot_header, \
-    _pgf_plot_footer, \
-    _pgf_footer, \
-    do_pgf_plot, \
-    do_pgf_3d_plot, \
-    do_pgf_multi_plot, \
-    _latex_header, \
-    _latex_footer, \
-    do_pgf_stacked_plot, \
-    run_pdflatex
+from general import do_pgf_plot
+from datetime import Error
 
-
-from datetime import *
-from tools import statistics, statistics_cropped
+from tools import statistics_cropped
 
 from pygraph.classes.graph import graph
 from pygraph.classes.digraph import digraph
 
 from pygraph.readwrite.dot import write
-from pygraph.algorithms.minmax import shortest_path
 
 # For printing clusters
 import networkx as nx
 from networkx.drawing.nx_agraph import to_agraph
-
-class bcolors:
-    HEADER = '\033[95m'
-    OKBLUE = '\033[94m'
-    OKGREEN = '\033[92m'
-    WARNING = '\033[93m'
-    FAIL = '\033[91m'
-    ENDC = '\033[0m'
-    BOLD = '\033[1m'
-    UNDERLINE = '\033[4m'
 
 SHM_REGIONS_OFFSET=20
 SHM_SLAVE_START=50
@@ -295,7 +267,6 @@ def draw_final(mod, sched, topo):
     import model
     import scheduling
 
-    from model import Model
     from overlay import Overlay
     assert isinstance(mod, model.Model)
     assert isinstance(sched, scheduling.Scheduling)
@@ -475,7 +446,6 @@ def parse_measurement(f, coreids=None):
                 dic[d[0]].append(d[3])
                 if not d[0] in coresfound:
                     coresfound.append(d[0])
-    result = []
     stat = []
     for c in coresfound:
         l = len(dic[c])

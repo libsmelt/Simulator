@@ -1,17 +1,8 @@
 # Copyright (c) 2007, 2008, 2009, 2010, 2011, 2012, 2013 ETH Zurich.
 
-# Import graphviz
-import sys
-sys.path.append('..')
-sys.path.append('/usr/lib/graphviz/python/')
-sys.path.append('/usr/lib64/graphviz/python/')
-import gv
-import logging
-
 # Import pygraph
 from pygraph.classes.digraph import digraph
 from pygraph.algorithms.minmax import minimal_spanning_tree
-from pygraph.classes.graph import graph
 
 # Import own code
 import overlay
@@ -24,14 +15,14 @@ class Mst(overlay.Overlay):
     - parallelism not considered, resulting graph could be a path
 
     """
-    
+
     def __init__(self, mod):
         """
         Initialize the clustering algorithm
 
         """
         super(Mst, self).__init__(mod)
-        
+
 
     def get_name(self):
         return "mst"
@@ -40,7 +31,7 @@ class Mst(overlay.Overlay):
     def _build_tree(self, g):
         """
         Iteratively run minimum spanning tree algorithm on graph
-        
+
         """
         # Init graph and add nodes
         mst = digraph()
@@ -61,5 +52,5 @@ class Mst(overlay.Overlay):
 
             # Otherwise, r is reached via s
             mst.add_edge((s,r)) # , g.edge_weight((s,r)))
-        
+
         return mst

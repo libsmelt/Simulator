@@ -6,8 +6,6 @@ import sched_adaptive
 import overlay
 import logging
 
-import tools
-
 class AdapativeTree(overlay.Overlay):
     """
     Build a cluster topology for a model.

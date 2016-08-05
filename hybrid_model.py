@@ -1,7 +1,3 @@
-import helpers
-
-from pygraph.classes.digraph import digraph
-
 class HybridModule(object):
     """
     Represents a module that can be used for composing together
@@ -17,7 +13,7 @@ class HybridModule(object):
 
 
 class MPTree(HybridModule):
-    
+
     def __init__(self, graph, mp_ol):
         """Represent a message passing module
 
@@ -29,4 +25,3 @@ class MPTree(HybridModule):
         """
         self.graph = graph
         self.mp_ol = mp_ol
-

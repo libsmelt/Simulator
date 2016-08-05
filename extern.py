@@ -4,7 +4,6 @@ import sys
 import os
 sys.path.append(os.getenv('HOME') + '/bin/')
 
-import helpers
 import config
 
 def get_group(machine, num):

@@ -1,12 +1,7 @@
 import events
 import heapq
 import draw
-import config
-import pdb
 import logging
-import sched_adaptive
-import copy # for heapq
-import helpers
 
 # We assume that the propagation time is zero. The cost for
 # transporting messages is captured in t_send and t_receive.
@@ -324,10 +319,6 @@ class AB(Protocol):
                 c_slowest, t_slowest = eval_context.schedule.get_slowest()
                 assert (last_node == c_slowest)
                 assert (t_last_node == t_slowest)
-
-                # Determine cost of OLD tree
-                cost_prev = eval_context.schedule.cost_tree()
-                cost_send_corrected = eval_context.model.get_send_cost(first, last_node, corrected=True)
 
                 # ------------------------------
                 # Replace edge
@@ -872,23 +863,15 @@ class Evaluate():
         d = int(e.dest) if e.dest != None else -1
         s = int(e.src) if e.src != None else -1
 
-        ev_type = None
-
         if isinstance(e, events.Propagate):
-            ev_type = "propagate"
             self.propagate(e.src, e.dest)
 
         if isinstance(e, events.Receive):
-            ev_type = "receive start"
             self.receive(e.src, e.dest)
 
         if isinstance(e, events.Send):
-            ev_type = "send start"
             assert e.dest is None
             self.send(e.src)
-
-        if isinstance(e, events.Receiving):
-            ev_type = "receive done"
 
         logging.info((bcolors.OKGREEN + \
             ('% 5d   core %d - %s -> Core %d' %

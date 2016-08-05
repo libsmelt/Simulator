@@ -1,15 +1,10 @@
 # Copyright (c) 2007, 2008, 2009, 2010, 2011, 2012, 2013 ETH Zurich.
 
-import pdb
 import logging
 import topology_parser
 import config
 import helpers
 import re
-
-from pygraph.algorithms.minmax import shortest_path
-from pygraph.classes.graph import graph
-from pygraph.classes.digraph import digraph
 
 import itertools
 
@@ -81,13 +76,6 @@ class Model(object):
         self.graph = self._build_graph()
         self.reset()
 
-
-    def reset(self):
-        """Reset the model:
-        - history of sends
-
-        """
-        return
 
     # --------------------------------------------------
     # Characteritics of model
@@ -302,10 +290,9 @@ class Model(object):
             l = l.rstrip()
             m = re.match('(\d+)\s+(\d+)\s+([0-9.]+)\s+([0-9.]+)', l)
             if m:
-                (src, dest, cost, stderr) = (int(m.group(1)),
-                                             int(m.group(2)),
-                                             float(m.group(3)),
-                                             float(m.group(4)))
+                (src, dest, cost) = (int(m.group(1)),
+                                     int(m.group(2)),
+                                     float(m.group(3)))
                 assert (src, dest) not in self.recv_cost
                 self.recv_cost[(src, dest)] = cost
         assert len(self.recv_cost.items())>0
@@ -325,10 +312,9 @@ class Model(object):
             l = l.rstrip()
             m = re.match('(\d+)\s+(\d+)\s+([0-9.]+)\s+([0-9.]+)', l)
             if m:
-                (src, dest, cost, stderr) = (int(m.group(1)),
-                                             int(m.group(2)),
-                                             float(m.group(3)),
-                                             float(m.group(4)))
+                (src, dest, cost) = (int(m.group(1)),
+                                     int(m.group(2)),
+                                     float(m.group(3)))
                 assert (src, dest) not in self.send_cost
                 self.send_cost[(src, dest)] = cost
         assert len(self.send_cost.items())>0

@@ -4,12 +4,8 @@ import sys
 import os
 sys.path.append(os.getenv('HOME') + '/bin/')
 
-import numpy
-import matplotlib.pyplot as plt
-import matplotlib
 import re
 import helpers
-import config
 import logging
 
 MAX=1000 # choose bigger than #local and #remote

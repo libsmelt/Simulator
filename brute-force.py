@@ -4,14 +4,10 @@ import sys
 import os
 sys.path.append(os.getenv('HOME') + '/bin/')
 
-import numpy as np
-
-import tools
 import copy
 import argparse
 import Queue
 import math
-import thread
 import threading
 import time
 from datetime import datetime

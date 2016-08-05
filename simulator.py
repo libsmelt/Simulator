@@ -8,22 +8,13 @@ The simulator consists of:
 
 """
 
-# Import own code
-import evaluate
 import config
 import helpers
 import simulation
-import itertools
 
 import argparse
 import logging
 import sys
-import os
-import tempfile
-import server
-from config import machines
-
-
 
 def simulate(args):
 
@@ -41,7 +32,7 @@ def simulate(args):
     m = m_class()
     assert m != None
     gr = m.get_graph()
-    
+
     if args.multicast:
         print "Building a multicast"
 
@@ -67,7 +58,7 @@ def simulate(args):
             # Hybrid
             hyb_cluster = None
             shm_writers = None
- 
+
             hyb_leaf_nodes = None
 
             if config.args.hybrid:
@@ -84,7 +75,7 @@ def simulate(args):
                     if len(args.hybrid_cluster) > 4:
                         hyb_cluster = m.machine_topology['NUMA'].get()
                         size = float(args.hybrid_cluster[4:])
-                        
+
                         if size > 1:
                             # Merge NUMA nodes
                             if ((size % 2) != 0):
@@ -117,7 +108,7 @@ def simulate(args):
                                 for j in range(1, split+1):
                                     tmp1 = hyb_cluster[i][(j-1)*seg_len:j*seg_len]
                                     new_cluster.append(tmp1)
-                            
+
                             hyb_cluster = new_cluster
                             print hyb_cluster
                     else:
@@ -229,6 +220,7 @@ def build_and_simulate():
     if config.args.debug:
         print 'Activating debug mode'
         import debug
+        assert type(debug.info)!=None
         logging.getLogger().setLevel(logging.INFO)
 
 
@@ -239,7 +231,7 @@ def build_and_simulate():
 
     if config.args.group:
         config.args.group = map(int, config.args.group.split(','))
-    
+
     if config.args.hybrid:
         config.args.hybrid = 'True'
 
@@ -247,30 +239,6 @@ def build_and_simulate():
 
     return 0
 
-
-    # --------------------------------------------------
-    # Output graphs
-#    helpers.output_graph(gr, '%s_full_mesh' % m.get_name())
-
-    # --------------------------------------------------
-    sched = topo.get_scheduler(final_graph)
-
-    # --------------------------------------------------
-    # Evaluate
-    evaluation = evaluate.Evaluate()
-    ev = evaluation.evaluate(topo, root, m, sched)
-
-    if config.args.debug:
-        (fid, fname) = tempfile.mkstemp(suffix='.tex')
-        f = open(fname, 'w+')
-        helpers._latex_header(f)
-        helpers._pgf_header(f)
-        f.write('\\input{%s/%s}\n' % (os.getcwd(), ev.visu_name.replace('.tex','')))
-        helpers._pgf_footer(f)
-        helpers._latex_footer(f)
-        f.close()
-
-        helpers.run_pdflatex(fname)
 
 if __name__ == "__main__":
 

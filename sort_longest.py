@@ -2,12 +2,7 @@
 
 import scheduling
 
-import pdb
 import logging
-
-from pygraph.algorithms.minmax import shortest_path
-from pygraph.classes.graph import graph
-from pygraph.classes.digraph import digraph
 
 SORT_SUBTREE=False
 

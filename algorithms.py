@@ -2,7 +2,6 @@
 
 from pygraph.classes.graph import graph
 from pygraph.classes.digraph import digraph
-import Queue
 import logging
 
 import tools
@@ -60,7 +59,7 @@ def binary_tree(m, nodes=[]):
 
 def sequential(m, nodes, coordinator):
     """
-    Construct a simple two-level tree. The coordinator is the root, and all 
+    Construct a simple two-level tree. The coordinator is the root, and all
     the other nodes are its children.
 
     The weights of edges are taken from m.
@@ -99,7 +98,7 @@ def invert_weights(g):
     """
 
     assert isinstance(g, digraph)
-    
+
     # Determine the most expensive edge
     w = 0
     for (s,d) in g.edges():
@@ -138,12 +137,12 @@ def merge_graphs(g1, g2):
         if not n in g.nodes():
             g.add_node(n)
     for e in g1.edges():
-        try: 
+        try:
             g.add_edge(e, g1.edge_weight(e))
         except:
             logging.info("merge_graphs: adding edge %d %d failed" % (e[0], e[1]))
     for e in g2.edges():
-        try: 
+        try:
             g.add_edge(e, g2.edge_weight(e))
         except:
             logging.info("merge_graphs: adding edge %d %d failed" % (e[0], e[1]))
@@ -168,13 +167,13 @@ def connect_graphs(g1, g2, connecting_edge, weight=1):
         for n in gr.nodes():
             g.add_node('%d_%d' % (index, n))
         for (src, dst) in gr.edges():
-            g.add_edge(('%d_%d' % (index, src), 
-                        '%d_%d' % (index, dst)), 
+            g.add_edge(('%d_%d' % (index, src),
+                        '%d_%d' % (index, dst)),
                         g.edge_weight((src, dst)))
- 
+
     # Connect subgraphs
     conn_src, conn_dst = connecting_edge
-    g.add_edge(('%d_%d' % (1, conn_src), 
+    g.add_edge(('%d_%d' % (1, conn_src),
                 '%d_%d' % (2, conn_dst)))
     g.add_edge(('%d_%d' % (2, conn_dst),
                 '%d_%d' % (1, conn_src)))
@@ -214,7 +213,7 @@ def _put_same_cluster(cluster, src, dest):
         return
     cluster.remove(destcluster)
 
-    # Find src's cluster .. 
+    # Find src's cluster ..
     for c in cluster:
         if src in c:
             # .. and add nodes fro dest's cluster
@@ -227,8 +226,8 @@ def F(n):
     if n == 0: return 0
     elif n == 1: return 1
     else: return F(n-1)+F(n-2)
-            
-        
+
+
 def fibonacci(depth, nodes=[], edges=[], s='', side=None):
     thisname = '%s%d' % (s, depth)
 
@@ -259,4 +258,3 @@ def fibonacci(depth, nodes=[], edges=[], s='', side=None):
             num += 1
 
     return num
-    

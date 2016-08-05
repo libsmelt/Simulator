@@ -4,12 +4,8 @@ import sys
 import os
 sys.path.append(os.getenv('HOME') + '/bin/')
 
-import tools
-import argparse
-
 import netos_machine
 import config
-import model
 
 from server import SimArgs
 
@@ -24,12 +20,11 @@ def main():
             r = m.get_receive_send_ratio()
             print 'Machine %20s - ratio is: %5.2f %5.2f %5.2f ' % \
                 (machine, r[0], r[1], r[2])
-        
+
         except IOError:
             print 'Could not load machine'
-        
-        
+
+
 
 if __name__ == "__main__":
     main()
-    

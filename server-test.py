@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import socket
-import sys
 import json
 import server
 import argparse
