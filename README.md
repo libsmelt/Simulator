@@ -53,18 +53,7 @@ Last, the hierarchy of caches and affinity of cores to them is needed.
 This is now also directly read from the machine database described
 above.
 
-# Design
-
-## Overlay
-
-## Hybrid models
-
-Hybrid models consist of a message passing and shared memory
-instance. Message passing components have an overlay
-(overlay.Overlay), that represents the topology to be used for sending
-messages (binary tree, MST)
-
-# Generating Quorum Configurations
+# Running the Simulator in a standalone version
 
 This Simulator is used to simulate and configure how messages should
 be send by Barrelfish's quorum program at runtime. The simulator
@@ -99,15 +88,15 @@ for reconfigurable hardware. An example is:
 Note: If the Simulator is running as a service within the ETH network,
 access from the outside world (`pluton`) and the Barrelfish rack cannot
 directly access it. Instead, on these machines, you have to setup a
-SSH tunnel to `emmentaler`.
+SSH tunnel.
 
 This is how you setup the tunnel (directly on the machine where you
 want to execute Smelt).
 
-```ssh -L 25041:sgv-skaestle-01:25041 skaestle@10.110.4.4 -p8006 -N```
+```ssh -L 25041:$SIMSERVER:25041 $TUNNELSERVER -N```
 
-`10.110.4.4` here is the local IP address of emmentaler as seen from
-within the Barrelfish rack. From the outside world, use
-`emmentaler1.ethz.ch` instead.
+`$TUNNELSERVER` here is the IP address of a machine that can be
+reached from the machine running Smelt and can itself reach the
+Simulator host machine.
 
-In order for this to work, `export SMLT_HOSTNAME=localhost`.
+When an SSH tunnel is used: `export SMLT_HOSTNAME=localhost`.
