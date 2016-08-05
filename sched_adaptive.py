@@ -373,7 +373,7 @@ class SchedAdaptive(scheduling.Scheduling):
         # Remove previous sender
         for (s, l_receivers) in self.store.items():
             logging.info(('ADAPTIVE', 'looking for ', receiver, 'in', l_receivers))
-            self.store[s] = [ (cost, r) for (cost, r) in l_receivers if \
+            self.store[s] = [ (c, r) for (c, r) in l_receivers if \
                               r != receiver ]
 
         # Add new pair
