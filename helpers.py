@@ -15,8 +15,6 @@ import re
 
 import config
 
-from datetime import Error
-
 from pygraph.classes.graph import graph
 from pygraph.classes.digraph import digraph
 
@@ -113,7 +111,7 @@ def output_quorum_configuration(model, hierarchies, root, sched, topo, midx,
             send_shm(h, mat, d)
         else:
             import pdb; pdb.set_trace()
-            raise Error('Unsupported Hybrid Module')
+            raise Exception('Unsupported Hybrid Module')
 
     #  Add clusters
     if shm_clusters:
