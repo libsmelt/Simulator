@@ -1,13 +1,12 @@
 #!/usr/bin/env python
 
 import sys
-import os
-sys.path.append(os.getenv('HOME') + '/bin/')
 
 import re
 import helpers
 import logging
 
+sys.path.append('machinedb/')
 from topology_parser import on_same_node
 
 class MultiMessage(object):

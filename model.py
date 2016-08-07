@@ -1,5 +1,8 @@
 # Copyright (c) 2007, 2008, 2009, 2010, 2011, 2012, 2013 ETH Zurich.
 
+import sys
+sys.path.append('machinedb/')
+
 import logging
 import topology_parser
 import config
@@ -7,8 +10,8 @@ import helpers
 import re
 
 import itertools
-
 import gzip
+
 from multimessage import MultiMessage
 
 # --------------------------------------------------
