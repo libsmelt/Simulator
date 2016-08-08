@@ -43,7 +43,7 @@ class Model(object):
         # Topology parser
         # --------------------------------------------------
         try:
-            self.machine_topology = topology_parser.parse_machine_db(self.get_name())
+            self.machine_topology = topology_parser.parse_machine_db(self.get_name(), 'machinedb/')
         except:
             helpers.warn('Warning: topology parser did not find machine data')
             self.machine_topology = {}
