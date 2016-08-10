@@ -1,7 +1,5 @@
 This is a simulator for multicores.
 
-[![build status](https://gitlab.inf.ethz.ch/skaestle/Simulator/badges/ci/build.svg)](https://gitlab.inf.ethz.ch/skaestle/Simulator/commits/ci)
-
 It can be used to Simulate broadcast trees and generate configurations
 to be fed into the Barrelfish's Quorum program.
 
