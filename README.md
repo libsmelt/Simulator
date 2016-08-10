@@ -1,7 +1,4 @@
-This is a simulator for multicores.
-
-It can be used to Simulate broadcast trees and generate configurations
-to be fed into the Barrelfish's Quorum program.
+[![Build Status](https://travis-ci.org/libsmelt/Simulator.svg?branch=master)](https://travis-ci.org/libsmelt/Simulator)
 
 # Setup
 
