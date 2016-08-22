@@ -32,7 +32,7 @@ import networkx as nx
 from networkx.drawing.nx_agraph import to_agraph
 
 SHM_REGIONS_OFFSET=20
-SHM_SLAVE_START=50
+SHM_SLAVE_START=150
 SHM_MASTER_START=SHM_SLAVE_START + SHM_REGIONS_OFFSET
 
 def output_clustered_graph(graph, name, clustering):
