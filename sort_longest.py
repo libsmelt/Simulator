@@ -56,6 +56,10 @@ class SortLongest(scheduling.Scheduling):
         """
         out = []
         omit = active_nodes if active_nodes != None else []
+
+        if not src in self.graph.nodes():
+            return []
+
         for nb in self.graph.neighbors(src):
             if not nb in omit:
                 cost = self.graph.edge_weight((src, nb))
