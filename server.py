@@ -12,6 +12,8 @@ import sys
 import json
 import helpers
 import config
+import threading
+import logging
 
 from StringIO import StringIO
 
@@ -32,6 +34,43 @@ class SimArgs:
     group = []
     multimessage = False
     reverserecv = False
+
+
+class ClientThread(threading.Thread):
+
+    def __init__(self, address, socket):
+        threading.Thread.__init__(self)
+        self.socket = socket
+        print >>sys.stderr, 'connection from', address
+
+    def run(self):
+
+        try:
+            # Receive the data in small chunks and retransmit it
+            buf = StringIO()
+
+            # XXX properly detect the length of the message
+            # here and receive ALL of it.
+            data = self.socket.recv(10240)
+            buf.write(data)
+
+            # There is still no guarantee that this is
+            # correct, but if not, the json parser will fail.
+
+            assert len(data)<10240 # Otherwise, the message is
+                                   # longer than 10240 and we
+                                   # need to properly
+                                   # implement sockets
+
+            res = handle_request(json.loads(buf.getvalue()))
+            if len(res)>0:
+                self.socket.sendall(res)
+
+        finally:
+            # Clean up the connection
+            self.socket.close()
+
+        print "Client disconnected..."
 
 
 def handle_request(r):
@@ -129,34 +168,10 @@ def server_loop():
                 print >>sys.stderr, 'waiting for a connection'
                 connection, client_address = sock.accept()
 
-                try:
-                    print >>sys.stderr, 'connection from', client_address
+                # Handle client connection in a separate thread
+                t = ClientThread(client_address, connection)
+                t.start()
 
-                    # Receive the data in small chunks and retransmit it
-                    buf = StringIO()
-
-                    # XXX properly detect the length of the message
-                    # here and receive ALL of it.
-                    data = connection.recv(10240)
-                    buf.write(data)
-
-                    # There is still no guarantee that this is
-                    # correct, but if not, the json parser will fail.
-
-                    assert len(data)<10240 # Otherwise, the message is
-                                           # longer than 10240 and we
-                                           # need to properly
-                                           # implement sockets
-
-                    res = handle_request(json.loads(buf.getvalue()))
-                    if len(res)>0:
-                        connection.sendall(res)
-
-                finally:
-                    # Clean up the connection
-                    connection.close()
-                    # sock.shutdown(1)
-                    # sock.close()
 
     finally:
         # Cleanup sockets
