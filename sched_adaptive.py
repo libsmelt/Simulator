@@ -104,7 +104,7 @@ class SchedAdaptive(scheduling.Scheduling):
             for us, them in zip(sh_us, sh_them):
                 assert us == them # send history matches in each element
 
-        print 'Send history is correct :-)'
+        logging.info(('Send history is correct :-)'))
 
 
     def cost_tree(self):
@@ -148,7 +148,7 @@ class SchedAdaptive(scheduling.Scheduling):
 
         # Determine the cost of each subtree
         cost = self.cost_subtree()
-        print 'Re-ordering: subtree costs are:', str(cost)
+        logging.info(('Re-ordering: subtree costs are:', str(cost)))
 
         # reset send history in machine model
         self.mod.reset()
@@ -279,9 +279,9 @@ class SchedAdaptive(scheduling.Scheduling):
         store_old = self.store
         history_old = self.mod.send_history
 
-        print 'root is', self.get_root()
+        logging.info(('root is', self.get_root()))
         for core, children in self.store.items():
-            print core, '->', [ core for (_, core) in children ]
+            logging.info((core, '->', [ core for (_, core) in children ]))
 
         # --------------------------------------------------
         # REORDER - for each core, reorder messages
@@ -303,11 +303,11 @@ class SchedAdaptive(scheduling.Scheduling):
             assert sorted(cld_c) == sorted(cld_old_c)
 
             if cld_c != cld_old_c:
-                print 'Changed schedule in node %4d from %20s to %20s' % \
-                    (sender, str(cld_old_c), str(cld_c))
+                logging.info(('Changed schedule in node %4d from %20s to %20s'%\
+                    (sender, str(cld_old_c), str(cld_c))))
 
             else:
-                print 'Unchanged schedule in node %2d' % sender
+                logging.info(('Unchanged schedule in node %2d' % sender))
 
 
         # XXX I think the problem here is that the cost in the very
@@ -387,7 +387,6 @@ class SchedAdaptive(scheduling.Scheduling):
         cheap_first = self.overlay.options.get('min', False)
 
         self.num += 1
-        #print 'Active nodes - %d' % self.num, len(cores_active)
 
         # Find cores that ...
         # Principles are:
@@ -543,9 +542,9 @@ class SchedAdaptive(scheduling.Scheduling):
             return []
 
     def next_eval(self):
-        print '--------------------------------------------------'
-        print 'FINISHED'
-        print '--------------------------------------------------'
+        logging.info(('--------------------------------------------------'))
+        logging.info(('FINISHED'))
+        logging.info(('--------------------------------------------------'))
         self.finished = True
 
 

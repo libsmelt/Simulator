@@ -77,9 +77,9 @@ def handle_request(r):
     res['leaf_nodes'] = leaf_nodes[0]
     res['git-version'] = helpers.git_version()
 
-    print 'Responding with >>>'
-    print json.dumps(res)
-    print '<<<'
+    logging.info(('Responding with >>>'))
+    logging.info((json.dumps(res)))
+    logging.info(('<<<'))
 
     write_statistics(c.machine)
 
