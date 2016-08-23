@@ -8,7 +8,6 @@
 # ETH Zurich D-INFK, Universitaetstr. 6, CH-8092 Zurich. Attn: Systems Group.
 
 import scheduling
-import sort_longest
 import helpers
 import naive
 
@@ -189,11 +188,7 @@ class Overlay(object):
         print "Initializing scheduler in overlay: %s" % str(final_graph)
 
 
-        if self.options.get('naive', False):
-            return naive.Naive(final_graph)
-
-        else:
-            return sort_longest.SortLongest(final_graph)
+        return naive.Naive(final_graph)
 
 
     @staticmethod

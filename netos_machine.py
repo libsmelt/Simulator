@@ -67,7 +67,7 @@ class NetosMachine(model.Model):
 
         The cost of communication for each pair of cores is the
         send_cost + receive_cost on that link. This is set as edge
-        weight and used by the sort_longest scheduler when sorting
+        weight and used by the schedulers when sorting
         edges.
 
         """
