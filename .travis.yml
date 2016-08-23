@@ -1,0 +1,17 @@
+language: python
+
+python:
+  - "2.7_with_system_site_packages"
+
+before_install:
+  - sudo apt-get -qq update
+  - sudo apt-get install -y libxml2-dev
+  - sudo apt-get install -y python-networkx python-pygraphviz libgv-python python-numpy python-pygraph python-matplotlib wget net-tools
+  - "ls -anh /usr/lib/python2.7/dist-packages"
+  - "(cd /usr/lib/python2.7/dist-packages; sudo rm _gv.so; sudo ln -s libgv_python27.x86_64-linux-gnu.so _gv.so)"
+  - "(cd /usr/lib/python2.7/dist-packages; sudo ln libgv_python27.so libgv_python27.x86_64-linux-gnu.so)"
+  - "ls -anh /usr/lib/python2.7/dist-packages"
+  - "ls -anh /usr/lib/python2.7/dist-packages/../../../share/pyshared/"
+  - "env | grep PYTHON"
+
+script: scripts/test_standalone.sh
