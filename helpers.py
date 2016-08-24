@@ -295,10 +295,14 @@ def draw_final(mod, sched, topo):
 
     clist = [ 'red', 'green', 'blue', 'orange', 'grey', 'yellow', 'black', 'pink' ]
 
-    i = 0
-    for c in mod.get_numa_information():
-        A.add_subgraph(c, name='cluster_%d' % i, color=clist[i % len(clist)])
-        i += 1
+    draw_subgraph = not topo.get_name() in [ 'fibonacci' ]
+    if draw_subgraph:
+        i = 0
+        for c in mod.get_numa_information():
+            A.add_subgraph(c, name='cluster_%d' % i, color=clist[i % len(clist)])
+            i += 1
+    else:
+        print 'Not drawing NUMA nodes'
 
     desc = 'mc' if mc else 'full'
 
