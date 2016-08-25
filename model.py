@@ -29,7 +29,7 @@ class Model(object):
         We initialize models with the graph
         """
 
-        print 'Initializing Model()'
+        print 'Initializing Model(%s)' % self.get_name()
 
         self.send_cost = {}
         self.recv_cost = {}
@@ -44,10 +44,12 @@ class Model(object):
         # --------------------------------------------------
         try:
             self.machine_topology = topology_parser.parse_machine_db(self.get_name(), 'machinedb/')
+            print 'Parsing machine topology was successful, machine is %s' % \
+                (topology_parser.generate_short_name(self.machine_topology))
         except:
             helpers.warn('Warning: topology parser did not find machine data')
-            self.machine_topology = {}
             raise
+            exit (0)
 
 
         # Pairwise
