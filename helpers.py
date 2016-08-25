@@ -295,7 +295,7 @@ def draw_final(mod, sched, topo):
 
     clist = [ 'red', 'green', 'blue', 'orange', 'grey', 'yellow', 'black', 'pink' ]
 
-    draw_subgraph = not topo.get_name() in [ 'fibonacci' ]
+    draw_subgraph = not topo.get_name() in [ 'fibonacci', 'bintree' ]
     if draw_subgraph:
         i = 0
         for c in mod.get_numa_information():
@@ -307,10 +307,11 @@ def draw_final(mod, sched, topo):
     desc = 'mc' if mc else 'full'
 
     try:
-        A.draw('graphs/final_%s-%s-%s.png' % (mod.get_name(), topo.get_name(), desc),
-               prog='dot')
+        _name = 'graphs/final_%s-%s-%s.png' % (mod.get_name(), topo.get_name(), desc)
+        A.draw(_name, prog='dot')
         A.draw('graphs/last.png', prog='dot')
         A.draw('graphs/last_%s.png' % mod.get_name(), prog='dot')
+        A.write(_name + '.dot')
 
     except Exception as e:
         print 'Generating PNGs for graph topologies faield, continuing'
