@@ -95,7 +95,8 @@ class Overlay(object):
         if self.mod.get_root_node():
             return self.mod.get_root_node()
         else:
-            return 0
+            # Choose root as first node in topology
+            return self.mod.get_cores(True)[0]
 
     def get_name(self):
         return None
@@ -171,7 +172,8 @@ class Overlay(object):
         """
         coordinators=[]
         for core in range(len(self.mod.get_graph())):
-            new_coordinator = True
+            # Add coordinator only if in active nodes, i.e. participating in multicast
+            new_coordinator = len(self.mod.filter_active_cores([core], True))>0
             for c in coordinators:
                 if self.mod.on_same_numa_node(core, c):
                     new_coordinator = False

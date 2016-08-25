@@ -34,7 +34,7 @@ class Sequential(overlay.Overlay):
         # Run binary tree algorithm
         sequential = algorithms.sequential(self.mod.get_graph(),
                                            self.mod.get_graph().nodes(),
-                                           0)
+                                           self.get_root_node())
 
         # Print graph
         helpers.output_graph(sequential, 'sequential', 'dot')
@@ -49,6 +49,7 @@ class Sequential(overlay.Overlay):
 
         # Run binary tree algorithm
         print 'Building sequential multicast', graph.nodes()
-        sequential = algorithms.sequential(graph, graph.nodes(), 0)
+        sequential = algorithms.sequential(graph, graph.nodes(),
+                                           self.get_root_node())
 
         return sequential
