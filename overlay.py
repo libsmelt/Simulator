@@ -48,8 +48,8 @@ class Overlay(object):
             print 'Overlay: activating argument: [%s]' % a
             self.options[a] = True
             # Some options have to be passed to the Machine
-            if a == 'nomm':
-                self.mod.nomm = True
+            if a == 'mm':
+                self.mod.enable_mm = True
 
 
     def _get_broadcast_tree(self):

@@ -36,7 +36,7 @@ class Model(object):
 
         self.send_history = {}
         self.mm = None # MultiMessage benchmark - see NetosMachine
-        self.nomm = False
+        self.enable_mm = False
 
         assert graph == None
 
@@ -129,7 +129,7 @@ class Model(object):
             cost += self.get_send_cost(sender, c, False, False)
 
         # Correct if requested
-        if not self.nomm and corrected and self.mm:
+        if self.enable_mm and corrected and self.mm:
             cost /= self.mm.get_factor(sender, cores)
 
         return cost
@@ -180,7 +180,7 @@ class Model(object):
                                      # added to the send history
                                      # before actually sending to it)
 
-        if not self.nomm:
+        if self.enable_mm:
             cost /= self.mm.get_factor(sender, cores + [receiver])
 
         return cost
