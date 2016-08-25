@@ -155,7 +155,10 @@ class Model(object):
                                                   self.send_history.get(sender, []))
 
         else:
-            cost = self.send_cost[(sender, receiver)]
+            if not (sender, receiver) in self.send_cost:
+                cost = sys.maxint
+            else:
+                cost = self.send_cost[(sender, receiver)]
 
         if add_history:
             self.add_send_history(sender, receiver)
@@ -325,7 +328,9 @@ class Model(object):
         """
         if (src==dest):
             return 0
-        assert (src, dest) in self.recv_cost
+        if not (src, dest) in self.recv_cost:
+            return sys.maxint
+
         return self.recv_cost[(src, dest)]
 
 
