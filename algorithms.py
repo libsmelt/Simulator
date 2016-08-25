@@ -30,7 +30,7 @@ def binary_tree(m, nodes=[]):
 
     g = digraph()
     if len(nodes)==0:
-        nodes = m.nodes()
+        nodes = sorted(m.nodes())
     num = len(nodes)
 
     # Adding nodes
