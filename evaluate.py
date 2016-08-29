@@ -481,6 +481,7 @@ class Barrier(Protocol):
         logging.info(('Leaf nodes are', str(leaf_nodes)))
 
         for l in leaf_nodes:
+            logging.info(('barrier state: %d - %d' % (l, Barrier.REDUCE)))
             self.state[l] = Barrier.REDUCE
             eval_context.schedule_node(l)
 
@@ -488,6 +489,7 @@ class Barrier(Protocol):
         logging.info(('Parent relationship: ', self.parents))
 
         self.root = root
+        logging.info(('Setting root to %d', self.root))
 
 
 
@@ -511,6 +513,7 @@ class Barrier(Protocol):
 
             # There is nothing to do for the root
             if core == self.root:
+                logging.info(('node %d is root' % core))
                 return
 
             self.num_msgs[core] = self.num_msgs.get(core, 0) + 1
@@ -598,12 +601,14 @@ class Barrier(Protocol):
 
             if start_bc:
                 # Change state to REDUCE
+                logging.info(('barrier state: %d - %d' % (core, Barrier.REDUCE)))
                 self.state[core] = Barrier.REDUCE
 
             return start_bc
 
         elif curr_core_state == Barrier.REDUCE:
             # Change state to BROADCAST, trigger sending a message
+            logging.info(('barrier state: %d - %d' % (core, Barrier.BC)))
             self.state[core] = Barrier.BC
             return True
 
@@ -633,11 +638,35 @@ class Barrier(Protocol):
 
         reduce_done = True
         finished = True
-        for (core, state) in self.state.items():
+
+        if len(self.state) < len(eval_context.model.get_cores(True)):
+            logging.info(('Not all cores have seen the message %d/%d' % \
+                          (len(self.state), len(eval_context.model.get_cores(True)))))
+            m = eval_context.model
+            sched = eval_context.schedule
+            for c in m.get_cores(True):
+                logging.info(( '%d -> %s' % \
+                    (c, ','.join([ str(x) for (_, x) in sched.find_schedule(c) ]))))
+
+
+            for i in eval_context.model.get_cores(True):
+                if not i in self.state:
+                    logging.info(('Core %d did not any message yet' % i))
+
+            return False
+
+        for (i, (core, state)) in enumerate(self.state.items()):
             if state != Barrier.BC:
+                logging.info(('barrier:is_terminated(%d): !finished core=%d state=%d' %\
+                              (i, core, state)))
                 finished = False
-            if state != Barrier.REDUCE:
+            elif state != Barrier.REDUCE:
+                logging.info(('barrier:is_terminated(%d): !reduce_done core=%d state=%d' %\
+                              (i, core, state)))
                 reduce_done = False
+
+        logging.info(('barrier:is_terminated: finished=%d reduce_done=%d' %\
+                      (finished, reduce_done)))
 
         if reduce_done:
 
@@ -647,6 +676,7 @@ class Barrier(Protocol):
 
             # Activate BC for root
             self.state[self.root] = Barrier.BC
+            logging.info(('barrier state: %d - %d' % (self.root, Barrier.BC)))
 
             # Reset state of all cores + schedule root
             eval_context.schedule_node(self.root)
@@ -861,7 +891,13 @@ class Evaluate():
         What the fuck is the difference between receive and receiving?
 
         """
-        (p, e) = heapq.heappop(self.event_queue)
+        (p, e) = heapq.heappop(self.event_queue) # If this happens,
+                  # there are no more events, but the protocol is
+                  # still not terminated. This is most likely because
+                  # the protocol did not terminate with is_terminated,
+                  # despite the fact that there are no more messages
+                  # floating around in the system. This should not
+                  # happen.
         assert(p>=self.sim_round) # Otherwise, we pick up events that should have happened in the past
         self.sim_round = p
 
