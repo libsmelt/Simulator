@@ -11,7 +11,7 @@
 # This is based on original maxmin implementation of the python-graph project.
 # See https://code.google.com/p/python-graph/source/browse/trunk/core/pygraph/algorithms/minmax.py
 
-def minimal_spanning_tree(graph, root=None):
+def minimal_spanning_tree(graph, root):
     """
     Minimal spanning tree.
 
@@ -31,12 +31,9 @@ def minimal_spanning_tree(graph, root=None):
     d = dict()
 
     # Initialization
-    if (root is not None):
-        visited.append(root)
-        nroot = root
-        spanning_tree[root] = None
-    else:
-        nroot = 1
+    visited.append(root)
+    nroot = root
+    spanning_tree[root] = None
 
     # Algorithm loop
     while (nroot is not None):

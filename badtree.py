@@ -44,7 +44,7 @@ class BadTree(overlay.Overlay):
         g_inv = algorithms.invert_weights(g)
 
         # Run binary tree algorithm
-        mst_inv = minimal_spanning_tree(g_inv, self.mod.get_root_node())
+        mst_inv = minimal_spanning_tree(g_inv, self.get_root_node())
 
         # Build a new graph
         badtree = digraph()
