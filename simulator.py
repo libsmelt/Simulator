@@ -149,11 +149,15 @@ def simulate(args):
             model_descriptions.append(tmp)
 
             tmp_last_node = -1
+            receive_order = None
             for (label, ev) in evs:
                 if label == 'atomic broadcast':
                     tmp_last_node = ev.last_node
+                    receive_order = ev.node_finished_list
                 print "Cost %s for tree is: %d (%d), last node is %s" % \
                     (label, ev.time, ev.time_no_ab, ev.last_node)
+
+            assert receive_order != None
 
             # Output c configuration for quorum program
             helpers.output_quorum_configuration(m, hierarchies, root, sched,
@@ -182,6 +186,19 @@ def simulate(args):
                     helpers.draw_final(m, sched, topo)
 
             num_models += 1
+
+        print all_leaf_nodes
+
+        # Cut down number of leafs
+        LEAFS_MAX = 10
+        if len(all_leaf_nodes[0])>LEAFS_MAX:
+            # Filter last nodes, only taking leaf nodes
+            _l = [ x for x in receive_order if x in all_leaf_nodes[0] ]
+            assert(len(_l) >= len(all_leaf_nodes[0]))
+            all_leaf_nodes[0] = _l[-10:]
+            helpers.warn('Cropping leaf nodes to: %s' % ','.join(map(str, all_leaf_nodes[0])))
+
+        helpers.warn('Leaf nodes are: %s - %d' % (','.join(map(str, all_leaf_nodes[0])), len(all_leaf_nodes[0])))
 
 
         # Generate footer

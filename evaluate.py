@@ -689,6 +689,7 @@ class Result():
         self.time = None
         self.last_node = last_node
         self.visu_name = visu_name
+        self.node_finished_list = [] # Nodes in the ordered they finished
 
 # ==================================================
 class Evaluate():
@@ -755,6 +756,9 @@ class Evaluate():
 
         self.node_state = {}
         self.last_node = -1
+
+        # Determine order in which nodes where finished according to the Simulator
+        self.nodes_by_receive_order = []
 
         #
         # The protocol that should be simulated
@@ -830,6 +834,9 @@ class Evaluate():
         r.time = self.sim_round
 
         self.visu.finalize(int(final_time))
+
+        # Determine order in which nodes where finished according to the Simulator
+        r.node_finished_list = self.nodes_by_receive_order
 
         return r
 
@@ -932,6 +939,7 @@ class Evaluate():
         """
         assert (dest>=0)
         self.last_node = dest
+        self.nodes_by_receive_order.append(dest)
 
         # Get receive cost
         cost = self.model.get_receive_cost(src, dest)
