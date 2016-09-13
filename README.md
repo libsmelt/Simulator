@@ -14,7 +14,7 @@ Then, you have to manually create directories and install the model:
 
     mkdir graphs/ visu/ model/
     wget 'http://people.inf.ethz.ch/skaestle/machinemodel.gz' -O "machinemodel.gz"
-    tar -xzf "machinemodel.gz" -C "model/"
+    tar -xzf "machinemodel.gz" -C "machinedb/"
 
 
 # Machines
