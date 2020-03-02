@@ -15,7 +15,7 @@ import config
 import threading
 import logging
 
-from StringIO import StringIO
+from io import StringIO
 
 PORT=25041
 
@@ -41,7 +41,7 @@ class ClientThread(threading.Thread):
     def __init__(self, address, socket):
         threading.Thread.__init__(self)
         self.socket = socket
-        print >>sys.stderr, 'connection from', address
+        print ('connection from', address)
 
     def run(self):
 
@@ -52,7 +52,9 @@ class ClientThread(threading.Thread):
             # XXX properly detect the length of the message
             # here and receive ALL of it.
             data = self.socket.recv(10240)
-            buf.write(data)
+            print(data.decode('ascii'))
+            
+            buf.write(data.decode('ascii'))
 
             # There is still no guarantee that this is
             # correct, but if not, the json parser will fail.
@@ -64,20 +66,20 @@ class ClientThread(threading.Thread):
 
             res = handle_request(json.loads(buf.getvalue()))
             if len(res)>0:
-                self.socket.sendall(res)
+                self.socket.sendall(res.encode('ascii'))
 
         finally:
             # Clean up the connection
             self.socket.close()
 
-        print "Client disconnected..."
+        print ("Client disconnected...")
 
 
 def handle_request(r):
     """Handle the Simulator request given by the r dictionary
     """
-    print "handle_request executed .. "
-    print r
+    print ("handle_request executed .. ")
+    print (r)
 
     # Parse request ..
     config = SimArgs()
@@ -114,7 +116,9 @@ def handle_request(r):
     res['model'] = config.models[0]
     res['last_node'] = last_nodes[0]
     res['leaf_nodes'] = leaf_nodes[0]
-    res['git-version'] = helpers.git_version()
+    res['git-version'] = helpers.git_version().decode('ascii')
+
+    print(res)
 
     logging.info(('Responding with >>>'))
     logging.info((json.dumps(res)))
@@ -149,14 +153,14 @@ def write_statistics(machine):
 def server_loop():
 
     config.running_as_server = True
-    print 'Starting server'
+    print ('Starting server')
 
     # Create a TCP/IP socket
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
     server_address = ('', PORT) # empty string = accept from all addresses
-    print >>sys.stderr, 'starting up on %s port %s' % server_address
+    print ('starting up on %s port %s' % server_address)
     sock.bind(server_address)
 
     sock.listen(1)
@@ -165,7 +169,7 @@ def server_loop():
 
         while True:
                 # Wait for a connection
-                print >>sys.stderr, 'waiting for a connection'
+                print ('waiting for a connection')
                 connection, client_address = sock.accept()
 
                 # Handle client connection in a separate thread
@@ -175,6 +179,6 @@ def server_loop():
 
     finally:
         # Cleanup sockets
-        print "Closing socket .. "
+        print ("Closing socket .. ")
         # sock.shutdown(1)
         # sock.close()
