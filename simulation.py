@@ -38,8 +38,11 @@ def _simulation_wrapper(ol, m, gr, multicast=False):
         # Multicast, group membership given
         n = config.get_mc_group()
 
+        nodes = [int(nd) for nd in n]
+
         print ('Multicast with nodes: %s' % ('-'.join(map(str,n))))
-        hybmod_list = r.get_multicast_tree(map(int, n))
+        
+        hybmod_list = r.get_multicast_tree(nodes)
 
     else:
         print ('Getting broadcast tree for ', str(r))

@@ -18,7 +18,7 @@ class Resource(object):
     def parse(self, element):
         if element.startswith(self.name):
             if self.cluster:
-                self.all.append(map(int, self.cluster))
+                self.all.append([int(i) for i in self.cluster])
             self.cluster = []
 
     def finalize(self):
@@ -309,6 +309,7 @@ def generate_short_name(topo_info, longer=False, add_cpuspeed_to_name=True):
         'Magny Cours': ('MC', None),
         'Ivy': ('IB', None),
         'Knights Corner': ('KNC', None),
+        'Skylake' : ("SK", "Skylake"),
         'Kabylake' : ("KL", "Kabylake")
     }
 

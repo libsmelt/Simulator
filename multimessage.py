@@ -43,7 +43,7 @@ class MultiMessage(object):
             if not m :
                 m = re.match('r=1,l=4, mode=([^,]+), avg=(\d+), stdev=(\d+), med=(\d+), min=(\d+), max=(\d+) cycles, count=(\d+), ignored=(\d+)', line)
             if m :
-                cores = map(int, m.group(1).split(','))
+                cores = [int(i) for i in m.group(1).split(',')]
                 l_cores = []
                 r_cores = []
 

@@ -251,7 +251,7 @@ def main():
         if args.cores:
             global c_mapping
             print 'Using the following cores:', args.cores
-            c_mapping = map(int, args.cores.split(','))
+            c_mapping = [int(i) for i in args.cores.split(',')]
             unused_nodes = range(len(c_mapping))
 
         t1 = datetime.now()

@@ -156,7 +156,7 @@ class Model(object):
 
         else:
             if not (sender, receiver) in self.send_cost:
-                cost = sys.maxint
+                cost = sys.maxsize
             else:
                 cost = self.send_cost[(sender, receiver)]
 
@@ -329,7 +329,7 @@ class Model(object):
         if (src==dest):
             return 0
         if not (src, dest) in self.recv_cost:
-            return sys.maxint
+            return sys.maxsize
 
         return self.recv_cost[(src, dest)]
 
