@@ -1,0 +1,3 @@
+algorithm,pthread,pthread_stderr,parsec,parsec_stderr,mcs,mcs_stderr,libsync,libsync_stderr
+Shoal,51.182500,0.178688,51.260250,0.224734,44.990750,0.303098,44.665000,0.117883
+no Shoal,61.838500,3.390250,60.961000,2.005238,49.146500,0.722713,48.340500,1.197390

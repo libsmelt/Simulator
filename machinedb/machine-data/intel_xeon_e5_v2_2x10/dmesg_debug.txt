@@ -1,0 +1,668 @@
+dmesg --level debug
+[    0.000000] DMI: dalco ag S2600GZ/S2600GZ, BIOS SE5C600.86B.02.02.0002.122320131210 12/23/2013
+[    0.000000] e820: update [mem 0x00000000-0x00000fff] usable ==> reserved
+[    0.000000] e820: remove [mem 0x000a0000-0x000fffff] usable
+[    0.000000] MTRR default type: uncachable
+[    0.000000] MTRR fixed ranges enabled:
+[    0.000000]   00000-9FFFF write-back
+[    0.000000]   A0000-BFFFF uncachable
+[    0.000000]   C0000-D3FFF write-through
+[    0.000000]   D4000-D7FFF write-protect
+[    0.000000]   D8000-E7FFF uncachable
+[    0.000000]   E8000-FFFFF write-protect
+[    0.000000] MTRR variable ranges enabled:
+[    0.000000]   0 base 000000000000 mask 3FFF80000000 write-back
+[    0.000000]   1 base 000080000000 mask 3FFFC0000000 write-back
+[    0.000000]   2 base 000100000000 mask 3FFF00000000 write-back
+[    0.000000]   3 base 000200000000 mask 3FFE00000000 write-back
+[    0.000000]   4 base 000400000000 mask 3FFC00000000 write-back
+[    0.000000]   5 base 000800000000 mask 3FF800000000 write-back
+[    0.000000]   6 base 001000000000 mask 3FF000000000 write-back
+[    0.000000]   7 base 002000000000 mask 3FE000000000 write-back
+[    0.000000]   8 base 004000000000 mask 3FFFC0000000 write-back
+[    0.000000]   9 disabled
+[    0.000000] e820: update [mem 0xc0000000-0xffffffff] usable ==> reserved
+[    0.000000] Base memory trampoline at [ffff880000095000] 95000 size 24576
+[    0.000000]  [mem 0x00000000-0x000fffff] page 4k
+[    0.000000] BRK [0x01f7c000, 0x01f7cfff] PGTABLE
+[    0.000000] BRK [0x01f7d000, 0x01f7dfff] PGTABLE
+[    0.000000] BRK [0x01f7e000, 0x01f7efff] PGTABLE
+[    0.000000]  [mem 0x403fe00000-0x403fffffff] page 1G
+[    0.000000]  [mem 0x403c000000-0x403fdfffff] page 1G
+[    0.000000]  [mem 0x4000000000-0x403bffffff] page 1G
+[    0.000000]  [mem 0x3000000000-0x3fffffffff] page 1G
+[    0.000000]  [mem 0x00100000-0x001fffff] page 4k
+[    0.000000]  [mem 0x00200000-0x3fffffff] page 2M
+[    0.000000]  [mem 0x40000000-0x7fffffff] page 1G
+[    0.000000]  [mem 0x80000000-0xbabfffff] page 2M
+[    0.000000]  [mem 0xbac00000-0xbad27fff] page 4k
+[    0.000000]  [mem 0xbaf90000-0xbafc4fff] page 4k
+[    0.000000] BRK [0x01f7f000, 0x01f7ffff] PGTABLE
+[    0.000000]  [mem 0xbafda000-0xbaffffff] page 4k
+[    0.000000]  [mem 0xbb000000-0xbb1fffff] page 2M
+[    0.000000]  [mem 0xbb200000-0xbb3d3fff] page 4k
+[    0.000000] BRK [0x01f80000, 0x01f80fff] PGTABLE
+[    0.000000]  [mem 0xbdfab000-0xbdffffff] page 4k
+[    0.000000] BRK [0x01f81000, 0x01f81fff] PGTABLE
+[    0.000000]  [mem 0x100000000-0x2fffffffff] page 1G
+[    0.000000] ACPI: Local APIC address 0xfee00000
+[    0.000000] NUMA: Initialized distance table, cnt=2
+[    0.000000]  [ffffea0000000000-ffffea0080ffffff] PMD -> [ffff881fbfe00000-ffff88203fdfffff] on node 0
+[    0.000000]  [ffffea0081000000-ffffea0100ffffff] PMD -> [ffff883fbf600000-ffff88403f5fffff] on node 1
+[    0.000000] On node 0 totalpages: 33534279
+[    0.000000]   DMA zone: 64 pages used for memmap
+[    0.000000]   DMA zone: 22 pages reserved
+[    0.000000]   DMA zone: 3995 pages, LIFO batch:0
+[    0.000000]   DMA32 zone: 11911 pages used for memmap
+[    0.000000]   DMA32 zone: 762284 pages, LIFO batch:31
+[    0.000000]   Normal zone: 512000 pages used for memmap
+[    0.000000]   Normal zone: 32768000 pages, LIFO batch:31
+[    0.000000] On node 1 totalpages: 33554432
+[    0.000000]   Normal zone: 524288 pages used for memmap
+[    0.000000]   Normal zone: 33554432 pages, LIFO batch:31
+[    0.000000] ACPI: Local APIC address 0xfee00000
+[    0.000000] ACPI: IRQ0 used by override.
+[    0.000000] ACPI: IRQ2 used by override.
+[    0.000000] ACPI: IRQ9 used by override.
+[    0.000000] nr_irqs_gsi: 88
+[    0.000000] pcpu-alloc: s81216 r8192 d21184 u131072 alloc=1*2097152
+[    0.000000] pcpu-alloc: [0] 000 001 002 003 004 005 006 007 008 009 020 021 022 023 024 025 
+[    0.000000] pcpu-alloc: [0] 026 027 028 029 040 042 044 046 048 050 052 054 056 058 060 062 
+[    0.000000] pcpu-alloc: [0] 064 066 068 070 072 074 076 078 080 082 084 086 088 090 092 094 
+[    0.000000] pcpu-alloc: [0] 096 098 100 102 104 106 108 110 112 114 116 118 120 122 124 126 
+[    0.000000] pcpu-alloc: [0] 128 130 132 134 136 138 140 142 144 146 148 150 152 154 156 158 
+[    0.000000] pcpu-alloc: [0] 160 162 164 166 168 170 172 174 176 178 180 182 184 186 188 190 
+[    0.000000] pcpu-alloc: [0] 192 194 196 198 200 202 204 206 208 210 212 214 216 218 220 222 
+[    0.000000] pcpu-alloc: [0] 224 226 228 230 232 234 236 238 --- --- --- --- --- --- --- --- 
+[    0.000000] pcpu-alloc: [1] 010 011 012 013 014 015 016 017 018 019 030 031 032 033 034 035 
+[    0.000000] pcpu-alloc: [1] 036 037 038 039 041 043 045 047 049 051 053 055 057 059 061 063 
+[    0.000000] pcpu-alloc: [1] 065 067 069 071 073 075 077 079 081 083 085 087 089 091 093 095 
+[    0.000000] pcpu-alloc: [1] 097 099 101 103 105 107 109 111 113 115 117 119 121 123 125 127 
+[    0.000000] pcpu-alloc: [1] 129 131 133 135 137 139 141 143 145 147 149 151 153 155 157 159 
+[    0.000000] pcpu-alloc: [1] 161 163 165 167 169 171 173 175 177 179 181 183 185 187 189 191 
+[    0.000000] pcpu-alloc: [1] 193 195 197 199 201 203 205 207 209 211 213 215 217 219 221 223 
+[    0.000000] pcpu-alloc: [1] 225 227 229 231 233 235 237 239 --- --- --- --- --- --- --- --- 
+[    0.000000] Calgary: detecting Calgary via BIOS EBDA area
+[    0.000000] Calgary: Unable to locate Rio Grande table in EBDA - bailing!
+[    0.000000] hpet clockevent registered
+[    0.394868] TSC deadline timer enabled
+[    1.917865] pci 0000:00:00.0: [8086:0e00] type 00 class 0x060000
+[    1.917921] pci 0000:00:00.0: PME# supported from D0 D3hot D3cold
+[    1.918002] pci 0000:00:01.0: [8086:0e02] type 01 class 0x060400
+[    1.918063] pci 0000:00:01.0: PME# supported from D0 D3hot D3cold
+[    1.924579] pci 0000:00:01.1: [8086:0e03] type 01 class 0x060400
+[    1.924640] pci 0000:00:01.1: PME# supported from D0 D3hot D3cold
+[    1.931134] pci 0000:00:02.0: [8086:0e04] type 01 class 0x060400
+[    1.931195] pci 0000:00:02.0: PME# supported from D0 D3hot D3cold
+[    1.937698] pci 0000:00:02.2: [8086:0e06] type 01 class 0x060400
+[    1.937759] pci 0000:00:02.2: PME# supported from D0 D3hot D3cold
+[    1.944256] pci 0000:00:03.0: [8086:0e08] type 01 class 0x060400
+[    1.944319] pci 0000:00:03.0: PME# supported from D0 D3hot D3cold
+[    1.950814] pci 0000:00:04.0: [8086:0e20] type 00 class 0x088000
+[    1.950827] pci 0000:00:04.0: reg 0x10: [mem 0x3803fff90000-0x3803fff93fff 64bit]
+[    1.950950] pci 0000:00:04.1: [8086:0e21] type 00 class 0x088000
+[    1.950963] pci 0000:00:04.1: reg 0x10: [mem 0x3803fff80000-0x3803fff83fff 64bit]
+[    1.951084] pci 0000:00:04.2: [8086:0e22] type 00 class 0x088000
+[    1.951097] pci 0000:00:04.2: reg 0x10: [mem 0x3803fff70000-0x3803fff73fff 64bit]
+[    1.951219] pci 0000:00:04.3: [8086:0e23] type 00 class 0x088000
+[    1.951232] pci 0000:00:04.3: reg 0x10: [mem 0x3803fff60000-0x3803fff63fff 64bit]
+[    1.951351] pci 0000:00:04.4: [8086:0e24] type 00 class 0x088000
+[    1.951363] pci 0000:00:04.4: reg 0x10: [mem 0x3803fff50000-0x3803fff53fff 64bit]
+[    1.951483] pci 0000:00:04.5: [8086:0e25] type 00 class 0x088000
+[    1.951496] pci 0000:00:04.5: reg 0x10: [mem 0x3803fff40000-0x3803fff43fff 64bit]
+[    1.951615] pci 0000:00:04.6: [8086:0e26] type 00 class 0x088000
+[    1.951628] pci 0000:00:04.6: reg 0x10: [mem 0x3803fff30000-0x3803fff33fff 64bit]
+[    1.951746] pci 0000:00:04.7: [8086:0e27] type 00 class 0x088000
+[    1.951759] pci 0000:00:04.7: reg 0x10: [mem 0x3803fff20000-0x3803fff23fff 64bit]
+[    1.951877] pci 0000:00:05.0: [8086:0e28] type 00 class 0x088000
+[    1.951981] pci 0000:00:05.1: [8086:0e29] type 00 class 0x088000
+[    1.952096] pci 0000:00:05.2: [8086:0e2a] type 00 class 0x088000
+[    1.952199] pci 0000:00:05.4: [8086:0e2c] type 00 class 0x080020
+[    1.952208] pci 0000:00:05.4: reg 0x10: [mem 0xd0f60000-0xd0f60fff]
+[    1.952335] pci 0000:00:11.0: [8086:1d3e] type 01 class 0x060400
+[    1.952425] pci 0000:00:11.0: PME# supported from D0 D3hot D3cold
+[    1.952510] pci 0000:00:16.0: [8086:1d3a] type 00 class 0x078000
+[    1.952529] pci 0000:00:16.0: reg 0x10: [mem 0xd0f50000-0xd0f5000f 64bit]
+[    1.952591] pci 0000:00:16.0: PME# supported from D0 D3hot D3cold
+[    1.952663] pci 0000:00:16.1: [8086:1d3b] type 00 class 0x078000
+[    1.952682] pci 0000:00:16.1: reg 0x10: [mem 0xd0f40000-0xd0f4000f 64bit]
+[    1.952744] pci 0000:00:16.1: PME# supported from D0 D3hot D3cold
+[    1.952827] pci 0000:00:1a.0: [8086:1d2d] type 00 class 0x0c0320
+[    1.952847] pci 0000:00:1a.0: reg 0x10: [mem 0xd0f20000-0xd0f203ff]
+[    1.952934] pci 0000:00:1a.0: PME# supported from D0 D3hot D3cold
+[    1.959447] pci 0000:00:1c.0: [8086:1d10] type 01 class 0x060400
+[    1.959578] pci 0000:00:1c.0: PME# supported from D0 D3hot D3cold
+[    1.966095] pci 0000:00:1c.7: [8086:1d1e] type 01 class 0x060400
+[    1.966172] pci 0000:00:1c.7: PME# supported from D0 D3hot D3cold
+[    1.972671] pci 0000:00:1d.0: [8086:1d26] type 00 class 0x0c0320
+[    1.972692] pci 0000:00:1d.0: reg 0x10: [mem 0xd0f10000-0xd0f103ff]
+[    1.972779] pci 0000:00:1d.0: PME# supported from D0 D3hot D3cold
+[    1.979285] pci 0000:00:1e.0: [8086:244e] type 01 class 0x060401
+[    1.985818] pci 0000:00:1f.0: [8086:1d41] type 00 class 0x060100
+[    1.985985] pci 0000:00:1f.2: [8086:1d02] type 00 class 0x010601
+[    1.986003] pci 0000:00:1f.2: reg 0x10: [io  0x5070-0x5077]
+[    1.986010] pci 0000:00:1f.2: reg 0x14: [io  0x5060-0x5063]
+[    1.986017] pci 0000:00:1f.2: reg 0x18: [io  0x5050-0x5057]
+[    1.986024] pci 0000:00:1f.2: reg 0x1c: [io  0x5040-0x5043]
+[    1.986031] pci 0000:00:1f.2: reg 0x20: [io  0x5020-0x503f]
+[    1.986039] pci 0000:00:1f.2: reg 0x24: [mem 0xd0f00000-0xd0f007ff]
+[    1.986082] pci 0000:00:1f.2: PME# supported from D3hot
+[    1.986149] pci 0000:00:1f.3: [8086:1d22] type 00 class 0x0c0500
+[    1.986163] pci 0000:00:1f.3: reg 0x10: [mem 0x3803fff10000-0x3803fff100ff 64bit]
+[    1.986183] pci 0000:00:1f.3: reg 0x20: [io  0x5000-0x501f]
+[    1.992008] pci 0000:02:00.0: [8086:1521] type 00 class 0x020000
+[    1.992018] pci 0000:02:00.0: reg 0x10: [mem 0xd0960000-0xd097ffff]
+[    1.992030] pci 0000:02:00.0: reg 0x18: [io  0x4060-0x407f]
+[    1.992038] pci 0000:02:00.0: reg 0x1c: [mem 0xd09b0000-0xd09b3fff]
+[    1.992090] pci 0000:02:00.0: PME# supported from D0 D3hot D3cold
+[    1.992120] pci 0000:02:00.0: reg 0x184: [mem 0xd0aa0000-0xd0aa3fff]
+[    1.992135] pci 0000:02:00.0: reg 0x190: [mem 0xd0a80000-0xd0a83fff]
+[    1.992192] pci 0000:02:00.1: [8086:1521] type 00 class 0x020000
+[    1.992202] pci 0000:02:00.1: reg 0x10: [mem 0xd0940000-0xd095ffff]
+[    1.992214] pci 0000:02:00.1: reg 0x18: [io  0x4040-0x405f]
+[    1.992221] pci 0000:02:00.1: reg 0x1c: [mem 0xd09a0000-0xd09a3fff]
+[    1.992274] pci 0000:02:00.1: PME# supported from D0 D3hot D3cold
+[    1.992297] pci 0000:02:00.1: reg 0x184: [mem 0xd0a60000-0xd0a63fff]
+[    1.992312] pci 0000:02:00.1: reg 0x190: [mem 0xd0a40000-0xd0a43fff]
+[    1.992366] pci 0000:02:00.2: [8086:1521] type 00 class 0x020000
+[    1.992376] pci 0000:02:00.2: reg 0x10: [mem 0xd0920000-0xd093ffff]
+[    1.992388] pci 0000:02:00.2: reg 0x18: [io  0x4020-0x403f]
+[    1.992395] pci 0000:02:00.2: reg 0x1c: [mem 0xd0990000-0xd0993fff]
+[    1.992448] pci 0000:02:00.2: PME# supported from D0 D3hot D3cold
+[    1.992470] pci 0000:02:00.2: reg 0x184: [mem 0xd0a20000-0xd0a23fff]
+[    1.992485] pci 0000:02:00.2: reg 0x190: [mem 0xd0a00000-0xd0a03fff]
+[    1.992543] pci 0000:02:00.3: [8086:1521] type 00 class 0x020000
+[    1.992553] pci 0000:02:00.3: reg 0x10: [mem 0xd0900000-0xd091ffff]
+[    1.992565] pci 0000:02:00.3: reg 0x18: [io  0x4000-0x401f]
+[    1.992572] pci 0000:02:00.3: reg 0x1c: [mem 0xd0980000-0xd0983fff]
+[    1.992624] pci 0000:02:00.3: PME# supported from D0 D3hot D3cold
+[    1.992647] pci 0000:02:00.3: reg 0x184: [mem 0xd09e0000-0xd09e3fff]
+[    1.992662] pci 0000:02:00.3: reg 0x190: [mem 0xd09c0000-0xd09c3fff]
+[    2.005936] pci 0000:00:01.1:   bridge window [io  0x4000-0x4fff]
+[    2.005939] pci 0000:00:01.1:   bridge window [mem 0xd0900000-0xd0afffff]
+[    2.005996] pci 0000:04:00.0: [8086:10fb] type 00 class 0x020000
+[    2.006007] pci 0000:04:00.0: reg 0x10: [mem 0xd0e20000-0xd0e3ffff 64bit]
+[    2.006012] pci 0000:04:00.0: reg 0x18: [io  0x3020-0x303f]
+[    2.006025] pci 0000:04:00.0: reg 0x20: [mem 0xd0e50000-0xd0e53fff 64bit]
+[    2.006057] pci 0000:04:00.0: PME# supported from D0 D3hot
+[    2.006080] pci 0000:04:00.0: reg 0x184: [mem 0x380200900000-0x380200903fff 64bit pref]
+[    2.006090] pci 0000:04:00.0: reg 0x190: [mem 0x380200800000-0x380200803fff 64bit pref]
+[    2.006137] pci 0000:04:00.1: [8086:10fb] type 00 class 0x020000
+[    2.006147] pci 0000:04:00.1: reg 0x10: [mem 0xd0e00000-0xd0e1ffff 64bit]
+[    2.006153] pci 0000:04:00.1: reg 0x18: [io  0x3000-0x301f]
+[    2.006165] pci 0000:04:00.1: reg 0x20: [mem 0xd0e40000-0xd0e43fff 64bit]
+[    2.006198] pci 0000:04:00.1: PME# supported from D0 D3hot
+[    2.006216] pci 0000:04:00.1: reg 0x184: [mem 0x380200700000-0x380200703fff 64bit pref]
+[    2.006227] pci 0000:04:00.1: reg 0x190: [mem 0x380200600000-0x380200603fff 64bit pref]
+[    2.019918] pci 0000:00:02.0:   bridge window [io  0x3000-0x3fff]
+[    2.019921] pci 0000:00:02.0:   bridge window [mem 0xd0e00000-0xd0efffff]
+[    2.019926] pci 0000:00:02.0:   bridge window [mem 0x380200600000-0x3802009fffff 64bit pref]
+[    2.019972] pci 0000:06:00.0: [1000:005b] type 00 class 0x010400
+[    2.019979] pci 0000:06:00.0: reg 0x10: [io  0x2000-0x20ff]
+[    2.019986] pci 0000:06:00.0: reg 0x14: [mem 0xd0d60000-0xd0d63fff 64bit]
+[    2.019993] pci 0000:06:00.0: reg 0x1c: [mem 0xd0d00000-0xd0d3ffff 64bit]
+[    2.020002] pci 0000:06:00.0: reg 0x30: [mem 0xd0d40000-0xd0d5ffff pref]
+[    2.020029] pci 0000:06:00.0: supports D1 D2
+[    2.033591] pci 0000:00:02.2:   bridge window [io  0x2000-0x2fff]
+[    2.033594] pci 0000:00:02.2:   bridge window [mem 0xd0d00000-0xd0dfffff]
+[    2.033649] pci 0000:07:00.0: [8086:225e] type 00 class 0x0b4000
+[    2.033659] pci 0000:07:00.0: reg 0x10: [mem 0x380000000000-0x3801ffffffff 64bit pref]
+[    2.033674] pci 0000:07:00.0: reg 0x20: [mem 0xd0c00000-0xd0c1ffff 64bit]
+[    2.033703] pci 0000:07:00.0: PME# supported from D0
+[    2.047285] pci 0000:00:03.0:   bridge window [mem 0xd0c00000-0xd0cfffff]
+[    2.047290] pci 0000:00:03.0:   bridge window [mem 0x380000000000-0x3801ffffffff 64bit pref]
+[    2.047357] pci 0000:08:00.0: [8086:1d6b] type 00 class 0x010700
+[    2.047375] pci 0000:08:00.0: reg 0x10: [mem 0x380200400000-0x380200403fff 64bit pref]
+[    2.047389] pci 0000:08:00.0: reg 0x18: [mem 0x380200000000-0x3802003fffff 64bit pref]
+[    2.047399] pci 0000:08:00.0: reg 0x20: [io  0x1000-0x10ff]
+[    2.047498] pci 0000:08:00.0: reg 0x164: [mem 0x380200410000-0x380200413fff 64bit pref]
+[    2.047568] pci 0000:08:00.3: [8086:1d70] type 00 class 0x0c0500
+[    2.047584] pci 0000:08:00.3: reg 0x10: [mem 0xd0b00000-0xd0b00fff]
+[    2.047623] pci 0000:08:00.3: reg 0x20: [io  0x1100-0x111f]
+[    2.047695] pci 0000:08:00.3: PME# supported from D0 D3hot D3cold
+[    2.053400] pci 0000:00:11.0:   bridge window [io  0x1000-0x1fff]
+[    2.053405] pci 0000:00:11.0:   bridge window [mem 0xd0b00000-0xd0bfffff]
+[    2.053412] pci 0000:00:11.0:   bridge window [mem 0x380200000000-0x3802004fffff 64bit pref]
+[    2.059212] pci 0000:0a:00.0: [102b:0522] type 00 class 0x030000
+[    2.059235] pci 0000:0a:00.0: reg 0x10: [mem 0xea000000-0xeaffffff pref]
+[    2.059252] pci 0000:0a:00.0: reg 0x14: [mem 0xd0810000-0xd0813fff]
+[    2.059269] pci 0000:0a:00.0: reg 0x18: [mem 0xd0000000-0xd07fffff]
+[    2.059331] pci 0000:0a:00.0: reg 0x30: [mem 0xd0800000-0xd080ffff pref]
+[    2.079554] pci 0000:00:1c.7:   bridge window [mem 0xd0000000-0xd08fffff]
+[    2.079560] pci 0000:00:1c.7:   bridge window [mem 0xea000000-0xeaffffff 64bit pref]
+[    2.087313] pci 0000:00:1e.0:   bridge window [io  0x0000-0xbfff] (subtractive decode)
+[    2.087314] pci 0000:00:1e.0:   bridge window [mem 0x000a0000-0x000bffff] (subtractive decode)
+[    2.087316] pci 0000:00:1e.0:   bridge window [mem 0x000c0000-0x000c3fff] (subtractive decode)
+[    2.087317] pci 0000:00:1e.0:   bridge window [mem 0x000c4000-0x000c7fff] (subtractive decode)
+[    2.087319] pci 0000:00:1e.0:   bridge window [mem 0x000d0000-0x000d3fff] (subtractive decode)
+[    2.087320] pci 0000:00:1e.0:   bridge window [mem 0x000d4000-0x000d7fff] (subtractive decode)
+[    2.087322] pci 0000:00:1e.0:   bridge window [mem 0x000d8000-0x000dbfff] (subtractive decode)
+[    2.087323] pci 0000:00:1e.0:   bridge window [mem 0x000dc000-0x000dffff] (subtractive decode)
+[    2.087324] pci 0000:00:1e.0:   bridge window [mem 0x000e0000-0x000e3fff] (subtractive decode)
+[    2.087326] pci 0000:00:1e.0:   bridge window [mem 0x000e4000-0x000e7fff] (subtractive decode)
+[    2.087327] pci 0000:00:1e.0:   bridge window [mem 0x000e8000-0x000ebfff] (subtractive decode)
+[    2.087329] pci 0000:00:1e.0:   bridge window [mem 0x000ec000-0x000effff] (subtractive decode)
+[    2.087330] pci 0000:00:1e.0:   bridge window [mem 0x000f0000-0x000fffff] (subtractive decode)
+[    2.087331] pci 0000:00:1e.0:   bridge window [mem 0xd0000000-0xebffffff] (subtractive decode)
+[    2.087333] pci 0000:00:1e.0:   bridge window [mem 0x380000000000-0x3803ffffffff] (subtractive decode)
+[    2.087392] pci_bus 0000:00: on NUMA node 0 (pxm 0)
+[    2.245763] pci 0000:80:01.0: [8086:0e02] type 01 class 0x060400
+[    2.245833] pci 0000:80:01.0: PME# supported from D0 D3hot D3cold
+[    2.252317] pci 0000:80:02.0: [8086:0e04] type 01 class 0x060400
+[    2.252386] pci 0000:80:02.0: PME# supported from D0 D3hot D3cold
+[    2.258864] pci 0000:80:03.0: [8086:0e08] type 01 class 0x060400
+[    2.258935] pci 0000:80:03.0: PME# supported from D0 D3hot D3cold
+[    2.265414] pci 0000:80:03.2: [8086:0e0a] type 01 class 0x060400
+[    2.265482] pci 0000:80:03.2: PME# supported from D0 D3hot D3cold
+[    2.271962] pci 0000:80:04.0: [8086:0e20] type 00 class 0x088000
+[    2.271978] pci 0000:80:04.0: reg 0x10: [mem 0x3805fff70000-0x3805fff73fff 64bit]
+[    2.272091] pci 0000:80:04.1: [8086:0e21] type 00 class 0x088000
+[    2.272105] pci 0000:80:04.1: reg 0x10: [mem 0x3805fff60000-0x3805fff63fff 64bit]
+[    2.272218] pci 0000:80:04.2: [8086:0e22] type 00 class 0x088000
+[    2.272232] pci 0000:80:04.2: reg 0x10: [mem 0x3805fff50000-0x3805fff53fff 64bit]
+[    2.272342] pci 0000:80:04.3: [8086:0e23] type 00 class 0x088000
+[    2.272356] pci 0000:80:04.3: reg 0x10: [mem 0x3805fff40000-0x3805fff43fff 64bit]
+[    2.272466] pci 0000:80:04.4: [8086:0e24] type 00 class 0x088000
+[    2.272480] pci 0000:80:04.4: reg 0x10: [mem 0x3805fff30000-0x3805fff33fff 64bit]
+[    2.272587] pci 0000:80:04.5: [8086:0e25] type 00 class 0x088000
+[    2.272601] pci 0000:80:04.5: reg 0x10: [mem 0x3805fff20000-0x3805fff23fff 64bit]
+[    2.272709] pci 0000:80:04.6: [8086:0e26] type 00 class 0x088000
+[    2.272723] pci 0000:80:04.6: reg 0x10: [mem 0x3805fff10000-0x3805fff13fff 64bit]
+[    2.272830] pci 0000:80:04.7: [8086:0e27] type 00 class 0x088000
+[    2.272844] pci 0000:80:04.7: reg 0x10: [mem 0x3805fff00000-0x3805fff03fff 64bit]
+[    2.272951] pci 0000:80:05.0: [8086:0e28] type 00 class 0x088000
+[    2.273045] pci 0000:80:05.1: [8086:0e29] type 00 class 0x088000
+[    2.273146] pci 0000:80:05.2: [8086:0e2a] type 00 class 0x088000
+[    2.273238] pci 0000:80:05.4: [8086:0e2c] type 00 class 0x080020
+[    2.273248] pci 0000:80:05.4: reg 0x10: [mem 0xec100000-0xec100fff]
+[    2.279124] pci 0000:82:00.0: [8086:225e] type 00 class 0x0b4000
+[    2.279135] pci 0000:82:00.0: reg 0x10: [mem 0x380600000000-0x3807ffffffff 64bit pref]
+[    2.279152] pci 0000:82:00.0: reg 0x20: [mem 0xec000000-0xec01ffff 64bit]
+[    2.279185] pci 0000:82:00.0: PME# supported from D0
+[    2.292750] pci 0000:80:02.0:   bridge window [mem 0xec000000-0xec0fffff]
+[    2.292756] pci 0000:80:02.0:   bridge window [mem 0x380600000000-0x3807ffffffff 64bit pref]
+[    2.304166] pci_bus 0000:80: on NUMA node 1 (pxm 1)
+[    2.360239] pci 0000:7f:08.0: [8086:0e80] type 00 class 0x088000
+[    2.360285] pci 0000:7f:09.0: [8086:0e90] type 00 class 0x088000
+[    2.360327] pci 0000:7f:0a.0: [8086:0ec0] type 00 class 0x088000
+[    2.360360] pci 0000:7f:0a.1: [8086:0ec1] type 00 class 0x088000
+[    2.360398] pci 0000:7f:0a.2: [8086:0ec2] type 00 class 0x088000
+[    2.360433] pci 0000:7f:0a.3: [8086:0ec3] type 00 class 0x088000
+[    2.360472] pci 0000:7f:0b.0: [8086:0e1e] type 00 class 0x088000
+[    2.360507] pci 0000:7f:0b.3: [8086:0e1f] type 00 class 0x088000
+[    2.360542] pci 0000:7f:0c.0: [8086:0ee0] type 00 class 0x088000
+[    2.360575] pci 0000:7f:0c.1: [8086:0ee2] type 00 class 0x088000
+[    2.360608] pci 0000:7f:0c.2: [8086:0ee4] type 00 class 0x088000
+[    2.360640] pci 0000:7f:0c.3: [8086:0ee6] type 00 class 0x088000
+[    2.360677] pci 0000:7f:0c.4: [8086:0ee8] type 00 class 0x088000
+[    2.360712] pci 0000:7f:0d.0: [8086:0ee1] type 00 class 0x088000
+[    2.360747] pci 0000:7f:0d.1: [8086:0ee3] type 00 class 0x088000
+[    2.360778] pci 0000:7f:0d.2: [8086:0ee5] type 00 class 0x088000
+[    2.360811] pci 0000:7f:0d.3: [8086:0ee7] type 00 class 0x088000
+[    2.360843] pci 0000:7f:0d.4: [8086:0ee9] type 00 class 0x088000
+[    2.360877] pci 0000:7f:0e.0: [8086:0ea0] type 00 class 0x088000
+[    2.360914] pci 0000:7f:0e.1: [8086:0e30] type 00 class 0x110100
+[    2.360958] pci 0000:7f:0f.0: [8086:0ea8] type 00 class 0x088000
+[    2.361003] pci 0000:7f:0f.1: [8086:0e71] type 00 class 0x088000
+[    2.361049] pci 0000:7f:0f.2: [8086:0eaa] type 00 class 0x088000
+[    2.361097] pci 0000:7f:0f.3: [8086:0eab] type 00 class 0x088000
+[    2.361142] pci 0000:7f:0f.4: [8086:0eac] type 00 class 0x088000
+[    2.361190] pci 0000:7f:0f.5: [8086:0ead] type 00 class 0x088000
+[    2.361236] pci 0000:7f:10.0: [8086:0eb0] type 00 class 0x088000
+[    2.361280] pci 0000:7f:10.1: [8086:0eb1] type 00 class 0x088000
+[    2.361330] pci 0000:7f:10.2: [8086:0eb2] type 00 class 0x088000
+[    2.361379] pci 0000:7f:10.3: [8086:0eb3] type 00 class 0x088000
+[    2.361427] pci 0000:7f:10.4: [8086:0eb4] type 00 class 0x088000
+[    2.361475] pci 0000:7f:10.5: [8086:0eb5] type 00 class 0x088000
+[    2.361521] pci 0000:7f:10.6: [8086:0eb6] type 00 class 0x088000
+[    2.361567] pci 0000:7f:10.7: [8086:0eb7] type 00 class 0x088000
+[    2.361613] pci 0000:7f:13.0: [8086:0e1d] type 00 class 0x088000
+[    2.361646] pci 0000:7f:13.1: [8086:0e34] type 00 class 0x110100
+[    2.361683] pci 0000:7f:13.4: [8086:0e81] type 00 class 0x088000
+[    2.361719] pci 0000:7f:13.5: [8086:0e36] type 00 class 0x110100
+[    2.361759] pci 0000:7f:13.6: [8086:0e37] type 00 class 0x110100
+[    2.361793] pci 0000:7f:16.0: [8086:0ec8] type 00 class 0x088000
+[    2.361828] pci 0000:7f:16.1: [8086:0ec9] type 00 class 0x088000
+[    2.361866] pci 0000:7f:16.2: [8086:0eca] type 00 class 0x088000
+[    2.412517] pci 0000:ff:08.0: [8086:0e80] type 00 class 0x088000
+[    2.412569] pci 0000:ff:09.0: [8086:0e90] type 00 class 0x088000
+[    2.412619] pci 0000:ff:0a.0: [8086:0ec0] type 00 class 0x088000
+[    2.412663] pci 0000:ff:0a.1: [8086:0ec1] type 00 class 0x088000
+[    2.412704] pci 0000:ff:0a.2: [8086:0ec2] type 00 class 0x088000
+[    2.412745] pci 0000:ff:0a.3: [8086:0ec3] type 00 class 0x088000
+[    2.412787] pci 0000:ff:0b.0: [8086:0e1e] type 00 class 0x088000
+[    2.412824] pci 0000:ff:0b.3: [8086:0e1f] type 00 class 0x088000
+[    2.412861] pci 0000:ff:0c.0: [8086:0ee0] type 00 class 0x088000
+[    2.412900] pci 0000:ff:0c.1: [8086:0ee2] type 00 class 0x088000
+[    2.412940] pci 0000:ff:0c.2: [8086:0ee4] type 00 class 0x088000
+[    2.412980] pci 0000:ff:0c.3: [8086:0ee6] type 00 class 0x088000
+[    2.413019] pci 0000:ff:0c.4: [8086:0ee8] type 00 class 0x088000
+[    2.413062] pci 0000:ff:0d.0: [8086:0ee1] type 00 class 0x088000
+[    2.413102] pci 0000:ff:0d.1: [8086:0ee3] type 00 class 0x088000
+[    2.413142] pci 0000:ff:0d.2: [8086:0ee5] type 00 class 0x088000
+[    2.413184] pci 0000:ff:0d.3: [8086:0ee7] type 00 class 0x088000
+[    2.413225] pci 0000:ff:0d.4: [8086:0ee9] type 00 class 0x088000
+[    2.413269] pci 0000:ff:0e.0: [8086:0ea0] type 00 class 0x088000
+[    2.413318] pci 0000:ff:0e.1: [8086:0e30] type 00 class 0x110100
+[    2.413369] pci 0000:ff:0f.0: [8086:0ea8] type 00 class 0x088000
+[    2.413426] pci 0000:ff:0f.1: [8086:0e71] type 00 class 0x088000
+[    2.413484] pci 0000:ff:0f.2: [8086:0eaa] type 00 class 0x088000
+[    2.413541] pci 0000:ff:0f.3: [8086:0eab] type 00 class 0x088000
+[    2.413596] pci 0000:ff:0f.4: [8086:0eac] type 00 class 0x088000
+[    2.413651] pci 0000:ff:0f.5: [8086:0ead] type 00 class 0x088000
+[    2.413710] pci 0000:ff:10.0: [8086:0eb0] type 00 class 0x088000
+[    2.413771] pci 0000:ff:10.1: [8086:0eb1] type 00 class 0x088000
+[    2.413834] pci 0000:ff:10.2: [8086:0eb2] type 00 class 0x088000
+[    2.413893] pci 0000:ff:10.3: [8086:0eb3] type 00 class 0x088000
+[    2.413953] pci 0000:ff:10.4: [8086:0eb4] type 00 class 0x088000
+[    2.414015] pci 0000:ff:10.5: [8086:0eb5] type 00 class 0x088000
+[    2.414070] pci 0000:ff:10.6: [8086:0eb6] type 00 class 0x088000
+[    2.414127] pci 0000:ff:10.7: [8086:0eb7] type 00 class 0x088000
+[    2.414185] pci 0000:ff:13.0: [8086:0e1d] type 00 class 0x088000
+[    2.414228] pci 0000:ff:13.1: [8086:0e34] type 00 class 0x110100
+[    2.414270] pci 0000:ff:13.4: [8086:0e81] type 00 class 0x088000
+[    2.414313] pci 0000:ff:13.5: [8086:0e36] type 00 class 0x110100
+[    2.414354] pci 0000:ff:13.6: [8086:0e37] type 00 class 0x110100
+[    2.414397] pci 0000:ff:16.0: [8086:0ec8] type 00 class 0x088000
+[    2.414442] pci 0000:ff:16.1: [8086:0ec9] type 00 class 0x088000
+[    2.414483] pci 0000:ff:16.2: [8086:0eca] type 00 class 0x088000
+[    2.428542] ACPI: \_SB_.PCI0: notify handler is installed
+[    2.428748] ACPI: \_SB_.PCI1: notify handler is installed
+[    2.428869] ACPI: \_SB_.UCR0: notify handler is installed
+[    2.428871] ACPI: \_SB_.UCR1: notify handler is installed
+[    2.428878] Found 4 acpi root devices
+[    2.452524] libata version 3.00 loaded.
+[    2.487497] PCI: pci_cache_line_size set to 64 bytes
+[    2.487875] e820: reserve RAM buffer [mem 0x0009c000-0x0009ffff]
+[    2.487879] e820: reserve RAM buffer [mem 0xbad28000-0xbbffffff]
+[    2.487882] e820: reserve RAM buffer [mem 0xbafc5000-0xbbffffff]
+[    2.487884] e820: reserve RAM buffer [mem 0xbb3d4000-0xbbffffff]
+[    2.487887] e820: reserve RAM buffer [mem 0xbe000000-0xbfffffff]
+[    2.557582] pnp 00:00: [dma 4]
+[    2.557617] pnp 00:00: Plug and Play ACPI device, IDs PNP0200 (active)
+[    2.557656] pnp 00:01: Plug and Play ACPI device, IDs INT0800 (active)
+[    2.557815] pnp 00:02: Plug and Play ACPI device, IDs PNP0103 (active)
+[    2.557872] pnp 00:03: Plug and Play ACPI device, IDs PNP0c04 (active)
+[    2.623324] system 00:04: Plug and Play ACPI device, IDs PNP0c02 (active)
+[    2.623372] pnp 00:05: Plug and Play ACPI device, IDs PNP0b00 (active)
+[    2.630221] system 00:06: Plug and Play ACPI device, IDs INT3f0d PNP0c02 (active)
+[    2.630576] pnp 00:07: [dma 0 disabled]
+[    2.630685] pnp 00:07: Plug and Play ACPI device, IDs PNP0501 (active)
+[    2.630930] pnp 00:08: [dma 0 disabled]
+[    2.631017] pnp 00:08: Plug and Play ACPI device, IDs PNP0501 (active)
+[    2.700339] system 00:09: Plug and Play ACPI device, IDs PNP0c02 (active)
+[    2.708740] system 00:0a: Plug and Play ACPI device, IDs PNP0c01 (active)
+[    2.889451] pci_bus 0000:00: resource 4 [io  0x0000-0xbfff]
+[    2.889454] pci_bus 0000:00: resource 5 [mem 0x000a0000-0x000bffff]
+[    2.889457] pci_bus 0000:00: resource 6 [mem 0x000c0000-0x000c3fff]
+[    2.889460] pci_bus 0000:00: resource 7 [mem 0x000c4000-0x000c7fff]
+[    2.889463] pci_bus 0000:00: resource 8 [mem 0x000d0000-0x000d3fff]
+[    2.889466] pci_bus 0000:00: resource 9 [mem 0x000d4000-0x000d7fff]
+[    2.889469] pci_bus 0000:00: resource 10 [mem 0x000d8000-0x000dbfff]
+[    2.889472] pci_bus 0000:00: resource 11 [mem 0x000dc000-0x000dffff]
+[    2.889475] pci_bus 0000:00: resource 12 [mem 0x000e0000-0x000e3fff]
+[    2.889478] pci_bus 0000:00: resource 13 [mem 0x000e4000-0x000e7fff]
+[    2.889481] pci_bus 0000:00: resource 14 [mem 0x000e8000-0x000ebfff]
+[    2.889484] pci_bus 0000:00: resource 15 [mem 0x000ec000-0x000effff]
+[    2.889487] pci_bus 0000:00: resource 16 [mem 0x000f0000-0x000fffff]
+[    2.889490] pci_bus 0000:00: resource 17 [mem 0xd0000000-0xebffffff]
+[    2.889493] pci_bus 0000:00: resource 18 [mem 0x380000000000-0x3803ffffffff]
+[    2.889497] pci_bus 0000:02: resource 0 [io  0x4000-0x4fff]
+[    2.889500] pci_bus 0000:02: resource 1 [mem 0xd0900000-0xd0afffff]
+[    2.889504] pci_bus 0000:04: resource 0 [io  0x3000-0x3fff]
+[    2.889507] pci_bus 0000:04: resource 1 [mem 0xd0e00000-0xd0efffff]
+[    2.889510] pci_bus 0000:04: resource 2 [mem 0x380200600000-0x3802009fffff 64bit pref]
+[    2.889513] pci_bus 0000:06: resource 0 [io  0x2000-0x2fff]
+[    2.889516] pci_bus 0000:06: resource 1 [mem 0xd0d00000-0xd0dfffff]
+[    2.889519] pci_bus 0000:07: resource 1 [mem 0xd0c00000-0xd0cfffff]
+[    2.889522] pci_bus 0000:07: resource 2 [mem 0x380000000000-0x3801ffffffff 64bit pref]
+[    2.889526] pci_bus 0000:08: resource 0 [io  0x1000-0x1fff]
+[    2.889529] pci_bus 0000:08: resource 1 [mem 0xd0b00000-0xd0bfffff]
+[    2.889532] pci_bus 0000:08: resource 2 [mem 0x380200000000-0x3802004fffff 64bit pref]
+[    2.889536] pci_bus 0000:0a: resource 1 [mem 0xd0000000-0xd08fffff]
+[    2.889539] pci_bus 0000:0a: resource 2 [mem 0xea000000-0xeaffffff 64bit pref]
+[    2.889542] pci_bus 0000:0b: resource 4 [io  0x0000-0xbfff]
+[    2.889545] pci_bus 0000:0b: resource 5 [mem 0x000a0000-0x000bffff]
+[    2.889548] pci_bus 0000:0b: resource 6 [mem 0x000c0000-0x000c3fff]
+[    2.889551] pci_bus 0000:0b: resource 7 [mem 0x000c4000-0x000c7fff]
+[    2.889554] pci_bus 0000:0b: resource 8 [mem 0x000d0000-0x000d3fff]
+[    2.889557] pci_bus 0000:0b: resource 9 [mem 0x000d4000-0x000d7fff]
+[    2.889560] pci_bus 0000:0b: resource 10 [mem 0x000d8000-0x000dbfff]
+[    2.889563] pci_bus 0000:0b: resource 11 [mem 0x000dc000-0x000dffff]
+[    2.889566] pci_bus 0000:0b: resource 12 [mem 0x000e0000-0x000e3fff]
+[    2.889569] pci_bus 0000:0b: resource 13 [mem 0x000e4000-0x000e7fff]
+[    2.889572] pci_bus 0000:0b: resource 14 [mem 0x000e8000-0x000ebfff]
+[    2.889575] pci_bus 0000:0b: resource 15 [mem 0x000ec000-0x000effff]
+[    2.889578] pci_bus 0000:0b: resource 16 [mem 0x000f0000-0x000fffff]
+[    2.889581] pci_bus 0000:0b: resource 17 [mem 0xd0000000-0xebffffff]
+[    2.889584] pci_bus 0000:0b: resource 18 [mem 0x380000000000-0x3803ffffffff]
+[    2.929546] pci_bus 0000:80: resource 4 [io  0x03b0-0x03df]
+[    2.929549] pci_bus 0000:80: resource 5 [io  0xc000-0xffff]
+[    2.929552] pci_bus 0000:80: resource 6 [mem 0x000a0000-0x000bffff]
+[    2.929555] pci_bus 0000:80: resource 7 [mem 0xec000000-0xfbffffff]
+[    2.929558] pci_bus 0000:80: resource 8 [mem 0x380400000000-0x3807ffffffff]
+[    2.929562] pci_bus 0000:82: resource 1 [mem 0xec000000-0xec0fffff]
+[    2.929565] pci_bus 0000:82: resource 2 [mem 0x380600000000-0x3807ffffffff 64bit pref]
+[    2.999405] pci 0000:0a:00.0: Boot video device
+[    2.999640] PCI: CLS 64 bytes, default 64
+[   42.232342] pcieport 0000:00:01.0: irq 88 for MSI/MSI-X
+[   42.232554] pcieport 0000:00:01.1: irq 89 for MSI/MSI-X
+[   42.232736] pcieport 0000:00:02.0: irq 90 for MSI/MSI-X
+[   42.232908] pcieport 0000:00:02.2: irq 91 for MSI/MSI-X
+[   42.233090] pcieport 0000:00:03.0: irq 92 for MSI/MSI-X
+[   42.233270] pcieport 0000:00:11.0: irq 93 for MSI/MSI-X
+[   42.233463] pcieport 0000:00:1c.0: irq 94 for MSI/MSI-X
+[   42.233711] pcieport 0000:00:1c.7: irq 95 for MSI/MSI-X
+[   42.234105] pcieport 0000:80:01.0: irq 96 for MSI/MSI-X
+[   42.234319] pcieport 0000:80:02.0: irq 97 for MSI/MSI-X
+[   42.234530] pcieport 0000:80:03.0: irq 98 for MSI/MSI-X
+[   42.234728] pcieport 0000:80:03.2: irq 99 for MSI/MSI-X
+[   42.242789] pcie_pme 0000:00:01.0:pcie01: service driver pcie_pme loaded
+[   42.280352] pcie_pme 0000:00:01.1:pcie01: service driver pcie_pme loaded
+[   42.303091] pcie_pme 0000:00:02.0:pcie01: service driver pcie_pme loaded
+[   42.318435] pcie_pme 0000:00:02.2:pcie01: service driver pcie_pme loaded
+[   42.333766] pcie_pme 0000:00:03.0:pcie01: service driver pcie_pme loaded
+[   42.356515] pcie_pme 0000:00:11.0:pcie01: service driver pcie_pme loaded
+[   42.364441] pcie_pme 0000:00:1c.0:pcie01: service driver pcie_pme loaded
+[   42.379773] pcie_pme 0000:00:1c.7:pcie01: service driver pcie_pme loaded
+[   42.387695] pcie_pme 0000:80:01.0:pcie01: service driver pcie_pme loaded
+[   42.403031] pcie_pme 0000:80:02.0:pcie01: service driver pcie_pme loaded
+[   42.410959] pcie_pme 0000:80:03.0:pcie01: service driver pcie_pme loaded
+[   42.418892] pcie_pme 0000:80:03.2:pcie01: service driver pcie_pme loaded
+[   42.446463] intel_idle: MWAIT substates: 0x1120
+[   42.446465] intel_idle: v0.4 model 0x3E
+[   42.446467] intel_idle: lapic_timer_reliable_states 0xffffffff
+[   42.622639] ahci 0000:00:1f.2: version 3.0
+[   42.622803] ahci 0000:00:1f.2: irq 100 for MSI/MSI-X
+[   42.822196] ehci-pci 0000:00:1a.0: cache line size of 64 is not supported
+[   42.877515] ehci-pci 0000:00:1d.0: cache line size of 64 is not supported
+[   44.118192] PM: Hibernation image not present or could not be loaded.
+[   44.278259] megaraid_sas 0000:06:00.0: irq 101 for MSI/MSI-X
+[   44.278275] megaraid_sas 0000:06:00.0: irq 102 for MSI/MSI-X
+[   44.278293] megaraid_sas 0000:06:00.0: irq 103 for MSI/MSI-X
+[   44.278310] megaraid_sas 0000:06:00.0: irq 104 for MSI/MSI-X
+[   44.278327] megaraid_sas 0000:06:00.0: irq 105 for MSI/MSI-X
+[   44.278345] megaraid_sas 0000:06:00.0: irq 106 for MSI/MSI-X
+[   44.278361] megaraid_sas 0000:06:00.0: irq 107 for MSI/MSI-X
+[   44.278379] megaraid_sas 0000:06:00.0: irq 108 for MSI/MSI-X
+[   44.278427] megaraid_sas 0000:06:00.0: irq 109 for MSI/MSI-X
+[   44.278442] megaraid_sas 0000:06:00.0: irq 110 for MSI/MSI-X
+[   44.278458] megaraid_sas 0000:06:00.0: irq 111 for MSI/MSI-X
+[   44.278473] megaraid_sas 0000:06:00.0: irq 112 for MSI/MSI-X
+[   44.278487] megaraid_sas 0000:06:00.0: irq 113 for MSI/MSI-X
+[   44.278502] megaraid_sas 0000:06:00.0: irq 114 for MSI/MSI-X
+[   44.278516] megaraid_sas 0000:06:00.0: irq 115 for MSI/MSI-X
+[   44.278530] megaraid_sas 0000:06:00.0: irq 116 for MSI/MSI-X
+[   44.351442] isci 0000:08:00.0: irq 117 for MSI/MSI-X
+[   44.351455] isci 0000:08:00.0: irq 118 for MSI/MSI-X
+[   44.375409] igb 0000:02:00.0: irq 119 for MSI/MSI-X
+[   44.375423] igb 0000:02:00.0: irq 120 for MSI/MSI-X
+[   44.375437] igb 0000:02:00.0: irq 121 for MSI/MSI-X
+[   44.375449] igb 0000:02:00.0: irq 122 for MSI/MSI-X
+[   44.375461] igb 0000:02:00.0: irq 123 for MSI/MSI-X
+[   44.375474] igb 0000:02:00.0: irq 124 for MSI/MSI-X
+[   44.375487] igb 0000:02:00.0: irq 125 for MSI/MSI-X
+[   44.375500] igb 0000:02:00.0: irq 126 for MSI/MSI-X
+[   44.375514] igb 0000:02:00.0: irq 127 for MSI/MSI-X
+[   44.375584] igb 0000:02:00.0: irq 119 for MSI/MSI-X
+[   44.375596] igb 0000:02:00.0: irq 120 for MSI/MSI-X
+[   44.375608] igb 0000:02:00.0: irq 121 for MSI/MSI-X
+[   44.375620] igb 0000:02:00.0: irq 122 for MSI/MSI-X
+[   44.375632] igb 0000:02:00.0: irq 123 for MSI/MSI-X
+[   44.375644] igb 0000:02:00.0: irq 124 for MSI/MSI-X
+[   44.375656] igb 0000:02:00.0: irq 125 for MSI/MSI-X
+[   44.375669] igb 0000:02:00.0: irq 126 for MSI/MSI-X
+[   44.375681] igb 0000:02:00.0: irq 127 for MSI/MSI-X
+[   44.502434] igb 0000:02:00.1: irq 128 for MSI/MSI-X
+[   44.502446] igb 0000:02:00.1: irq 129 for MSI/MSI-X
+[   44.502458] igb 0000:02:00.1: irq 130 for MSI/MSI-X
+[   44.502470] igb 0000:02:00.1: irq 131 for MSI/MSI-X
+[   44.502481] igb 0000:02:00.1: irq 132 for MSI/MSI-X
+[   44.502493] igb 0000:02:00.1: irq 133 for MSI/MSI-X
+[   44.502505] igb 0000:02:00.1: irq 134 for MSI/MSI-X
+[   44.502516] igb 0000:02:00.1: irq 135 for MSI/MSI-X
+[   44.502528] igb 0000:02:00.1: irq 136 for MSI/MSI-X
+[   44.502595] igb 0000:02:00.1: irq 128 for MSI/MSI-X
+[   44.502607] igb 0000:02:00.1: irq 129 for MSI/MSI-X
+[   44.502618] igb 0000:02:00.1: irq 130 for MSI/MSI-X
+[   44.502630] igb 0000:02:00.1: irq 131 for MSI/MSI-X
+[   44.502642] igb 0000:02:00.1: irq 132 for MSI/MSI-X
+[   44.502653] igb 0000:02:00.1: irq 133 for MSI/MSI-X
+[   44.502664] igb 0000:02:00.1: irq 134 for MSI/MSI-X
+[   44.502676] igb 0000:02:00.1: irq 135 for MSI/MSI-X
+[   44.502688] igb 0000:02:00.1: irq 136 for MSI/MSI-X
+[   44.610359] igb 0000:02:00.2: irq 137 for MSI/MSI-X
+[   44.610371] igb 0000:02:00.2: irq 138 for MSI/MSI-X
+[   44.610383] igb 0000:02:00.2: irq 139 for MSI/MSI-X
+[   44.610395] igb 0000:02:00.2: irq 140 for MSI/MSI-X
+[   44.610407] igb 0000:02:00.2: irq 141 for MSI/MSI-X
+[   44.610418] igb 0000:02:00.2: irq 142 for MSI/MSI-X
+[   44.610430] igb 0000:02:00.2: irq 143 for MSI/MSI-X
+[   44.610441] igb 0000:02:00.2: irq 144 for MSI/MSI-X
+[   44.610453] igb 0000:02:00.2: irq 145 for MSI/MSI-X
+[   44.610512] igb 0000:02:00.2: irq 137 for MSI/MSI-X
+[   44.610524] igb 0000:02:00.2: irq 138 for MSI/MSI-X
+[   44.610536] igb 0000:02:00.2: irq 139 for MSI/MSI-X
+[   44.610547] igb 0000:02:00.2: irq 140 for MSI/MSI-X
+[   44.610559] igb 0000:02:00.2: irq 141 for MSI/MSI-X
+[   44.610571] igb 0000:02:00.2: irq 142 for MSI/MSI-X
+[   44.610582] igb 0000:02:00.2: irq 143 for MSI/MSI-X
+[   44.610594] igb 0000:02:00.2: irq 144 for MSI/MSI-X
+[   44.610605] igb 0000:02:00.2: irq 145 for MSI/MSI-X
+[   44.688969] igb 0000:02:00.3: irq 146 for MSI/MSI-X
+[   44.688982] igb 0000:02:00.3: irq 147 for MSI/MSI-X
+[   44.688995] igb 0000:02:00.3: irq 148 for MSI/MSI-X
+[   44.689007] igb 0000:02:00.3: irq 149 for MSI/MSI-X
+[   44.689019] igb 0000:02:00.3: irq 150 for MSI/MSI-X
+[   44.689032] igb 0000:02:00.3: irq 151 for MSI/MSI-X
+[   44.689044] igb 0000:02:00.3: irq 152 for MSI/MSI-X
+[   44.689057] igb 0000:02:00.3: irq 153 for MSI/MSI-X
+[   44.689069] igb 0000:02:00.3: irq 154 for MSI/MSI-X
+[   44.689129] igb 0000:02:00.3: irq 146 for MSI/MSI-X
+[   44.689142] igb 0000:02:00.3: irq 147 for MSI/MSI-X
+[   44.689154] igb 0000:02:00.3: irq 148 for MSI/MSI-X
+[   44.689167] igb 0000:02:00.3: irq 149 for MSI/MSI-X
+[   44.689179] igb 0000:02:00.3: irq 150 for MSI/MSI-X
+[   44.689191] igb 0000:02:00.3: irq 151 for MSI/MSI-X
+[   44.689203] igb 0000:02:00.3: irq 152 for MSI/MSI-X
+[   44.689216] igb 0000:02:00.3: irq 153 for MSI/MSI-X
+[   44.689228] igb 0000:02:00.3: irq 154 for MSI/MSI-X
+[   44.748455] sd 6:2:0:0: [sda] Mode Sense: 1f 00 10 08
+[   45.524939] ixgbe 0000:04:00.0: irq 155 for MSI/MSI-X
+[   45.524952] ixgbe 0000:04:00.0: irq 156 for MSI/MSI-X
+[   45.524964] ixgbe 0000:04:00.0: irq 157 for MSI/MSI-X
+[   45.524975] ixgbe 0000:04:00.0: irq 158 for MSI/MSI-X
+[   45.524989] ixgbe 0000:04:00.0: irq 159 for MSI/MSI-X
+[   45.525013] ixgbe 0000:04:00.0: irq 160 for MSI/MSI-X
+[   45.525025] ixgbe 0000:04:00.0: irq 161 for MSI/MSI-X
+[   45.525037] ixgbe 0000:04:00.0: irq 162 for MSI/MSI-X
+[   45.525068] ixgbe 0000:04:00.0: irq 163 for MSI/MSI-X
+[   45.525081] ixgbe 0000:04:00.0: irq 164 for MSI/MSI-X
+[   45.525093] ixgbe 0000:04:00.0: irq 165 for MSI/MSI-X
+[   45.525106] ixgbe 0000:04:00.0: irq 166 for MSI/MSI-X
+[   45.525118] ixgbe 0000:04:00.0: irq 167 for MSI/MSI-X
+[   45.525130] ixgbe 0000:04:00.0: irq 168 for MSI/MSI-X
+[   45.525143] ixgbe 0000:04:00.0: irq 169 for MSI/MSI-X
+[   45.525155] ixgbe 0000:04:00.0: irq 170 for MSI/MSI-X
+[   45.525168] ixgbe 0000:04:00.0: irq 171 for MSI/MSI-X
+[   45.525180] ixgbe 0000:04:00.0: irq 172 for MSI/MSI-X
+[   45.525192] ixgbe 0000:04:00.0: irq 173 for MSI/MSI-X
+[   45.525205] ixgbe 0000:04:00.0: irq 174 for MSI/MSI-X
+[   45.525221] ixgbe 0000:04:00.0: irq 175 for MSI/MSI-X
+[   45.525233] ixgbe 0000:04:00.0: irq 176 for MSI/MSI-X
+[   45.525246] ixgbe 0000:04:00.0: irq 177 for MSI/MSI-X
+[   45.525258] ixgbe 0000:04:00.0: irq 178 for MSI/MSI-X
+[   45.525270] ixgbe 0000:04:00.0: irq 179 for MSI/MSI-X
+[   45.525283] ixgbe 0000:04:00.0: irq 180 for MSI/MSI-X
+[   45.525295] ixgbe 0000:04:00.0: irq 181 for MSI/MSI-X
+[   45.525307] ixgbe 0000:04:00.0: irq 182 for MSI/MSI-X
+[   45.525320] ixgbe 0000:04:00.0: irq 183 for MSI/MSI-X
+[   45.525332] ixgbe 0000:04:00.0: irq 184 for MSI/MSI-X
+[   45.525344] ixgbe 0000:04:00.0: irq 185 for MSI/MSI-X
+[   45.525369] ixgbe 0000:04:00.0: irq 186 for MSI/MSI-X
+[   45.525380] ixgbe 0000:04:00.0: irq 187 for MSI/MSI-X
+[   45.525392] ixgbe 0000:04:00.0: irq 188 for MSI/MSI-X
+[   45.525403] ixgbe 0000:04:00.0: irq 189 for MSI/MSI-X
+[   45.525415] ixgbe 0000:04:00.0: irq 190 for MSI/MSI-X
+[   45.525430] ixgbe 0000:04:00.0: irq 191 for MSI/MSI-X
+[   45.525444] ixgbe 0000:04:00.0: irq 192 for MSI/MSI-X
+[   45.525456] ixgbe 0000:04:00.0: irq 193 for MSI/MSI-X
+[   45.525467] ixgbe 0000:04:00.0: irq 194 for MSI/MSI-X
+[   45.525479] ixgbe 0000:04:00.0: irq 195 for MSI/MSI-X
+[   45.725073] ixgbe 0000:04:00.1: irq 196 for MSI/MSI-X
+[   45.725096] ixgbe 0000:04:00.1: irq 197 for MSI/MSI-X
+[   45.725107] ixgbe 0000:04:00.1: irq 198 for MSI/MSI-X
+[   45.725118] ixgbe 0000:04:00.1: irq 199 for MSI/MSI-X
+[   45.725132] ixgbe 0000:04:00.1: irq 200 for MSI/MSI-X
+[   45.725143] ixgbe 0000:04:00.1: irq 201 for MSI/MSI-X
+[   45.725155] ixgbe 0000:04:00.1: irq 202 for MSI/MSI-X
+[   45.725166] ixgbe 0000:04:00.1: irq 203 for MSI/MSI-X
+[   45.725178] ixgbe 0000:04:00.1: irq 204 for MSI/MSI-X
+[   45.725189] ixgbe 0000:04:00.1: irq 205 for MSI/MSI-X
+[   45.725201] ixgbe 0000:04:00.1: irq 206 for MSI/MSI-X
+[   45.725212] ixgbe 0000:04:00.1: irq 207 for MSI/MSI-X
+[   45.725224] ixgbe 0000:04:00.1: irq 208 for MSI/MSI-X
+[   45.725235] ixgbe 0000:04:00.1: irq 209 for MSI/MSI-X
+[   45.725248] ixgbe 0000:04:00.1: irq 210 for MSI/MSI-X
+[   45.725260] ixgbe 0000:04:00.1: irq 211 for MSI/MSI-X
+[   45.725271] ixgbe 0000:04:00.1: irq 212 for MSI/MSI-X
+[   45.725292] ixgbe 0000:04:00.1: irq 213 for MSI/MSI-X
+[   45.725304] ixgbe 0000:04:00.1: irq 214 for MSI/MSI-X
+[   45.725315] ixgbe 0000:04:00.1: irq 215 for MSI/MSI-X
+[   45.725330] ixgbe 0000:04:00.1: irq 216 for MSI/MSI-X
+[   45.725342] ixgbe 0000:04:00.1: irq 217 for MSI/MSI-X
+[   45.725353] ixgbe 0000:04:00.1: irq 218 for MSI/MSI-X
+[   45.725364] ixgbe 0000:04:00.1: irq 219 for MSI/MSI-X
+[   45.725376] ixgbe 0000:04:00.1: irq 220 for MSI/MSI-X
+[   45.725387] ixgbe 0000:04:00.1: irq 221 for MSI/MSI-X
+[   45.725399] ixgbe 0000:04:00.1: irq 222 for MSI/MSI-X
+[   45.725410] ixgbe 0000:04:00.1: irq 223 for MSI/MSI-X
+[   45.725424] ixgbe 0000:04:00.1: irq 224 for MSI/MSI-X
+[   45.725435] ixgbe 0000:04:00.1: irq 225 for MSI/MSI-X
+[   45.725447] ixgbe 0000:04:00.1: irq 226 for MSI/MSI-X
+[   45.725458] ixgbe 0000:04:00.1: irq 227 for MSI/MSI-X
+[   45.725470] ixgbe 0000:04:00.1: irq 228 for MSI/MSI-X
+[   45.725491] ixgbe 0000:04:00.1: irq 229 for MSI/MSI-X
+[   45.725502] ixgbe 0000:04:00.1: irq 230 for MSI/MSI-X
+[   45.725514] ixgbe 0000:04:00.1: irq 231 for MSI/MSI-X
+[   45.725527] ixgbe 0000:04:00.1: irq 232 for MSI/MSI-X
+[   45.725538] ixgbe 0000:04:00.1: irq 233 for MSI/MSI-X
+[   45.725550] ixgbe 0000:04:00.1: irq 234 for MSI/MSI-X
+[   45.725561] ixgbe 0000:04:00.1: irq 235 for MSI/MSI-X
+[   45.725572] ixgbe 0000:04:00.1: irq 236 for MSI/MSI-X
+[   59.357568] ioatdma 0000:00:04.0: irq 237 for MSI/MSI-X
+[   59.359261] ioatdma 0000:00:04.1: irq 238 for MSI/MSI-X
+[   59.362236] ioatdma 0000:00:04.2: irq 239 for MSI/MSI-X
+[   59.363932] ioatdma 0000:00:04.3: irq 240 for MSI/MSI-X
+[   59.365086] ioatdma 0000:00:04.4: irq 241 for MSI/MSI-X
+[   59.366104] ioatdma 0000:00:04.5: irq 242 for MSI/MSI-X
+[   59.367560] ioatdma 0000:00:04.6: irq 243 for MSI/MSI-X
+[   59.368894] ioatdma 0000:00:04.7: irq 244 for MSI/MSI-X
+[   59.369948] ioatdma 0000:80:04.0: irq 245 for MSI/MSI-X
+[   59.371108] ioatdma 0000:80:04.1: irq 246 for MSI/MSI-X
+[   59.372090] ioatdma 0000:80:04.2: irq 247 for MSI/MSI-X
+[   59.372927] ioatdma 0000:80:04.3: irq 248 for MSI/MSI-X
+[   59.374059] ioatdma 0000:80:04.4: irq 249 for MSI/MSI-X
+[   59.375144] ioatdma 0000:80:04.5: irq 250 for MSI/MSI-X
+[   59.376135] ioatdma 0000:80:04.6: irq 251 for MSI/MSI-X
+[   59.377152] ioatdma 0000:80:04.7: irq 252 for MSI/MSI-X

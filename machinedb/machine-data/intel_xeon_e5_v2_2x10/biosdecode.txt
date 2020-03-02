@@ -1,0 +1,45 @@
+sudo biosdecode
+# biosdecode 2.12
+ACPI 2.0 present.
+	OEM Identifier: INTEL 
+	RSD Table 32-bit Address: 0xBDFAAF18
+	XSD Table 64-bit Address: 0x00000000BDFA9D98
+SMBIOS 2.6 present.
+	Structure Table Length: 10026 bytes
+	Structure Table Address: 0x000E9850
+	Number Of Structures: 172
+	Maximum Structure Size: 335 bytes
+PNP BIOS 1.0 present.
+	Event Notification: Not Supported
+	Real Mode 16-bit Code Address: F000:BA36
+	Real Mode 16-bit Data Address: F000:0000
+	16-bit Protected Mode Code Address: 0x000FBA5E
+	16-bit Protected Mode Data Address: 0x000F0000
+PCI Interrupt Routing 1.0 present.
+	Router ID: 00:1f.0
+	Exclusive IRQs: None
+	Compatible Router: 8086:2912
+	Slot Entry 1: ID 00:1f, on-board
+	Slot Entry 2: ID 00:1d, on-board
+	Slot Entry 3: ID 00:1a, on-board
+	Slot Entry 4: ID 00:1b, on-board
+	Slot Entry 5: ID 00:16, on-board
+	Slot Entry 6: ID 0a:00, on-board
+	Slot Entry 7: ID 00:11, on-board
+	Slot Entry 8: ID 00:1c, on-board
+	Slot Entry 9: ID 09:00, slot number 33
+	Slot Entry 10: ID 00:00, on-board
+	Slot Entry 11: ID 00:02, slot number 255
+	Slot Entry 12: ID 00:03, slot number 255
+	Slot Entry 13: ID 80:00, on-board
+	Slot Entry 14: ID 80:01, on-board
+	Slot Entry 15: ID 80:02, slot number 255
+	Slot Entry 16: ID 80:03, on-board
+	Slot Entry 17: ID 00:04, on-board
+	Slot Entry 18: ID 80:04, on-board
+	Slot Entry 19: ID 01:00, on-board
+	Slot Entry 20: ID 02:00, on-board
+	Slot Entry 21: ID 04:00, slot number 1
+	Slot Entry 22: ID 06:00, slot number 2
+	Slot Entry 23: ID 07:00, slot number 3
+	Slot Entry 24: ID 00:01, on-board

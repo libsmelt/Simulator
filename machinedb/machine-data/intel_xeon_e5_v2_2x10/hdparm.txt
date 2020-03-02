@@ -1,0 +1,5 @@
+sudo hdparm -i /dev/sd[abcd]
+
+/dev/sda:
+SG_IO: bad/missing sense data, sb[]:  70 00 05 00 00 00 00 0d 00 00 00 00 20 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+ HDIO_GET_IDENTITY failed: Invalid argument

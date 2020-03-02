@@ -1,0 +1,21 @@
+sudo setserial -g -a /dev/ttyS[0123]
+/dev/ttyS0, Line 0, UART: 16550A, Port: 0x03f8, IRQ: 4
+	Baud_base: 115200, close_delay: 50, divisor: 0
+	closing_wait: 3000
+	Flags: spd_normal skip_test
+
+/dev/ttyS1, Line 1, UART: 16550A, Port: 0x02f8, IRQ: 3
+	Baud_base: 115200, close_delay: 50, divisor: 0
+	closing_wait: 3000
+	Flags: spd_normal skip_test
+
+/dev/ttyS2, Line 2, UART: unknown, Port: 0x03e8, IRQ: 4
+	Baud_base: 115200, close_delay: 50, divisor: 0
+	closing_wait: 3000
+	Flags: spd_normal skip_test
+
+/dev/ttyS3, Line 3, UART: unknown, Port: 0x02e8, IRQ: 3
+	Baud_base: 115200, close_delay: 50, divisor: 0
+	closing_wait: 3000
+	Flags: spd_normal
+

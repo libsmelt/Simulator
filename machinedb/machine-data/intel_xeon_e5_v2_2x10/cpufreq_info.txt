@@ -1,0 +1,63 @@
+cpufreq-info
+cpufrequtils 008: cpufreq-info (C) Dominik Brodowski 2004-2009
+Report errors and bugs to cpufreq@vger.kernel.org, please.
+analyzing CPU 0:
+  no or unknown cpufreq driver is active on this CPU
+  maximum transition latency: 4294.55 ms.
+analyzing CPU 1:
+  no or unknown cpufreq driver is active on this CPU
+  maximum transition latency: 4294.55 ms.
+analyzing CPU 2:
+  no or unknown cpufreq driver is active on this CPU
+  maximum transition latency: 4294.55 ms.
+analyzing CPU 3:
+  no or unknown cpufreq driver is active on this CPU
+  maximum transition latency: 4294.55 ms.
+analyzing CPU 4:
+  no or unknown cpufreq driver is active on this CPU
+  maximum transition latency: 4294.55 ms.
+analyzing CPU 5:
+  no or unknown cpufreq driver is active on this CPU
+  maximum transition latency: 4294.55 ms.
+analyzing CPU 6:
+  no or unknown cpufreq driver is active on this CPU
+  maximum transition latency: 4294.55 ms.
+analyzing CPU 7:
+  no or unknown cpufreq driver is active on this CPU
+  maximum transition latency: 4294.55 ms.
+analyzing CPU 8:
+  no or unknown cpufreq driver is active on this CPU
+  maximum transition latency: 4294.55 ms.
+analyzing CPU 9:
+  no or unknown cpufreq driver is active on this CPU
+  maximum transition latency: 4294.55 ms.
+analyzing CPU 10:
+  no or unknown cpufreq driver is active on this CPU
+  maximum transition latency: 4294.55 ms.
+analyzing CPU 11:
+  no or unknown cpufreq driver is active on this CPU
+  maximum transition latency: 4294.55 ms.
+analyzing CPU 12:
+  no or unknown cpufreq driver is active on this CPU
+  maximum transition latency: 4294.55 ms.
+analyzing CPU 13:
+  no or unknown cpufreq driver is active on this CPU
+  maximum transition latency: 4294.55 ms.
+analyzing CPU 14:
+  no or unknown cpufreq driver is active on this CPU
+  maximum transition latency: 4294.55 ms.
+analyzing CPU 15:
+  no or unknown cpufreq driver is active on this CPU
+  maximum transition latency: 4294.55 ms.
+analyzing CPU 16:
+  no or unknown cpufreq driver is active on this CPU
+  maximum transition latency: 4294.55 ms.
+analyzing CPU 17:
+  no or unknown cpufreq driver is active on this CPU
+  maximum transition latency: 4294.55 ms.
+analyzing CPU 18:
+  no or unknown cpufreq driver is active on this CPU
+  maximum transition latency: 4294.55 ms.
+analyzing CPU 19:
+  no or unknown cpufreq driver is active on this CPU
+  maximum transition latency: 4294.55 ms.
