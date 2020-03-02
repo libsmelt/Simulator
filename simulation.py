@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # Copyright (c) 2013-2016, ETH Zurich.
 # All rights reserved.
@@ -26,8 +26,8 @@ def _simulation_wrapper(ol, m, gr, multicast=False):
     @return (r, evaluation, root, scheduler, instanceof(overlay))
 
     """
-    print 'Simulating machine [%s] with topology [%s] - multicast %d' % \
-        (m.get_name(), ol, multicast)
+    print ('Simulating machine [%s] with topology [%s] - multicast %d' % \
+            (m.get_name(), ol, multicast))
 
     r = overlay.Overlay.get_overlay(ol, m)
 
@@ -38,11 +38,11 @@ def _simulation_wrapper(ol, m, gr, multicast=False):
         # Multicast, group membership given
         n = config.get_mc_group()
 
-        print 'Multicast with nodes: %s' % ('-'.join(map(str,n)))
+        print ('Multicast with nodes: %s' % ('-'.join(map(str,n))))
         hybmod_list = r.get_multicast_tree(map(int, n))
 
     else:
-        print 'Getting broadcast tree for ', str(r)
+        print ('Getting broadcast tree for ', str(r))
         hybmod_list = r.get_broadcast_tree()
 
     assert isinstance(hybmod_list, list)
@@ -56,7 +56,7 @@ def _simulation_wrapper(ol, m, gr, multicast=False):
         r = r.mp_tree # Get the Overlay for the MP part of the evaluation
         if not r:
             skip_mp = True
-        print 'MP topology is', str(r)
+        print ('MP topology is', str(r))
 
     if not skip_mp:
 
@@ -72,9 +72,9 @@ def _simulation_wrapper(ol, m, gr, multicast=False):
                 mp_model = tmp_model
                 final_graph = mp_model.graph
                 mp_ol = mp_model.mp_ol
-                print 'Getting scheduler for topology', str(r), \
-                    'graph is', str(final_graph), \
-                    'overlay is', str(mp_ol)
+                print ('Getting scheduler for topology', str(r), \
+                                    'graph is', str(final_graph), \
+                                    'overlay is', str(mp_ol))
 
                 # XXX r here is a class, and not an instance of the class
 

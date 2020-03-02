@@ -8,13 +8,13 @@
 # ETH Zurich D-INFK, Universitaetstr. 6, CH-8092 Zurich. Attn: Systems Group.
 
 import sys
-sys.path.append('machinedb/')
-
 import logging
-import topology_parser
 import config
 import helpers
 import re
+
+sys.path.append(config.MACHINE_DATABASE_SCRIPTS)
+import topology_parser
 
 import itertools
 import gzip
@@ -29,7 +29,7 @@ class Model(object):
         We initialize models with the graph
         """
 
-        print 'Initializing Model(%s)' % self.get_name()
+        print ('Initializing Model(%s)' % self.get_name())
 
         self.send_cost = {}
         self.recv_cost = {}
@@ -44,8 +44,8 @@ class Model(object):
         # --------------------------------------------------
         try:
             self.machine_topology = topology_parser.parse_machine_db(self.get_name(), 'machinedb/')
-            print 'Parsing machine topology was successful, machine is %s' % \
-                (topology_parser.generate_short_name(self.machine_topology))
+            print ('Parsing machine topology was successful, machine is %s' % \
+                            (topology_parser.generate_short_name(self.machine_topology)))
         except:
             helpers.warn('Warning: topology parser did not find machine data')
             raise
@@ -64,19 +64,19 @@ class Model(object):
         # Multimessage
         # --------------------------------------------------
         mm_fname = '%s/%s/multimessage.gz' % \
-                   (config.MACHINE_DATABASE, self.get_name())
+                   (config.MACHINE_DATABASE_DATA, self.get_name())
 
         self.mm = None
 
-        print 'Reading multimessage data: ', mm_fname
+        print ('Reading multimessage data: ', mm_fname)
         try:
             f = gzip.open(mm_fname, 'r')
             self.mm = MultiMessage(f, self)
             f.close()
         except IOError:
-            print 'No multimessage data for this machine'
-        except:
-            helpers.warn('Unable to read multimessage data')
+            print ('No multimessage data for this machine')
+        except Exception as e:
+            helpers.warn('Unable to read multimessage data' + str(e))
 
         # Build graph and reset
         # --------------------------------------------------
@@ -282,8 +282,8 @@ class Model(object):
 
         """
         fname = '%s/%s/pairwise-nsend_receive' % \
-                (config.MACHINE_DATABASE, self.get_name())
-        print 'Reading receive costs from %s' % fname
+                (config.MACHINE_DATABASE_DATA, self.get_name())
+        print ('Reading receive costs from %s' % fname)
         f = open(fname)
         for l in f.readlines():
             l = l.rstrip()
@@ -304,8 +304,8 @@ class Model(object):
 
         """
         fname = '%s/%s/pairwise-nsend_send' % \
-                (config.MACHINE_DATABASE, self.get_name())
-        print 'Reading send costs from %s' % fname
+                (config.MACHINE_DATABASE_DATA, self.get_name())
+        print ('Reading send costs from %s' % fname)
         f = open(fname)
         for l in f.readlines():
             l = l.rstrip()

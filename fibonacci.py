@@ -44,7 +44,7 @@ class Fibonacci(overlay.Overlay):
         while algorithms.F(fibno+2)-1<num_cores:
             fibno += 1
 
-        print 'Fibonacci number for this machine is %d' % fibno
+        print ('Fibonacci number for this machine is %d' % fibno)
 
         # Build tree
         nodes = []
@@ -54,7 +54,7 @@ class Fibonacci(overlay.Overlay):
         assert len(nodes)>=num_cores
 
         # Sort nodes such that nodes further up in the tree come first
-        nodes = sorted(nodes, cmp=lambda x, y: cmp(len(x),len(y)))
+        nodes = sorted(nodes, key=lambda x: len(x))
 
         # Shorten nodes so that we have just enough cores
         nodes = nodes[:num_cores]

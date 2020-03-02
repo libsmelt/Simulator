@@ -41,9 +41,9 @@ class Cluster(overlay.Overlay):
 
         """
 
-        print '--------------------------------------------------'
-        print '-- BUILD CLUSTER TOPLOGY'
-        print '--------------------------------------------------'
+        print ('--------------------------------------------------')
+        print ('-- BUILD CLUSTER TOPLOGY')
+        print ('--------------------------------------------------')
 
         coords = self.get_coordinators()
 
@@ -69,7 +69,7 @@ class Cluster(overlay.Overlay):
             numa_node = [ n for n in self.mod.get_numa_node(c) if n in g.nodes() ]
             g_simple = sequential(self.mod.get_graph(), numa_node, c)
             g_outer = merge_graphs(g_outer, g_simple)
-            print "%s" % str(numa_node)
+            print ("%s" % str(numa_node))
 
         helpers.output_graph(g_outer, 'cluster_outer_bin', 'neato')
         return g_outer

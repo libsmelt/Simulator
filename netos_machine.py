@@ -51,7 +51,7 @@ class NetosMachine(model.Model):
 
         """
         self.name = config.args.machine
-        print 'Initializing NetOS machine %s' % self.name
+        print ('Initializing NetOS machine %s' % self.name)
 
         # Build a graph model
         super(NetosMachine, self).__init__()

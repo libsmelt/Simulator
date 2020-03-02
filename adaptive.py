@@ -7,6 +7,9 @@
 # If you do not find this file, copies can be found by writing to:
 # ETH Zurich D-INFK, Universitaetstr. 6, CH-8092 Zurich. Attn: Systems Group.
 
+import sys
+
+#sys.path.append('contrib/python-graph/core')
 from pygraph.classes.digraph import digraph
 
 import sched_adaptive
@@ -61,8 +64,8 @@ class AdapativeTree(overlay.Overlay):
         c_snd_cost = sorted(_c_snd_cost.items(), key=lambda x: x[1])
         (root, cost) = c_snd_cost[0]
 
-        print 'Choosing node %d as root with cost %d' % \
-            (root, cost)
+        print ('Choosing node %d as root with cost %d' % \
+                    (root, cost))
 
         return root
 
@@ -74,5 +77,8 @@ class AdapativeTree(overlay.Overlay):
 
         """
         gout = digraph()
-        map(gout.add_node, [ n for n in g.nodes() ])
+        for n in g.nodes() :
+            gout.add_node(n)
+
+
         return gout

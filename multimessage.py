@@ -36,12 +36,14 @@ class MultiMessage(object):
 
         for line in f.readlines():
 
+            line = line.decode().replace("\n", "")
             # Format:
             # cores=01,02,03,04,08,12,16,20,24,28, mode=all , avg=109, stdev=13, med=106, min=98, max=355 cycles, count=1800, ignored=3200
             m = re.match('cores=([0-9,]+), mode=([^,]+), avg=(\d+), stdev=(\d+), med=(\d+), min=(\d+), max=(\d+) cycles, count=(\d+), ignored=(\d+)', line)
+            if not m :
+                m = re.match('r=1,l=4, mode=([^,]+), avg=(\d+), stdev=(\d+), med=(\d+), min=(\d+), max=(\d+) cycles, count=(\d+), ignored=(\d+)', line)
             if m :
                 cores = map(int, m.group(1).split(','))
-
                 l_cores = []
                 r_cores = []
 
@@ -135,25 +137,28 @@ class MultiMessage(object):
         self.matrix = [[ 0 for l in range(self.cores_local) ] for r in range(self.cores_remote)]
 
         for r in range(self.cores_remote)[::-1]:
-            print '>> ',
+            print ('>> ')
             for l in range(self.cores_local):
 
                 if r==0 and l==0:
-                    print '                         |',
+                    print ('                         |')
                     continue
 
                 # Determine send cost as predicted by n-receive
                 send_pw = self.machine.get_send_history_cost(self.sender_core, self.history[r][l])
-                rel_error = send_pw/float(self.data['sum'][r][l])
+                if self.data['sum'][r][l] == 0 :
+                    rel_error = 0
+                else :
+                    rel_error = send_pw/float(self.data['sum'][r][l])
 
                 cost_last = self.data['last'][r][l] - self.tsc_overhead
 
                 self.matrix[r][l] = rel_error
 
-                print ' %5.1f %5.0f %5.0f %5.2f |' % \
-                    (cost_last, self.data['sum'][r][l], send_pw, rel_error),
+                print (' %5.1f %5.0f %5.0f %5.2f |' % \
+                                    (cost_last, self.data['sum'][r][l], send_pw, rel_error),)
 
-            print ''
+            print ('')
 
 
     def get_factor(self, sender, c_batch):

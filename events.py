@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # Copyright (c) 2013-2016, ETH Zurich.
 # All rights reserved.
@@ -11,6 +11,8 @@ class Event():
     def __init__(self, src, dest):
         self.src = src
         self.dest = dest
+    def __lt__(self, other) :
+        return False
 
 class Send(Event):
     """
@@ -20,6 +22,8 @@ class Send(Event):
 
     def get_type(self):
         return 'Send'
+    def __lt__(self, other) :
+        return True
 
 class Receive(Event):
     """
@@ -29,6 +33,8 @@ class Receive(Event):
     """
     def get_type(self):
         return 'Receive'
+    def __lt__(self, other) :
+        return True
 
 class Propagate(Event):
     """
@@ -38,6 +44,8 @@ class Propagate(Event):
     """
     def get_type(self):
         return 'Propagate'
+    def __lt__(self, other) :
+        return False
 
 class Receiving(Event):
     """Indicates that a node is currently receiving a message and no other
@@ -53,3 +61,5 @@ class Receiving(Event):
     """
     def get_type(self):
         return 'Receiving'
+    def __lt__(self, other) :
+        return False

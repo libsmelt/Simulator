@@ -33,7 +33,9 @@ running_as_server = False
 dir_path = os.path.dirname(os.path.realpath(__file__))
 
 # Path to the machine database.
-MACHINE_DATABASE='%s/machinedb/' % dir_path
+MACHINE_DATABASE='%s/machinedb' % dir_path
+MACHINE_DATABASE_SCRIPTS='%s/machinedb/scripts' % dir_path
+MACHINE_DATABASE_DATA='%s/machinedb/machine-data' % dir_path
 
 # Arguments as given when invoking the simulator
 args = None

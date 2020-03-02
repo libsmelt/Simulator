@@ -9,7 +9,7 @@
 
 # Import pygraph
 from pygraph.classes.digraph import digraph
-from pygraph.algorithms.minmax import minimal_spanning_tree
+from minmax_degree import minimal_spanning_tree
 
 # Import own code
 import overlay
@@ -49,7 +49,7 @@ class Mst(overlay.Overlay):
         # where the edge that connects it with the root is coming
         # from.
         mst_edges = minimal_spanning_tree(g, self.get_root_node())
-        print 'Minumum spanning tree:', mst_edges
+        print ('Minumum spanning tree:', mst_edges)
 
         for (r, s) in mst_edges.items():
 

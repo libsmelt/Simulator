@@ -158,7 +158,7 @@ class Output():
 
         # Individual core by core, no merging of neighboring cores in one box
         if not packed:
-            print self.obj_per_core
+            print (self.obj_per_core)
             for c in self.model.get_cores(True):
                 cidx = self.model.get_numa_id(c) % int(len(self.color_map))
                 color = self.color_map[cidx]
@@ -220,7 +220,7 @@ class Output():
         with open('test.tex', 'w') as f:
 
             _out = self.name.replace('.tex', '.png')
-            print 'Generating visualization .. '
+            print ('Generating visualization .. ')
 
             for line in open('template.tex', 'r'):
                 f.write(line.replace('{%file%}', self.name))
@@ -228,10 +228,10 @@ class Output():
             f.close()
 
             try:
-                print subprocess.check_output(shlex.split('rm -f test-figure0.pdf'))
-                print subprocess.check_output(shlex.split('pdflatex -shell-escape -interaction nonstopmode test.tex'))
-                print subprocess.check_output(shlex.split('convert -verbose -density 300 test-figure0.pdf %s' % _out))
+                print (subprocess.check_output(shlex.split('rm -f test-figure0.pdf')))
+                print (subprocess.check_output(shlex.split('pdflatex -shell-escape -interaction nonstopmode test.tex')))
+                print (subprocess.check_output(shlex.split('convert -verbose -density 300 test-figure0.pdf %s' % _out)))
 
             except Exception as e:
-                print 'Generating visualization failed, aborting'
+                print ('Generating visualization failed, aborting')
                 raise e

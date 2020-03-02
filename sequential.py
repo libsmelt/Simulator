@@ -48,7 +48,7 @@ class Sequential(overlay.Overlay):
         """
 
         # Run binary tree algorithm
-        print 'Building sequential multicast', graph.nodes()
+        print ('Building sequential multicast', graph.nodes())
         sequential = algorithms.sequential(graph, graph.nodes(),
                                            self.get_root_node())
 

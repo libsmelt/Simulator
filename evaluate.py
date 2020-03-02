@@ -767,8 +767,8 @@ class Evaluate():
 
         # Dump tree
         for c in m.get_cores(True):
-            print '%d -> %s' % \
-                (c, ','.join([ str(x) for (_, x) in sched.find_schedule(c) ]))
+            print( '%d -> %s' % \
+                            (c, ','.join([ str(x) for (_, x) in sched.find_schedule(c) ])))
 
         return res
 
@@ -853,9 +853,9 @@ class Evaluate():
         else:
             send_feedback = 0
 
-        print "Terminating(%d,%s,%s) - cost %d for last_node -> root" % \
-            (self.sim_round, str(self.last_node), str(root),
-             send_feedback + self.model.get_receive_cost(self.last_node, root))
+        print ("Terminating(%d,%s,%s) - cost %d for last_node -> root" % \
+                    (self.sim_round, str(self.last_node), str(root),
+                     send_feedback + self.model.get_receive_cost(self.last_node, root)))
         self.sim_round += send_feedback
         # * Propagation
         self.sim_round += T_PROPAGATE

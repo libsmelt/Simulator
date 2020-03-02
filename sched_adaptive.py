@@ -11,7 +11,7 @@ import scheduling
 
 import logging
 import model
-import Queue
+import queue
 import config
 
 # Number of messages to send to a remote NUMA node before stopping to
@@ -202,10 +202,12 @@ class SchedAdaptive(scheduling.Scheduling):
         # Send history
         send_history = {}
 
-        _start = start if start != None else self.get_root()
+        _start  = start
+        if _start == None :
+            _start = self.get_root()
 
         # Calculate cost of subtree
-        q = Queue.Queue()
+        q = queue.Queue()
         q.put((_start, 0))
 
         # Dictionary core c -> time when message is availabe on each

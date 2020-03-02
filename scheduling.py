@@ -16,7 +16,7 @@ class Scheduling(object):
         @param graph An instance of digraph representing the tree
         topology for which to search a model for.
         """
-        print "Initializing scheduler %s with %s" % (str(self), str(graph))
+        print ("Initializing scheduler %s with %s" % (str(self), str(graph)))
         self.graph = graph
 
     def find_schedule(self, sending_node, active_nodes):

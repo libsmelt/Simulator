@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # Copyright (c) 2013-2016, ETH Zurich.
 # All rights reserved.
@@ -23,6 +23,10 @@ import argparse
 import logging
 import sys
 
+import sys
+sys.path.append('./contrib/python-graph/core')
+
+
 def simulate(args):
 
     machine = args.machine
@@ -32,8 +36,8 @@ def simulate(args):
     config.args.hybrid = args.hybrid
     config.args.hybrid_cluster = args.hybrid_cluster
 
-    print "machine: %s, topology: %s, hybrid: %s" % \
-        (machine, args.overlay, args.hybrid)
+    print ("machine: %s, topology: %s, hybrid: %s" % \
+            (machine, args.overlay, args.hybrid))
 
     m_class = config.arg_machine(machine)
     m = m_class()
@@ -41,8 +45,7 @@ def simulate(args):
     gr = m.get_graph()
 
     if args.multicast:
-        print "Building a multicast"
-
+        print ("Building a multicast")
     # --------------------------------------------------
     # Switch main action
 
@@ -70,15 +73,15 @@ def simulate(args):
 
             if config.args.hybrid:
 
-                print args.hybrid_cluster
+                print (args.hybrid_cluster)
                 if 'socket' in args.hybrid_cluster:
-                    print "Clustering: Sockets"
+                    print ("Clustering: Sockets")
                     hyb_cluster = m.machine_topology['Package'].get()
                 elif 'all' in args.hybrid_cluster:
-                    print "Clustering: All cores"
+                    print ("Clustering: All cores")
                     hyb_cluster = [range(0, m.machine_topology['numcpus'])]
                 elif 'numa' in args.hybrid_cluster:
-                    print "Clustering: NUMA nodes"
+                    print ("Clustering: NUMA nodes")
                     if len(args.hybrid_cluster) > 4:
                         hyb_cluster = m.machine_topology['NUMA'].get()
                         size = float(args.hybrid_cluster[4:])
@@ -101,7 +104,7 @@ def simulate(args):
                             hyb_cluster = new_cluster
                         else:
                             # Split NUMA nodes
-                            print hyb_cluster
+                            print (hyb_cluster)
                             new_cluster = []
                             split = int(1/size)
                             if split > (len(hyb_cluster[0])/2):
@@ -117,12 +120,12 @@ def simulate(args):
                                     new_cluster.append(tmp1)
 
                             hyb_cluster = new_cluster
-                            print hyb_cluster
+                            print (hyb_cluster)
                     else:
                         hyb_cluster = m.machine_topology['NUMA'].get()
                 else:
-                    print "Warning: Unknown cluster argument for hybrid, using default option"
-                    print "Clustering: NUMA nodes"
+                    print ("Warning: Unknown cluster argument for hybrid, using default option")
+                    print ("Clustering: NUMA nodes")
                     hyb_cluster = m.machine_topology['NUMA'].get()
 
                 # Simulate a multicast tree
@@ -154,8 +157,8 @@ def simulate(args):
                 if label == 'atomic broadcast':
                     tmp_last_node = ev.last_node
                     receive_order = ev.node_finished_list
-                print "Cost %s for tree is: %d (%d), last node is %s" % \
-                    (label, ev.time, ev.time_no_ab, ev.last_node)
+                print ("Cost %s for tree is: %d (%d), last node is %s" % \
+                                    (label, ev.time, ev.time_no_ab, ev.last_node))
 
             assert receive_order != None
 
@@ -187,7 +190,7 @@ def simulate(args):
 
             num_models += 1
 
-        print all_leaf_nodes
+        print (all_leaf_nodes)
 
         # Cut down number of leafs
         LEAFS_MAX = 10
@@ -242,9 +245,9 @@ def build_and_simulate():
         exit(1)
 
     if config.args.debug:
-        print 'Activating debug mode'
-        import debug
-        assert type(debug.info)!=None
+        print ('Activating debug mode')
+        #$import debug
+        #asert type(debug.info)!=None
         logging.getLogger().setLevel(logging.INFO)
 
 
@@ -267,7 +270,7 @@ def build_and_simulate():
 if __name__ == "__main__":
 
     import netos_machine
-    print 'Starting Simulator v%s' % helpers.git_version()
+    print ('Starting Simulator v%s' % helpers.git_version())
 
     # Append NetOS machines
     config.machines += netos_machine.get_list()

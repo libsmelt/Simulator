@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # Copyright (c) 2013-2016, ETH Zurich.
 # All rights reserved.
@@ -15,13 +15,17 @@ sys.path.append('/usr/lib/graphviz/python/')
 sys.path.append('/usr/lib64/graphviz/python/')
 sys.path.append('/home/skaestle/bin/')
 sys.path.append(os.getenv('HOME') + '/bin/')
+
 import gv
-import Queue
+import queue
 import logging
 import re
 
 import config
 
+import sys
+sys.path.append('./contrib/python-graph/core')
+sys.path.append('./contrib/python-graph/dot')
 from pygraph.classes.graph import graph
 from pygraph.classes.digraph import digraph
 
@@ -51,7 +55,7 @@ def output_clustered_graph(graph, name, clustering):
                   '#9467bd', '#c5b0d5', '#8c564b', '#c49c94',
                   '#e377c2', '#f7b6d2', '#7f7f7f', '#c7c7c7',
                   '#bcbd22', '#dbdb8d', '#17becf', '#9edae5' ]
-    clist = [ tableau20[i*2] for i in range(0, len(tableau20)/2)]
+    clist = [ tableau20[i*2] for i in range(0, len(tableau20)//2)]
 
     i = 0
     for c in clustering:
@@ -104,7 +108,7 @@ def output_quorum_configuration(model, hierarchies, root, sched, topo, midx,
     d = core_index_dict(model.graph.nodes())
 
     dim = model.get_num_cores()
-    mat = [[0 for x in xrange(dim)] for x in xrange(dim)]
+    mat = [[0 for x in range(dim)] for x in range(dim)]
 
     import hybrid_model
 
@@ -238,7 +242,7 @@ def walk_graph(g, root, func, mat, sched, core_dict):
     """
     assert isinstance(g, graph) or isinstance(g, digraph)
 
-    active = Queue.Queue()
+    active = queue.Queue()
     done = []
 
     active.put((root, None))
@@ -274,8 +278,8 @@ def draw_final(mod, sched, topo):
     assert isinstance(sched, scheduling.Scheduling)
     assert isinstance(topo, Overlay)
 
-    print 'Name of machine is:', mod.get_name()
-    print 'Name of topology is:', topo.get_name()
+    print ('Name of machine is:', mod.get_name())
+    print ('Name of topology is:', topo.get_name())
 
     import pygraphviz as pgv
     A = pgv.AGraph()
@@ -302,7 +306,7 @@ def draw_final(mod, sched, topo):
             A.add_subgraph(c, name='cluster_%d' % i, color=clist[i % len(clist)])
             i += 1
     else:
-        print 'Not drawing NUMA nodes'
+        print ('Not drawing NUMA nodes')
 
     desc = 'mc' if mc else 'full'
 
@@ -314,8 +318,8 @@ def draw_final(mod, sched, topo):
         A.write(_name + '.dot')
 
     except Exception as e:
-        print 'Generating PNGs for graph topologies faield, continuing'
-        print e
+        print ('Generating PNGs for graph topologies faield, continuing')
+        print (e)
 
 
 def fill_matrix(s, children, parent, mat, sched, core_dict):
@@ -444,7 +448,7 @@ class bcolors:
     UNDERLINE = '\033[4m'
 
 def warn(msg):
-    print bcolors.WARNING + 'WARNING: ' + msg + bcolors.ENDC
+    print (bcolors.WARNING + 'WARNING: ' + msg + bcolors.ENDC)
 
 
 def git_version():

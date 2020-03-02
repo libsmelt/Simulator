@@ -54,7 +54,7 @@ class Hybrid(overlay.Overlay):
             g = digraph()
 
             clusters = self.mod.machine_topology['Cache level 3']
-            print str(clusters)
+            print (str(clusters))
             coords = []
 
             for cluster in clusters.get():
@@ -62,7 +62,7 @@ class Hybrid(overlay.Overlay):
                 # First core in cluster acts as coordinator
                 coords.append(cluster[0])
 
-            print str(coords)
+            print (str(coords))
             coords = map(int, coords)
             g.add_nodes(coords)
 
@@ -75,7 +75,7 @@ class Hybrid(overlay.Overlay):
 
             self.mp_tree = self.mp_topology(simplemachine.SimpleMachine(g))
             tmp = self.mp_tree.get_broadcast_tree()
-            print 'broadcast', str(tmp[0].graph)
+            print ('broadcast', str(tmp[0].graph))
             self.mp_tree_topo = tmp[0].graph
 
             for (cluster, coord) in zip(clusters.get(), coords):
@@ -116,7 +116,7 @@ class Hybrid(overlay.Overlay):
         """
         XXX Graph is ignored!!
         """
-        print "get_scheduler for hybrid tree using %s" % str(self.mp_tree)
+        print ("get_scheduler for hybrid tree using %s" % str(self.mp_tree))
         return self.mp_tree.get_scheduler(self.mp_tree._get_broadcast_tree())
 
     def get_name(self):

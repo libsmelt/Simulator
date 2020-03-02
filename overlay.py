@@ -45,7 +45,7 @@ class Overlay(object):
         @param args list of strings
         """
         for a in args:
-            print 'Overlay: activating argument: [%s]' % a
+            print ('Overlay: activating argument: [%s]' % a)
             self.options[a] = True
             # Some options have to be passed to the Machine
             if a == 'mm':
@@ -123,7 +123,7 @@ class Overlay(object):
         """
         if self.tree is None:
 
-            print "Generating model"
+            print ("Generating model")
 
             # Get tree
             tmp = self._get_broadcast_tree()
@@ -181,13 +181,13 @@ class Overlay(object):
                 coordinators.append(core)
 
         coordinators = self.mod.filter_active_cores(coordinators, True)
-        print "Coordinator nodes are: %s" % str(coordinators)
+        print ("Coordinator nodes are: %s" % str(coordinators))
         return coordinators
 
     def get_scheduler(self, final_graph):
         """Return a scheduler for the given topology and graph.
         """
-        print "Initializing scheduler in overlay: %s" % str(final_graph)
+        print ("Initializing scheduler in overlay: %s" % str(final_graph))
 
 
         return naive.Naive(final_graph)
@@ -243,7 +243,7 @@ class Overlay(object):
             r = hybrid.Hybrid(topo, None)
         elif overlay_name.startswith('hybrid_'):
             e = overlay_name.split('_')
-            print 'Detected hybrid model with base class', e[1]
+            print ('Detected hybrid model with base class', e[1])
             r_mp_class = Overlay.get_overlay_class(e[1])
             assert len(overlay_args) == 0 # Don't know how to pass the
                                           # arguments for Hybrids

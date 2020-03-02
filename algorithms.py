@@ -108,7 +108,7 @@ def invert_weights(g):
     w = 0
     for (s,d) in g.edges():
         w = max(w, g.edge_weight((s,d)))
-    print 'Maximum edge weight is %d' % w
+    print ('Maximum edge weight is %d' % w)
     w += 1 # Make sure the most expensive edge will have a cost of 1 afterwards
     g_inv = digraph()
     for n in g.nodes():
@@ -121,14 +121,14 @@ def invert_weights(g):
             g_inv.add_edge((s,d), w_inv)
         except:
             assert g_inv.edge_weight((s,d)) == w_inv # This one fails
-            print "Edge %d %d already in graph, ignoring .. " % (s,d)
+            print ("Edge %d %d already in graph, ignoring .. " % (s,d))
     return g_inv
 
 
 def merge_graphs(g1, g2):
     """
-    Merge two graphs to a new graph (V, E) with V = g1.nodes \union g2.nodes
-    and Edge e \in g1 or e \in g2 -> e \in E.
+    Merge two graphs to a new graph (V, E) with V = g1.nodes union g2.nodes
+    and Edge e in g1 or e in g2 -> e in E.
     """
 
     if g1.DIRECTED or g2.DIRECTED:
