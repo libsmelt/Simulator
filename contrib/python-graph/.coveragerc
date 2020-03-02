@@ -1,0 +1,5 @@
+[run]
+source = core/
+         dot/
+omit = */setup.py
+

@@ -1,0 +1,13 @@
+*.pyc
+*.swp
+.#*
+.cache
+__pycache__
+.eggs
+*.po~
+*.mo
+.idea
+.vscode
+*.wpr
+*.wpu
+.venv
