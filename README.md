@@ -4,7 +4,7 @@
 
 Install the following packages (on Ubuntu LTS).
 
-    apt-get install python-networkx python-pygraphviz libgv-python python-numpy python-pygraph python-matplotlib
+    apt-get install python3-gv python3-pydot python3-networkx python3-pygraphviz libgv-python python-numpy python-matplotlib
 
 I had to do some manual config to make it work:
 
